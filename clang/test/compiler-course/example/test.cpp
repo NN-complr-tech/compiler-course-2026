@@ -1,32 +1,15 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/VariableStatisticsPlugin_Lukin_Ivan_FIIT3_ClangAST%pluginext -plugin VariableStatisticsPlugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/example_ClangAST%pluginext -plugin example_plugin -fsyntax-only %s 2>&1 | FileCheck %s
 
-int global1 = 0;//глобальная
+// CHECK: FunctionDecl {{0x[0-9a-fA-F]+}} <{{.*}}> col:20 isEven 'bool (int) noexcept'
+// CHECK-NEXT: |-ParmVarDecl {{0x[0-9a-fA-F]+}} <col:27, col:31> col:31 used value 'int'
+// CHECK-NEXT: |-CompoundStmt {{0x[0-9a-fA-F]+}} <col:47, col:72>
+// CHECK-NEXT: | `-ReturnStmt {{0x[0-9a-fA-F]+}} <col:49, col:69>
+// CHECK-NEXT: |   `-BinaryOperator {{0x[0-9a-fA-F]+}} <col:56, col:69> 'bool' '=='
+// CHECK-NEXT: |     |-BinaryOperator {{0x[0-9a-fA-F]+}} <col:56, col:64> 'int' '%'
+// CHECK-NEXT: |     | |-ImplicitCastExpr {{0x[0-9a-fA-F]+}} <col:56> 'int' <LValueToRValue>
+// CHECK-NEXT: |     | | `-DeclRefExpr {{0x[0-9a-fA-F]+}} <col:56> 'int' lvalue ParmVar {{0x[0-9a-fA-F]+}} 'value' 'int'
+// CHECK-NEXT: |     | `-IntegerLiteral {{0x[0-9a-fA-F]+}} <col:64> 'int' 2
+// CHECK-NEXT: |     `-IntegerLiteral {{0x[0-9a-fA-F]+}} <col:69> 'int' 0
+// CHECK-NEXT: `-WarnUnusedResultAttr {{0x[0-9a-fA-F]+}} <col:3> nodiscard ""
 
-static int static1 = 0;//статическая на уровне файла (все равно статик)
-
-class Example{
-    static int static2;//статическая для класса 
-};
-
-void foo1()
-{
-    int local1 = 0;//локальная переменная
-    static int static3 = 0;//статик в функции
-    double local2 = 0.0;//локальная переменная
-}
-
-double global2 = 0.0;
-
-void foo2(int param1, int param2)//два параметра
-{
-    int local3 = 0;//локальная
-}
-
-
-// CHECK: Statistics
-// CHECK-NEXT: Global objects: 2
-// CHECK-NEXT: Local variables: 3
-// CHECK-NEXT: Static variables: 3
-// CHECK-NEXT: Params: 2
-
-
+[[nodiscard]] bool isEven(int value) noexcept { return value % 2 == 0; }
