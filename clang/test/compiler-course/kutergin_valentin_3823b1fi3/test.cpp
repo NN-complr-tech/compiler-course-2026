@@ -13,6 +13,7 @@ void func2() {
 
 // Тест 3: Вызов опасной функции
 // CHECK: FunctionDecl {{.*}} func3 'void ()'
+// CHECK-NOT: noexcept
 void func3() {
     func2();
 }
