@@ -6,14 +6,12 @@
 
 namespace {
 
-struct Statistic//здесь будет храниться статистика по переменным (их количество)
+struct Statistic//здесь будет храниться статистика по переменным
 {
-  int global_obj;
-  int static_vars;
-  int local_vars;
-  int params;
-
-  Statistic() : global_obj(0), static_vars(0), local_vars(0), params(0) {}
+  int global_obj = 0;
+  int static_vars = 0;
+  int local_vars = 0;
+  int params = 0;
 };
 
 class StatisticVisitor final : public clang::RecursiveASTVisitor<StatisticVisitor> {
@@ -33,10 +31,6 @@ public:
       return true;
     }
 
-    //теперь по порядку проверяем
-    //1.Если static глобавльно или в функции, если static в классе
-    //2.Если обьявление на уровне файла или namespace
-    //3.Если локальная переменная
     if(D->getStorageClass() == clang::SC_Static || D->isStaticDataMember()){
       stat.static_vars++;
     }
@@ -50,7 +44,7 @@ public:
     return true;
   }
 
-  Statistic get_statistic()
+  Statistic get_statistic() const
   {
     return stat;
   }
@@ -68,7 +62,7 @@ public:
     m_visitor.TraverseDecl(context.getTranslationUnitDecl());
 
     Statistic stat = m_visitor.get_statistic();
-    llvm::outs() << "\nStatistics \n";
+    llvm::outs() << "\nStatistics\n";
     llvm::outs() << "Global objects: " << stat.global_obj << "\n";
     llvm::outs() << "Local variables: " << stat.local_vars << "\n";
     llvm::outs() << "Static variables: " << stat.static_vars << "\n";
@@ -94,4 +88,4 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<StatisticAction>
-    X("VariableStatisticsPlugin", "Plugin to get variables statistics");
+    X("VariableStatisticsPlugin", "Plugin for obtaining statistics on variables in TU");
