@@ -6,7 +6,7 @@
 
 namespace {
 
-struct Statistic//здесь будет храниться статистика по переменным
+struct Statistic // здесь будет храниться статистика по переменным
 {
   int global_obj = 0;
   int static_vars = 0;
@@ -14,40 +14,38 @@ struct Statistic//здесь будет храниться статистика 
   int params = 0;
 };
 
-class StatisticVisitor final : public clang::RecursiveASTVisitor<StatisticVisitor> {
+class StatisticVisitor final
+    : public clang::RecursiveASTVisitor<StatisticVisitor> {
 public:
-  explicit StatisticVisitor(clang::ASTContext *context) : m_context(context), stat(Statistic()) {}
+  explicit StatisticVisitor(clang::ASTContext *context)
+      : m_context(context), stat(Statistic()) {}
 
-  //вызывается, когда доходим до пар-в ф-ии
+  // вызывается, когда доходим до пар-в ф-ии
   bool VisitParmVarDecl(clang::ParmVarDecl *D) {
     stat.params++;
     return true;
   }
 
-  //вызывается, когда доходим до обьявления переменных
-  bool VisitVarDecl(clang::VarDecl *D){
-    //т.к. пар-ры ф-ии также явл-ся переменными, проверяем, не они ли это. Иначе посчитаем дважды
-    if(clang::isa<clang::ParmVarDecl>(D)){
+  // вызывается, когда доходим до обьявления переменных
+  bool VisitVarDecl(clang::VarDecl *D) {
+    // т.к. пар-ры ф-ии также явл-ся переменными, проверяем, не они ли это.
+    // Иначе посчитаем дважды
+    if (clang::isa<clang::ParmVarDecl>(D)) {
       return true;
     }
 
-    if(D->getStorageClass() == clang::SC_Static || D->isStaticDataMember()){
+    if (D->getStorageClass() == clang::SC_Static || D->isStaticDataMember()) {
       stat.static_vars++;
-    }
-    else if(D->isFileVarDecl()){
+    } else if (D->isFileVarDecl()) {
       stat.global_obj++;
-    }
-    else if(D->isLocalVarDecl()){
+    } else if (D->isLocalVarDecl()) {
       stat.local_vars++;
     }
 
     return true;
   }
 
-  Statistic get_statistic() const
-  {
-    return stat;
-  }
+  Statistic get_statistic() const { return stat; }
 
 private:
   clang::ASTContext *m_context;
@@ -62,11 +60,13 @@ public:
     m_visitor.TraverseDecl(context.getTranslationUnitDecl());
 
     Statistic stat = m_visitor.get_statistic();
-    llvm::outs() << "\nStatistics\n";
-    llvm::outs() << "Global objects: " << stat.global_obj << "\n";
-    llvm::outs() << "Local variables: " << stat.local_vars << "\n";
-    llvm::outs() << "Static variables: " << stat.static_vars << "\n";
-    llvm::outs() << "Params: " << stat.params << "\n";
+
+    auto &out = llvm::outs();
+    out << "\nStatistics\n";
+    out << "Global objects: " << stat.global_obj << "\n";
+    out << "Local variables: " << stat.local_vars << "\n";
+    out << "Static variables: " << stat.static_vars << "\n";
+    out << "Params: " << stat.params << "\n";
   }
 
 private:
@@ -88,4 +88,5 @@ public:
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<StatisticAction>
-    X("VariableStatisticsPlugin", "Plugin for obtaining statistics on variables in TU");
+    X("VariableStatisticsPlugin",
+      "Plugin for obtaining statistics on variables in TU");
