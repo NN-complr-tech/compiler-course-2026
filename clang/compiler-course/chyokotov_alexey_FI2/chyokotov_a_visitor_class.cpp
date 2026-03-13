@@ -147,24 +147,11 @@ public:
     return true;
   }
 
-
   ActionType getActionType() override {
     return AddAfterMainAction;
   }
-
-
 };
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<ExampleAction>
     X("chyokotov_a_analyzer_plugin", "Description_plugin");
-
-/*
-clang++ -cc1 -load "/home/acheck/labworks/compiler-course-2026/build/lib/chyokotov_alexey_FI2_ClangAST.so" -plugin chyokotov_a_analyzer_plugin "/home/acheck/labworks/compiler-course-2026/clang/test/compiler-course/chyokotov_alexeyFI2/test.cpp"
- rebuild: ninja -C build/
-
- // RUN: split-file %s %t
-// RUN: %clang_cc1 -load %llvmshlibdir/chyokotov_alexey_FI2_ClangAST%pluginext -plugin chyokotov_a_analyzer_plugin -fsyntax-only -verify %t/with_warnings.cpp
-
-//--- with_warnings.cpp
-*/
