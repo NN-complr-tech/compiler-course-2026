@@ -12,12 +12,7 @@
 
 namespace {
 
-enum class CastStyles {
-  Static,
-  Const,
-  Reinterpret,
-  Dynamic
-};
+enum class CastStyles { Static, Const, Reinterpret, Dynamic };
 
 static llvm::StringRef getCastStyleName(CastStyles style) {
   switch (style) {
@@ -35,7 +30,8 @@ static llvm::StringRef getCastStyleName(CastStyles style) {
 
 class TypeCastClassifier {
 public:
-  explicit TypeCastClassifier(clang::ASTContext &context) : m_context(context) {}
+  explicit TypeCastClassifier(clang::ASTContext &context)
+      : m_context(context) {}
 
   CastStyles chooseCast(const clang::CStyleCastExpr *cast) const {
     const clang::Expr *sub = cast->getSubExpr()->IgnoreParenImpCasts();
@@ -44,28 +40,29 @@ public:
     }
 
     const clang::QualType sourceType = sub->getType().getCanonicalType();
-    const clang::QualType targetType = cast->getTypeAsWritten().getCanonicalType();
+    const clang::QualType targetType =
+        cast->getTypeAsWritten().getCanonicalType();
 
-    if (isCvAdjustment(sourceType, targetType)){
+    if (isCvAdjustment(sourceType, targetType)) {
       return CastStyles::Const;
     }
-    if (isPolymorphicDowncast(sourceType, targetType)){
+    if (isPolymorphicDowncast(sourceType, targetType)) {
       return CastStyles::Dynamic;
     }
-    if (isPointerIntegerMix(sourceType, targetType)){
+    if (isPointerIntegerMix(sourceType, targetType)) {
       return CastStyles::Reinterpret;
     }
-    if (isOpaquePointerConversion(sourceType, targetType)){
+    if (isOpaquePointerConversion(sourceType, targetType)) {
       return CastStyles::Static;
     }
-    if (isUnrelatedPointerConversion(sourceType, targetType)){
+    if (isUnrelatedPointerConversion(sourceType, targetType)) {
       return CastStyles::Reinterpret;
     }
-    if (isNumLike(sourceType) && isNumLike(targetType)){
+    if (isNumLike(sourceType) && isNumLike(targetType)) {
       return CastStyles::Static;
     }
     return CastStyles::Static;
-  } 
+  }
 
 private:
   clang::ASTContext &m_context;
@@ -75,11 +72,13 @@ private:
   }
 
   static bool isPointerIntegerMix(clang::QualType from, clang::QualType to) {
-    return (from->isPointerType() && to->isIntegerType()) || (from->isIntegerType() && to->isPointerType());
+    return (from->isPointerType() && to->isIntegerType()) ||
+           (from->isIntegerType() && to->isPointerType());
   }
 
-  static bool isOpaquePointerConversion(clang::QualType from, clang::QualType to) {
-    if (!from->isPointerType() || !to->isPointerType()){
+  static bool isOpaquePointerConversion(clang::QualType from,
+                                        clang::QualType to) {
+    if (!from->isPointerType() || !to->isPointerType()) {
       return false;
     }
     const clang::QualType fromPointee = from->getPointeeType();
@@ -87,20 +86,22 @@ private:
     return fromPointee->isVoidType() || toPointee->isVoidType();
   }
 
-  bool isUnrelatedPointerConversion(clang::QualType from, clang::QualType to) const {
-    if (!from->isPointerType() || !to->isPointerType()){
+  bool isUnrelatedPointerConversion(clang::QualType from,
+                                    clang::QualType to) const {
+    if (!from->isPointerType() || !to->isPointerType()) {
       return false;
     }
-    const clang::QualType fromPointee = from->getPointeeType().getCanonicalType();
+    const clang::QualType fromPointee =
+        from->getPointeeType().getCanonicalType();
     const clang::QualType toPointee = to->getPointeeType().getCanonicalType();
 
-    if (fromPointee.getUnqualifiedType() == toPointee.getUnqualifiedType()){
+    if (fromPointee.getUnqualifiedType() == toPointee.getUnqualifiedType()) {
       return false;
     }
-    if (areRelatedRecords(fromPointee, toPointee)){
+    if (areRelatedRecords(fromPointee, toPointee)) {
       return false;
     }
-    if (fromPointee->isVoidType() || toPointee->isVoidType()){
+    if (fromPointee->isVoidType() || toPointee->isVoidType()) {
       return false;
     }
 
@@ -109,17 +110,21 @@ private:
 
   static bool isCvAdjustment(clang::QualType from, clang::QualType to) {
     if (from->isPointerType() && to->isPointerType()) {
-      const clang::QualType fromPointee = from->getPointeeType().getCanonicalType();
+      const clang::QualType fromPointee =
+          from->getPointeeType().getCanonicalType();
       const clang::QualType toPointee = to->getPointeeType().getCanonicalType();
 
-      return fromPointee.getUnqualifiedType() == toPointee.getUnqualifiedType() && fromPointee != toPointee;
+      return fromPointee.getUnqualifiedType() ==
+                 toPointee.getUnqualifiedType() &&
+             fromPointee != toPointee;
     }
 
     if (from->isReferenceType() && to->isReferenceType()) {
       const clang::QualType fromRef = from->getPointeeType().getCanonicalType();
       const clang::QualType toRef = to->getPointeeType().getCanonicalType();
 
-      return fromRef.getUnqualifiedType() == toRef.getUnqualifiedType() && fromRef != toRef;
+      return fromRef.getUnqualifiedType() == toRef.getUnqualifiedType() &&
+             fromRef != toRef;
     }
 
     return false;
@@ -128,15 +133,16 @@ private:
   bool areRelatedRecords(clang::QualType lhs, clang::QualType rhs) const {
     const auto *lhsDecl = lhs->getAsCXXRecordDecl();
     const auto *rhsDecl = rhs->getAsCXXRecordDecl();
-    if (!lhsDecl || !rhsDecl){
+    if (!lhsDecl || !rhsDecl) {
       return false;
     }
     lhsDecl = lhsDecl->getDefinition();
     rhsDecl = rhsDecl->getDefinition();
-    if (!lhsDecl || !rhsDecl){
+    if (!lhsDecl || !rhsDecl) {
       return false;
     }
-    return lhsDecl == rhsDecl || lhsDecl->isDerivedFrom(rhsDecl) || rhsDecl->isDerivedFrom(lhsDecl);
+    return lhsDecl == rhsDecl || lhsDecl->isDerivedFrom(rhsDecl) ||
+           rhsDecl->isDerivedFrom(lhsDecl);
   }
 
   bool isPolymorphicDowncast(clang::QualType from, clang::QualType to) const {
@@ -155,15 +161,15 @@ private:
 
     const auto *fromDecl = fromBase->getAsCXXRecordDecl();
     const auto *toDecl = toBase->getAsCXXRecordDecl();
-    if (!fromDecl || !toDecl){
+    if (!fromDecl || !toDecl) {
       return false;
     }
     fromDecl = fromDecl->getDefinition();
     toDecl = toDecl->getDefinition();
-    if (!fromDecl || !toDecl){
+    if (!fromDecl || !toDecl) {
       return false;
     }
-    if (!fromDecl->isPolymorphic()){
+    if (!fromDecl->isPolymorphic()) {
       return false;
     }
     return toDecl->isDerivedFrom(fromDecl);
@@ -174,49 +180,59 @@ class SourceTextBuilder {
 public:
   explicit SourceTextBuilder(clang::ASTContext &context) : m_context(context) {}
 
-  std::string doReplace(const clang::CStyleCastExpr *cast, CastStyles style) const {
-    const std::string typeText = getText(cast->getTypeInfoAsWritten()->getTypeLoc().getSourceRange());
+  std::string doReplace(const clang::CStyleCastExpr *cast,
+                        CastStyles style) const {
+    const std::string typeText =
+        getText(cast->getTypeInfoAsWritten()->getTypeLoc().getSourceRange());
     const std::string exprText = getText(cast->getSubExpr()->getSourceRange());
 
-    if (typeText.empty() || exprText.empty()){
+    if (typeText.empty() || exprText.empty()) {
       return {};
     }
 
-    return getCastStyleName(style).str() + "<" + typeText + ">(" + exprText + ")";
+    return getCastStyleName(style).str() + "<" + typeText + ">(" + exprText +
+           ")";
   }
 
 private:
   clang::ASTContext &m_context;
 
   std::string getText(clang::SourceRange range) const {
-    if (range.isInvalid()){
+    if (range.isInvalid()) {
       return {};
     }
     const clang::SourceManager &sm = m_context.getSourceManager();
     const clang::LangOptions &lang = m_context.getLangOpts();
 
-    return clang::Lexer::getSourceText(clang::CharSourceRange::getTokenRange(range), sm, lang).str();
+    return clang::Lexer::getSourceText(
+               clang::CharSourceRange::getTokenRange(range), sm, lang)
+        .str();
   }
 };
 
-class RewriteOldStyleCastVisitor final : public clang::RecursiveASTVisitor<RewriteOldStyleCastVisitor> {
+class RewriteOldStyleCastVisitor final
+    : public clang::RecursiveASTVisitor<RewriteOldStyleCastVisitor> {
 public:
-  RewriteOldStyleCastVisitor(clang::ASTContext &context, clang::Rewriter &rewriter): m_context(context), m_rewriter(rewriter), m_classifier(context), m_textBuilder(context) {}
+  RewriteOldStyleCastVisitor(clang::ASTContext &context,
+                             clang::Rewriter &rewriter)
+      : m_context(context), m_rewriter(rewriter), m_classifier(context),
+        m_textBuilder(context) {}
 
   bool VisitCStyleCastExpr(clang::CStyleCastExpr *cast) {
-    if (!cast){
+    if (!cast) {
       return true;
     }
-    if (!shouldProcess(cast)){
+    if (!shouldProcess(cast)) {
       return true;
     }
     const CastStyles style = m_classifier.chooseCast(cast);
     const std::string repl = m_textBuilder.doReplace(cast, style);
 
-    if (repl.empty()){
+    if (repl.empty()) {
       return true;
     }
-    const clang::CharSourceRange fullRange = clang::CharSourceRange::getTokenRange(cast->getSourceRange());
+    const clang::CharSourceRange fullRange =
+        clang::CharSourceRange::getTokenRange(cast->getSourceRange());
     m_rewriter.ReplaceText(fullRange, repl);
     return true;
   }
@@ -231,13 +247,13 @@ private:
     clang::SourceManager &sm = m_context.getSourceManager();
     const clang::SourceLocation loc = cast->getBeginLoc();
 
-    if (loc.isInvalid()){
+    if (loc.isInvalid()) {
       return false;
     }
-    if (loc.isMacroID()){
+    if (loc.isMacroID()) {
       return false;
     }
-    if (sm.isInSystemHeader(loc)){
+    if (sm.isInSystemHeader(loc)) {
       return false;
     }
     return sm.isWrittenInMainFile(sm.getSpellingLoc(loc));
@@ -246,7 +262,9 @@ private:
 
 class RewriteOldStyleCastConsumer final : public clang::ASTConsumer {
 public:
-  RewriteOldStyleCastConsumer(clang::ASTContext &context, clang::Rewriter &rewriter) : m_visitor(context, rewriter) {}
+  RewriteOldStyleCastConsumer(clang::ASTContext &context,
+                              clang::Rewriter &rewriter)
+      : m_visitor(context, rewriter) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
     m_visitor.TraverseDecl(context.getTranslationUnitDecl());
@@ -260,11 +278,13 @@ class RewriteOldStyleCastAction final : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    m_rewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts()); 
-    return std::make_unique<RewriteOldStyleCastConsumer>(ci.getASTContext(), m_rewriter);
+    m_rewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
+    return std::make_unique<RewriteOldStyleCastConsumer>(ci.getASTContext(),
+                                                         m_rewriter);
   }
 
-  bool ParseArgs(const clang::CompilerInstance &, const std::vector<std::string> &) override {
+  bool ParseArgs(const clang::CompilerInstance &,
+                 const std::vector<std::string> &) override {
     return true;
   }
 
