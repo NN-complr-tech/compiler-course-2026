@@ -75,17 +75,20 @@ public:
       QualType type = decl->getType();
 
       if (type->isReferenceType()) {
-        if (!st.dataModified && !type.getNonReferenceType().isConstQualified()) {
+        if (!st.dataModified &&
+            !type.getNonReferenceType().isConstQualified()) {
           QualType pointee = type.getNonReferenceType();
           std::string newType = "const " + pointee.getAsString() + "&";
           replaceType(decl, newType);
         }
       } else if (type->isPointerType()) {
-        bool makePointeeConst = !st.dataModified && !type->getPointeeType().isConstQualified();
+        bool makePointeeConst =
+            !st.dataModified && !type->getPointeeType().isConstQualified();
         bool makePtrConst = !st.ptrModified && !type.isConstQualified();
 
         if (makePointeeConst || makePtrConst) {
-          std::string newType = buildPointerString(type, makePointeeConst, makePtrConst);
+          std::string newType =
+              buildPointerString(type, makePointeeConst, makePtrConst);
           replaceType(decl, newType);
         }
       }
@@ -104,21 +107,25 @@ private:
       return !type.getNonReferenceType().isConstQualified();
     if (type->isPointerType()) {
       const PointerType *ptr = type->getAs<PointerType>();
-      return !type.isConstQualified() && !ptr->getPointeeType().isConstQualified();
+      return !type.isConstQualified() &&
+             !ptr->getPointeeType().isConstQualified();
     }
     return false;
   }
 
   // Рекурсивно помечает переменные в выражении как модифицированные
   void markModified(Expr *E, bool isPtrMod, bool isDataMod) {
-    if (!E) return;
+    if (!E)
+      return;
     E = E->IgnoreParenImpCasts();
 
     if (auto *dre = dyn_cast<DeclRefExpr>(E)) {
       if (auto *decl = dyn_cast<ValueDecl>(dre->getDecl())) {
         VarState &st = m_state[decl];
-        if (isPtrMod) st.ptrModified = true;
-        if (isDataMod) st.dataModified = true;
+        if (isPtrMod)
+          st.ptrModified = true;
+        if (isDataMod)
+          st.dataModified = true;
       }
       return;
     }
@@ -144,7 +151,8 @@ private:
   }
 
   // Формирует строку нового типа для указателя с нужными const
-  std::string buildPointerString(QualType type, bool addConstToPointee, bool addConstToPtr) {
+  std::string buildPointerString(QualType type, bool addConstToPointee,
+                                 bool addConstToPtr) {
     std::vector<std::string> stars;
     QualType pointee = type;
     while (pointee->isPointerType()) {
@@ -173,7 +181,8 @@ private:
     else if (auto *pd = dyn_cast<ParmVarDecl>(decl))
       tsi = pd->getTypeSourceInfo();
 
-    if (!tsi) return;
+    if (!tsi)
+      return;
 
     SourceRange range = tsi->getTypeLoc().getSourceRange();
     if (range.isValid())
@@ -191,8 +200,8 @@ public:
     m_visitor.TraverseDecl(ctx.getTranslationUnitDecl());
     m_visitor.applyChanges();
 
-    m_visitor.getRewriter().getEditBuffer(
-        m_visitor.getRewriter().getSourceMgr().getMainFileID())
+    m_visitor.getRewriter()
+        .getEditBuffer(m_visitor.getRewriter().getSourceMgr().getMainFileID())
         .write(llvm::outs());
   }
 
@@ -205,9 +214,11 @@ public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &ci,
                                                  llvm::StringRef) override {
     m_rewriter.setSourceMgr(ci.getSourceManager(), ci.getLangOpts());
-    return std::make_unique<LocalVarConstConsumer>(&ci.getASTContext(), m_rewriter);
+    return std::make_unique<LocalVarConstConsumer>(&ci.getASTContext(),
+                                                   m_rewriter);
   }
- bool ParseArgs(const CompilerInstance &, const std::vector<std::string> &) override {
+  bool ParseArgs(const CompilerInstance &,
+                 const std::vector<std::string> &) override {
     return true;
   }
 
@@ -218,4 +229,5 @@ private:
 } // namespace
 
 static FrontendPluginRegistry::Add<LocalVarConstAction>
-    X("const_plugin", "Adds const to local pointers/references based on mutations");
+    X("const_plugin",
+      "Adds const to local pointers/references based on mutations");
