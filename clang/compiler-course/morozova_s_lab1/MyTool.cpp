@@ -18,22 +18,30 @@ public:
     int localCount = 0;
     int staticLocalCount = 0;
     int paramCount = 0;
-    
+
     bool VisitVarDecl(VarDecl *VD) {
-        if (VD->isFileVarDecl()) { 
+        if (VD != VD->getCanonicalDecl() && 
+            !(VD->isThisDeclarationADefinition() && VD->hasGlobalStorage() && !VD->isStaticLocal())) {
+            return true;
+        }
+
+        if (!VD->isThisDeclarationADefinition())
+            return true;
+
+        if (VD->hasGlobalStorage() && !VD->isStaticLocal())
             globalCount++;
-        }
-        else if (VD->isLocalVarDecl() && !VD->isStaticLocal()) {
+        else if (VD->isLocalVarDecl() && !VD->isStaticLocal())
             localCount++;
-        }
-        else if (VD->isStaticLocal()) {
+        else if (VD->isStaticLocal())
             staticLocalCount++;
-        }
+
         return true;
     }
-    
+
     bool VisitParmVarDecl(ParmVarDecl *PD) {
-        paramCount++;
+        if (auto *FD = dyn_cast<FunctionDecl>(PD->getDeclContext()))
+            if (!FD->isTemplated() || isa<CXXConstructorDecl>(FD))
+                paramCount++;
         return true;
     }
 };
@@ -43,7 +51,7 @@ public:
     void HandleTranslationUnit(ASTContext &Context) override {
         MyVisitor Visitor;
         Visitor.TraverseDecl(Context.getTranslationUnitDecl());
-        
+
         outs() << "========== СТАТИСТИКА ПЕРЕМЕННЫХ ==========\n";
         outs() << "Глобальных переменных: " << Visitor.globalCount << "\n";
         outs() << "Локальных переменных: " << Visitor.localCount << "\n";
