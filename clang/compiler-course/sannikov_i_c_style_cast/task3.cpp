@@ -34,7 +34,7 @@ public:
       : m_context(context) {}
 
   CastStyles chooseCast(const clang::CStyleCastExpr *cast) const {
-    const clang::Expr *sub = cast->getSubExpr()->IgnoreParenImpCasts();
+    const clang::Expr *sub = cast->getSubExpr();
     if (!sub) {
       return CastStyles::Static;
     }
@@ -119,12 +119,14 @@ private:
              fromPointee != toPointee;
     }
 
-    if (from->isReferenceType() && to->isReferenceType()) {
-      const clang::QualType fromRef = from->getPointeeType().getCanonicalType();
-      const clang::QualType toRef = to->getPointeeType().getCanonicalType();
+    if (to->isReferenceType()) {
+      const clang::QualType fromBase =
+          from.getNonReferenceType().getCanonicalType();
+      const clang::QualType toBase =
+          to.getNonReferenceType().getCanonicalType();
 
-      return fromRef.getUnqualifiedType() == toRef.getUnqualifiedType() &&
-             fromRef != toRef;
+      return fromBase.getUnqualifiedType() == toBase.getUnqualifiedType() &&
+             fromBase != toBase;
     }
 
     return false;
