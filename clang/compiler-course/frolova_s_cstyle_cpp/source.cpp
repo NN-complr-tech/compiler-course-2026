@@ -16,35 +16,33 @@ public:
   bool VisitCStyleCastExpr(clang::CStyleCastExpr *Node) {
     clang::SourceManager &SM = Context.getSourceManager();
 
-    // Игнорируем макросы и системные заголовки
     if (!SM.isInMainFile(Node->getBeginLoc()) ||
         Node->getBeginLoc().isMacroID())
       return true;
 
-    // Определяем подходящий C++ cast
     std::string CastName = "static_cast";
     clang::CastKind Kind = Node->getCastKind();
 
     if (Kind == clang::CK_BitCast || Kind == clang::CK_LValueBitCast) {
       CastName = "reinterpret_cast";
-    } else if (Kind == clang::CK_NoOp &&
-               Node->getSubExpr()->getType().isConstQualified() &&
-               !Node->getType().isConstQualified()) {
-      CastName = "const_cast";
+    } else if (Kind == clang::CK_NoOp) {
+      clang::QualType SubType = Node->getSubExpr()->getType();
+      clang::QualType TargetType = Node->getType();
+      if (Context.hasSameUnqualifiedType(SubType, TargetType) &&
+          (SubType.isConstQualified() != TargetType.isConstQualified() ||
+           SubType.isVolatileQualified() != TargetType.isVolatileQualified())) {
+        CastName = "const_cast";
+      }
     }
 
-    // Получаем текстовое представление целевого типа
     std::string TypeStr = Node->getTypeAsWritten().getAsString();
 
-    // Получаем текст выражения, которое кастим
     clang::SourceLocation SubExprLoc =
         Node->getSubExprAsWritten()->getBeginLoc();
 
-    std::string Replacement = CastName + "<" + TypeStr + ">(";
-
     clang::SourceRange CastRange(Node->getBeginLoc(),
                                  SubExprLoc.getLocWithOffset(-1));
-
+    std::string Replacement = CastName + "<" + TypeStr + ">(";
     Rewrite.ReplaceText(CastRange, Replacement);
 
     Rewrite.InsertTextAfter(Node->getEndLoc().getLocWithOffset(1), ")");
@@ -67,7 +65,6 @@ public:
     CastRewriterVisitor Visitor(Context, Rewrite);
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
 
-    // Выводим измененный код в stdout или перезаписываем файлы
     Rewrite.getEditBuffer(CI.getSourceManager().getMainFileID())
         .write(llvm::outs());
   }
@@ -91,7 +88,8 @@ public:
 
   ActionType getActionType() override { return AddBeforeMainAction; }
 };
-} // namespace
+
+}
 
 static clang::FrontendPluginRegistry::Add<CastAction>
     X("cstyle_cast_replacer",
