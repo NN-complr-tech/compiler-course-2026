@@ -88,8 +88,7 @@ public:
 
   ActionType getActionType() override { return AddBeforeMainAction; }
 };
-
-}
+} // namespace
 
 static clang::FrontendPluginRegistry::Add<CastAction>
     X("cstyle_cast_replacer",
