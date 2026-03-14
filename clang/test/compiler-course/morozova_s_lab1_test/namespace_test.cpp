@@ -1,4 +1,4 @@
-// RUN: ~/compiler-course-2026/build/bin/my_tool %s | FileCheck %s
+// RUN: %build_dir/bin/my_tool %s | FileCheck %s
 
 // CHECK: ========== СТАТИСТИКА ПЕРЕМЕННЫХ ==========
 // CHECK: Глобальных переменных: 4
