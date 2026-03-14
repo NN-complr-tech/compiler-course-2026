@@ -1,6 +1,5 @@
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/RecursiveASTVisitor.h"
-#include "clang/Basic/Diagnostic.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/Casting.h"
@@ -25,8 +24,6 @@ public:
     if (!varDecl->isThisDeclarationADefinition()) {
       return true;
     }
-
-    noteLocation(varDecl->getLocation());
 
     if (varDecl->isStaticLocal() || varDecl->isStaticDataMember() ||
         (varDecl->isFileVarDecl() &&
@@ -58,7 +55,6 @@ public:
       return true;
     }
 
-    noteLocation(parmVarDecl->getLocation());
     ++ParameterCount;
     return true;
   }
@@ -75,7 +71,6 @@ public:
     out << "Local variables: " << LocalCount << "\n";
     out << "Static variables: " << StaticCount << "\n";
     out << "Function parameters: " << ParameterCount << "\n";
-    EmitSummaryWarning();
   }
 
 private:
@@ -84,7 +79,6 @@ private:
   unsigned StaticCount = 0;
   unsigned LocalCount = 0;
   unsigned ParameterCount = 0;
-  clang::SourceLocation FirstVarLoc;
 
   [[nodiscard]] unsigned TotalCount() const {
     return GlobalCount + StaticCount + LocalCount + ParameterCount;
@@ -106,27 +100,6 @@ private:
            !sm.isInSystemMacro(loc);
   }
 
-  void noteLocation(clang::SourceLocation loc) {
-    if (FirstVarLoc.isValid()) {
-      return;
-    }
-
-    const auto &sm = Context.getSourceManager();
-    FirstVarLoc = sm.getExpansionLoc(loc);
-  }
-
-  void EmitSummaryWarning() {
-    auto &diag = Context.getDiagnostics();
-    const auto loc = FirstVarLoc.isValid()
-                         ? FirstVarLoc
-                         : Context.getSourceManager().getLocForStartOfFile(
-                               Context.getSourceManager().getMainFileID());
-    const unsigned diagId = diag.getCustomDiagID(
-        clang::DiagnosticsEngine::Warning,
-        "Variable stats: globals=%0 locals=%1 statics=%2 params=%3");
-    diag.Report(loc, diagId)
-        << GlobalCount << LocalCount << StaticCount << ParameterCount;
-  }
 };
 
 class SizovVarStatsConsumer final : public clang::ASTConsumer {

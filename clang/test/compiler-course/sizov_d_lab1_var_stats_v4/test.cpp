@@ -14,7 +14,7 @@
 // EMPTY-NEXT:   (no variables found)
 
 //--- with_warnings.cpp
-// expected-warning@+1 {{Variable stats: globals=2 locals=3 statics=4 params=4}}
+// expected-no-diagnostics
 int GlobalA = 1;
 int GlobalB = 2;
 static int StaticGlobal = 3;
