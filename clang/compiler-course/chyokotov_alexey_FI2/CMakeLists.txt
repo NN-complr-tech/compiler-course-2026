@@ -1,5 +1,6 @@
-get_filename_component(CURRENT_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-set(TARGET_NAME "${CURRENT_DIR_NAME}_ClangAST")
+set(Student "chykotov_alexey")
+set(Group "FI2")
+set(TARGET_NAME "${Student}_${Group}_ClangAST")
 
 file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
 add_llvm_library(${TARGET_NAME} MODULE ${SOURCES} PLUGIN_TOOL clang)

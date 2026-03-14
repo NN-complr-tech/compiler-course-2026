@@ -4,22 +4,23 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include <string>
 #include <map>
+#include <string>
 
 namespace {
-class ChyokotovAVisitor final : public clang::RecursiveASTVisitor<ChyokotovAVisitor> {
+class ChyokotovAVisitor final
+    : public clang::RecursiveASTVisitor<ChyokotovAVisitor> {
 public:
   explicit ChyokotovAVisitor(clang::ASTContext *context) : m_context(context) {}
 
   bool VisitBinaryOperator(clang::BinaryOperator *binop) {
-    if(!binop || !binop->isAssignmentOp()){
+    if (!binop || !binop->isAssignmentOp()) {
       return true;
     }
-    clang::Expr* rhs = binop->getRHS()->IgnoreImplicit();
-    if(isAllocation(rhs)){
+    clang::Expr *rhs = binop->getRHS()->IgnoreImplicit();
+    if (isAllocation(rhs)) {
       clang::VarDecl *var = getVarDecl(binop->getLHS()->IgnoreImplicit());
-      if(var){
+      if (var) {
         vars[var] = 1;
       }
     }
@@ -38,7 +39,7 @@ public:
         clang::Expr *arg = call->getArg(0)->IgnoreParenCasts();
         clang::VarDecl *var = getVarDecl(arg);
         if (var) {
-          vars[var] = 2;
+          vars[var] = 0;
         }
       }
     }
@@ -47,26 +48,28 @@ public:
 
   bool VisitVarDecl(clang::VarDecl *var) {
     clang::Expr *exp = var->getInit();
-    if(exp && isAllocation(exp)){
+    if (exp && isAllocation(exp)) {
       vars[var] = 1;
     }
     return true;
   }
 
   bool VisitReturnStmt(clang::ReturnStmt *ret) {
-    if (!ret) return true;
-    
+    if (!ret)
+      return true;
+
     clang::Expr *retValue = ret->getRetValue();
-    if (!retValue) return true;
-    
+    if (!retValue)
+      return true;
+
     retValue = retValue->IgnoreParenCasts();
-    
+
     if (auto *declRef = clang::dyn_cast<clang::DeclRefExpr>(retValue)) {
-        if (auto *var = clang::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
-            if (vars.count(var) && vars[var] == 1) {
-                vars[var] = 1;
-            }
+      if (auto *var = clang::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
+        if (vars.count(var) && vars[var] == 1) {
+          vars[var] = 2;
         }
+      }
     }
     return true;
   }
@@ -75,31 +78,41 @@ public:
     clang::Expr *arg = exp->getArgument()->IgnoreParenCasts();
     clang::VarDecl *var = getVarDecl(arg);
     if (var) {
-      vars[var] = 2;
+      vars[var] = 0;
     }
     return true;
   }
 
-  void outputs(){
+  void outputs() {
+    if (vars.empty()) {
+      return;
+    }
     clang::DiagnosticsEngine &DE = m_context->getDiagnostics();
-    for(auto &i : vars){
-      if(i.second == 1){
-        unsigned diagID = DE.getCustomDiagID(
-                clang::DiagnosticsEngine::Warning,
-                "memory leak: '%0'"
-            );
-            
-        DE.Report(i.first->getLocation(), diagID) << i.first->getNameAsString();
+
+    unsigned leakDiagID = DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
+                                             "memory leak: '%0'");
+
+    unsigned returnLeakDiagID =
+        DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
+                           "resource leak: '%0' may not be freed (no "
+                           "guaranteed deallocation on return)");
+
+    for (auto &[var, state] : vars) {
+      if (state == 1) {
+        DE.Report(var->getLocation(), leakDiagID) << var->getNameAsString();
+      } else if (state == 2) {
+        DE.Report(var->getLocation(), returnLeakDiagID)
+            << var->getNameAsString();
       }
     }
   }
 
 private:
-  bool isAllocation(clang::Expr* exp){
+  bool isAllocation(clang::Expr *exp) {
     clang::Expr *castexp = exp->IgnoreParenCasts();
 
-    if (clang::CallExpr *call = clang::dyn_cast<clang::CallExpr>(castexp)){
-      if(clang::FunctionDecl *func = call->getDirectCallee()){
+    if (clang::CallExpr *call = clang::dyn_cast<clang::CallExpr>(castexp)) {
+      if (clang::FunctionDecl *func = call->getDirectCallee()) {
         llvm::StringRef funcName = func->getName();
         return (funcName == "malloc" || funcName == "fopen");
       }
@@ -112,14 +125,15 @@ private:
       return nullptr;
     }
     clang::Expr *castexp = exp->IgnoreParenCasts();
-    if (clang::DeclRefExpr *ref = clang::dyn_cast<clang::DeclRefExpr>(castexp)) {
+    if (clang::DeclRefExpr *ref =
+            clang::dyn_cast<clang::DeclRefExpr>(castexp)) {
       return clang::dyn_cast<clang::VarDecl>(ref->getDecl());
     }
     return nullptr;
   }
 
   clang::ASTContext *m_context;
-  std::map<clang::VarDecl*, int> vars;
+  std::map<clang::VarDecl *, int> vars;
 };
 
 class ExampleConsumer final : public clang::ASTConsumer {
@@ -147,9 +161,7 @@ public:
     return true;
   }
 
-  ActionType getActionType() override {
-    return AddAfterMainAction;
-  }
+  ActionType getActionType() override { return AddAfterMainAction; }
 };
 } // namespace
 
