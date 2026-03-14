@@ -99,7 +99,6 @@ private:
     return sm.isWrittenInMainFile(loc) && !sm.isInSystemHeader(loc) &&
            !sm.isInSystemMacro(loc);
   }
-
 };
 
 class SizovVarStatsConsumer final : public clang::ASTConsumer {
