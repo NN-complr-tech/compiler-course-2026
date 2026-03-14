@@ -1,4 +1,4 @@
-// RUN: %build_dir/bin/my_tool %s | FileCheck %s
+// RUN: %p/../../../../bin/my_tool %s | FileCheck %s
 
 // CHECK: ========== СТАТИСТИКА ПЕРЕМЕННЫХ ==========
 // CHECK: Глобальных переменных: 23
