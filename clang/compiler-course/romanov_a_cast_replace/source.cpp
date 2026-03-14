@@ -54,8 +54,8 @@ static std::string getCppCastWord(const clang::CStyleCastExpr *expr) {
 class RomanovACastReplaceVisitor final
     : public clang::RecursiveASTVisitor<RomanovACastReplaceVisitor> {
 public:
-  explicit RomanovACastReplaceVisitor(clang::ASTContext *context,
-                                      clang::Rewriter &rewriter)
+  RomanovACastReplaceVisitor(clang::ASTContext *context,
+                             clang::Rewriter &rewriter)
       : m_context(context), m_rewriter(rewriter) {}
 
   bool shouldTraversePostOrder() const { return true; }
@@ -86,8 +86,8 @@ private:
 
 class RomanovACastReplaceConsumer final : public clang::ASTConsumer {
 public:
-  explicit RomanovACastReplaceConsumer(clang::ASTContext *context,
-                                       clang::Rewriter &rewriter)
+  RomanovACastReplaceConsumer(clang::ASTContext *context,
+                              clang::Rewriter &rewriter)
       : m_visitor(context, rewriter) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
@@ -124,4 +124,4 @@ private:
 
 static clang::FrontendPluginRegistry::Add<RomanovACastReplaceAction>
     X("romanov_a_cast_replace_plugin",
-      "Plugin for replacing C-style casts with C++-style castes");
+      "Plugin for replacing C-style casts with C++-style casts");
