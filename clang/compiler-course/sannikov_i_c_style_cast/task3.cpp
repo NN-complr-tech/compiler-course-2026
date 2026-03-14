@@ -14,7 +14,7 @@ namespace {
 
 enum class CastStyles { Static, Const, Reinterpret, Dynamic };
 
-static llvm::StringRef getCastStyleName(CastStyles style) {
+llvm::StringRef getCastStyleName(CastStyles style) {
   switch (style) {
   case CastStyles::Static:
     return "static_cast";
@@ -67,17 +67,17 @@ public:
 private:
   clang::ASTContext &m_context;
 
-  static bool isNumLike(clang::QualType type) {
+  bool isNumLike(clang::QualType type) const {
     return type->isArithmeticType() || type->isEnumeralType();
   }
 
-  static bool isPointerIntegerMix(clang::QualType from, clang::QualType to) {
+  bool isPointerIntegerMix(clang::QualType from, clang::QualType to) const {
     return (from->isPointerType() && to->isIntegerType()) ||
            (from->isIntegerType() && to->isPointerType());
   }
 
-  static bool isOpaquePointerConversion(clang::QualType from,
-                                        clang::QualType to) {
+  bool isOpaquePointerConversion(clang::QualType from,
+                                 clang::QualType to) const {
     if (!from->isPointerType() || !to->isPointerType()) {
       return false;
     }
@@ -108,7 +108,7 @@ private:
     return true;
   }
 
-  static bool isCvAdjustment(clang::QualType from, clang::QualType to) {
+  bool isCvAdjustment(clang::QualType from, clang::QualType to) const {
     if (from->isPointerType() && to->isPointerType()) {
       const clang::QualType fromPointee =
           from->getPointeeType().getCanonicalType();
