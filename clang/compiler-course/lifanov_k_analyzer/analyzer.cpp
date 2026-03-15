@@ -156,7 +156,7 @@ protected:
     return std::make_unique<ResourceConsumer>(ci.getASTContext());
   }
 
-  bool ParseArgs(const CompilerInstance &, 
+  bool ParseArgs(const CompilerInstance &,
                  const std::vector<std::string> &) override {
     return true;
   }
