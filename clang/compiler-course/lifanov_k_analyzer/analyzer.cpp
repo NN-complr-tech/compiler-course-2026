@@ -72,7 +72,7 @@ public:
     for (auto *var : allocated) {
       if (released.find(var) == released.end() &&
           reported.find(var) == reported.end()) {
-        warnReturn(var->getLocation(), var);
+        warnReturn(ret->getReturnLoc(), var);
         reported.insert(var);
       }
     }
