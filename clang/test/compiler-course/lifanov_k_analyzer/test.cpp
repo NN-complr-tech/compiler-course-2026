@@ -1,6 +1,6 @@
 // RUN: split-file %s %t
-// RUN: %clang_cc1 -load %llvmshlibdir/lifanov_k_analyzer_Analyzer%pluginext -plugin lifanov_k_resource-checker -fsyntax-only -verify %t/with_warnings.cpp
-// RUN: %clang_cc1 -load %llvmshlibdir/lifanov_k_analyzer_Analyzer%pluginext -plugin lifanov_k_resource-checker -fsyntax-only -verify %t/without_warnings.cpp
+// RUN: %clang_cc1 -load %llvmshlibdir/lifanov_k_analyzer_ClangAST%pluginext -plugin lifanov_k_resource-checker -fsyntax-only -verify %t/with_warnings.cpp
+// RUN: %clang_cc1 -load %llvmshlibdir/lifanov_k_analyzer_ClangAST%pluginext -plugin lifanov_k_resource-checker -fsyntax-only -verify %t/without_warnings.cpp
 
 //--- with_warnings.cpp
 extern "C" {

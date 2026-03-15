@@ -3,8 +3,8 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 
-#include <unordered_set>
 #include "llvm/Support/raw_ostream.h"
+#include <unordered_set>
 
 using namespace clang;
 
@@ -116,18 +116,17 @@ private:
   }
 
   void warnReturn(SourceLocation loc) {
-      DiagnosticsEngine &diag = context.getDiagnostics();
-      unsigned id = diag.getCustomDiagID(
-          DiagnosticsEngine::Warning,
-          "ресурс для переменной '%0' может быть не освобождён при выходе.");
-      diag.Report(loc, id);
+    DiagnosticsEngine &diag = context.getDiagnostics();
+    unsigned id = diag.getCustomDiagID(
+        DiagnosticsEngine::Warning,
+        "ресурс для переменной '%0' может быть не освобождён при выходе.");
+    diag.Report(loc, id);
   }
 
   void warnFinalize(SourceLocation loc) {
     DiagnosticsEngine &diag = context.getDiagnostics();
     unsigned id = diag.getCustomDiagID(
-        DiagnosticsEngine::Warning,
-        "выделенный ресурс для '%0' не освобождён");
+        DiagnosticsEngine::Warning,"выделенный ресурс для '%0' не освобождён");
     diag.Report(loc, id);
   }
 
@@ -152,12 +151,13 @@ private:
 
 class ResourcePluginAction : public PluginASTAction {
 protected:
-  std::unique_ptr<ASTConsumer>
-  CreateASTConsumer(CompilerInstance &ci, llvm::StringRef) override {
+  std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &ci,
+                                                  llvm::StringRef) override {
     return std::make_unique<ResourceConsumer>(ci.getASTContext());
   }
 
-  bool ParseArgs(const CompilerInstance &, const std::vector<std::string> &) override {
+  bool ParseArgs(const CompilerInstance &, 
+                const std::vector<std::string> &) override {
     return true;
   }
 };
