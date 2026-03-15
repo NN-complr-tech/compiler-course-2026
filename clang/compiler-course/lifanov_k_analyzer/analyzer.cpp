@@ -72,7 +72,7 @@ public:
     for (auto *var : allocated) {
       if (released.find(var) == released.end() &&
           reported.find(var) == reported.end()) {
-        warnReturn(ret->getReturnLoc());
+        warnReturn(ret->getReturnLoc(), var);
         reported.insert(var);
       }
     }
@@ -83,7 +83,7 @@ public:
     for (auto *var : allocated) {
       if (released.find(var) == released.end() &&
           reported.find(var) == reported.end()) {
-        warnFinalize(var->getLocation());
+        warnFinalize(var->getLocation(), var);
       }
     }
   }
@@ -115,19 +115,20 @@ private:
     return nullptr;
   }
 
-  void warnReturn(SourceLocation loc) {
+  void warnReturn(SourceLocation loc, VarDecl *var) {
     DiagnosticsEngine &diag = context.getDiagnostics();
     unsigned id = diag.getCustomDiagID(
         DiagnosticsEngine::Warning,
         "ресурс для переменной '%0' может быть не освобождён при выходе.");
-    diag.Report(loc, id);
+    diag.Report(loc, id) << var->getName();
   }
 
-  void warnFinalize(SourceLocation loc) {
+  void warnFinalize(SourceLocation loc, VarDecl *var) {
     DiagnosticsEngine &diag = context.getDiagnostics();
     unsigned id = diag.getCustomDiagID(
-        DiagnosticsEngine::Warning,"выделенный ресурс для '%0' не освобождён");
-    diag.Report(loc, id);
+        DiagnosticsEngine::Warning,
+        "выделенный ресурс для '%0' не освобождён");
+    diag.Report(loc, id) << var->getName();
   }
 
   ASTContext &context;
