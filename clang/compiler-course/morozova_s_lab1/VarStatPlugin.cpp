@@ -13,23 +13,25 @@ public:
       : globalCount(0), localCount(0), staticLocalCount(0), paramCount(0) {}
 
   bool VisitVarDecl(VarDecl *VD) {
-    if (VD != VD->getCanonicalDecl())
-      return true;
     if (!VD->isThisDeclarationADefinition())
       return true;
 
-    if (VD->hasGlobalStorage() && !VD->isStaticLocal())
+    if (VD->isFileVarDecl()) {
       globalCount++;
-    else if (VD->isLocalVarDecl() && !VD->isStaticLocal())
+    }
+    else if (VD->isLocalVarDecl() && !VD->isStaticLocal()) {
       localCount++;
-    else if (VD->isStaticLocal())
+    }
+    else if (VD->isStaticLocal()) {
       staticLocalCount++;
-
+    }
     return true;
   }
 
   bool VisitParmVarDecl(ParmVarDecl *PD) {
-    paramCount++;
+    if (auto *FD = dyn_cast<FunctionDecl>(PD->getDeclContext()))
+      if (!FD->isTemplated() || isa<CXXConstructorDecl>(FD))
+        paramCount++;
     return true;
   }
 
@@ -74,7 +76,9 @@ public:
     return true;
   }
 
-  ActionType getActionType() override { return AddBeforeMainAction; }
+  ActionType getActionType() override {
+    return PluginASTAction::ReplaceAction;
+  }
 };
 
 static FrontendPluginRegistry::Add<VarStatAction>
