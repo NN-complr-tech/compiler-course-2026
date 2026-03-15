@@ -8,31 +8,38 @@
 namespace {
 class VarStatVisitor final : public clang::RecursiveASTVisitor<VarStatVisitor> {
 public:
-  explicit VarStatVisitor(clang::ASTContext *context) : m_context(context), static_var_counter(0), local_var_counter(0), global_var_counter(0), func_param_counter(0) {}
+  explicit VarStatVisitor(clang::ASTContext *context)
+      : m_context(context), static_var_counter(0), local_var_counter(0),
+        global_var_counter(0), func_param_counter(0) {}
   bool VisitVarDecl(clang::VarDecl *variable) {
-    
-    if(variable != variable->getCanonicalDecl()){ //для extern и прочих объявлений
+
+    if (variable !=
+        variable->getCanonicalDecl()) { // для extern и прочих объявлений
       return true;
     }
 
-    if(variable->getStorageClass() == clang::SC_Static){
+    if (variable->getStorageClass() == clang::SC_Static) {
       static_var_counter++;
-    }
-    else if(variable->isLocalVarDeclOrParm()){
-        if(variable->isLocalVarDecl()) local_var_counter++;
-        else func_param_counter++;
-    }
-    else if (variable->isFileVarDecl()) global_var_counter++;
+    } else if (variable->isLocalVarDeclOrParm()) {
+      if (variable->isLocalVarDecl())
+        local_var_counter++;
+      else
+        func_param_counter++;
+    } else if (variable->isFileVarDecl())
+      global_var_counter++;
 
     return true;
   }
 
-  void print() const{
+  void print() const {
     llvm::outs() << "static variables: " << static_var_counter << "\n";
     llvm::outs() << "local variables: " << local_var_counter << "\n";
     llvm::outs() << "global variables: " << global_var_counter << "\n";
     llvm::outs() << "function parameters: " << func_param_counter << "\n";
-    llvm::outs() << "total: " << static_var_counter + local_var_counter + global_var_counter + func_param_counter << "\n";
+    llvm::outs() << "total: "
+                 << static_var_counter + local_var_counter +
+                        global_var_counter + func_param_counter
+                 << "\n";
   }
 
 private:
