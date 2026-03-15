@@ -21,7 +21,8 @@ public:
     if (isAllocation(rhs)) {
       clang::VarDecl *var = getVarDecl(binop->getLHS()->IgnoreImplicit());
       if (var) {
-        vars[var] = 1;
+        vars[var] = 3;
+        Loc[var] = binop->getBeginLoc();
       }
     }
     return true;
@@ -55,12 +56,21 @@ public:
   }
 
   bool VisitReturnStmt(clang::ReturnStmt *ret) {
-    for (auto &[var, state] : vars) {
-      if (state == 1) {
-        vars[var] = 2;
-        retLoc[var] = ret->getReturnLoc();
+    clang::Expr *retValue = ret->getRetValue();
+    if (!retValue)
+      return true;
+
+    retValue = retValue->IgnoreParenCasts();
+
+    if (auto *declRef = clang::dyn_cast<clang::DeclRefExpr>(retValue)) {
+      if (auto *var = clang::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
+        if (vars[var] == 1) {
+          vars[var] = 2;
+          Loc[var] = ret->getReturnLoc();
+        }
       }
     }
+
     return true;
   }
 
@@ -91,7 +101,9 @@ public:
       if (state == 1) {
         DE.Report(var->getLocation(), leakDiagID) << var->getNameAsString();
       } else if (state == 2) {
-        DE.Report(retLoc[var], returnLeakDiagID) << var->getNameAsString();
+        DE.Report(Loc[var], returnLeakDiagID) << var->getNameAsString();
+      } else if (state == 3) {
+        DE.Report(Loc[var], leakDiagID) << var->getNameAsString();
       }
     }
   }
@@ -123,7 +135,7 @@ private:
 
   clang::ASTContext *m_context;
   std::map<clang::VarDecl *, int> vars;
-  std::map<clang::VarDecl *, clang::SourceLocation> retLoc;
+  std::map<clang::VarDecl *, clang::SourceLocation> Loc;
 };
 
 class ExampleConsumer final : public clang::ASTConsumer {

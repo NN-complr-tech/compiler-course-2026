@@ -18,17 +18,17 @@ void test_fopen_no_return() {
   void* f = fopen("test.txt", "r"); // expected-warning {{memory leak: 'f'}}
 }
 
-void test_free_ok() {
+void test_free() {
   int* p = (int*)malloc(100);
   free(p);
 }
 
-void test_fclose_ok() {
+void test_fclose() {
   void* f = fopen("test.txt", "r");
   fclose(f);
 }
 
-void test_delete_ok() {
+void test_delete() {
   int* p = new int(42);
   delete p;
 }
@@ -47,4 +47,39 @@ void test_static() {
 
 void test_new_array() {
   int* arr = new int[50]; // expected-warning {{memory leak: 'arr'}}
+}
+
+int* test_new_return(int sz) {
+  int* p = new int[sz];
+  return p; // expected-warning {{resource leak: 'p' may not be freed (no guaranteed deallocation on return)}}
+}
+
+void* test_fopen_return() {
+  void* f = fopen("test.txt", "r");
+  return f; // expected-warning {{resource leak: 'f' may not be freed (no guaranteed deallocation on return)}}
+}
+
+void test_binary_operator() {
+  int* t;
+  t = (int*)malloc(100); // expected-warning {{memory leak: 't'}}
+}
+
+void test_binary_operator_new() {
+  int* q;
+  q = new int(42); // expected-warning {{memory leak: 'q'}}
+}
+
+void test_delete_array() {
+  int* p = new int[10];
+  delete[] p;
+}
+
+bool test_branching(int sz) {
+  int* p = new int[sz];
+  if (sz > 10) {
+    delete[] p;
+    return true;
+  }
+  delete[] p;
+  return false;
 }

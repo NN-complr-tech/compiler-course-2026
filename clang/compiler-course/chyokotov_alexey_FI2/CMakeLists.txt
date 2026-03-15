@@ -1,4 +1,4 @@
-set(Student "chykotov_alexey")
+set(Student "chyokotov_alexey")
 set(Group "FI2")
 set(TARGET_NAME "${Student}_${Group}_ClangAST")
 
