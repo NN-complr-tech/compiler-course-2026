@@ -72,7 +72,7 @@ public:
     for (auto *var : allocated) {
       if (released.find(var) == released.end() &&
           reported.find(var) == reported.end()) {
-        warnReturn(ret->getLocation(), var);
+        warnReturn(var->getLocation(), var);
         reported.insert(var);
       }
     }
@@ -156,8 +156,8 @@ protected:
     return std::make_unique<ResourceConsumer>(ci.getASTContext());
   }
 
-  bool ParseArgs(const CompilerInstance &, const std::vector<std::string> &)
-      override {
+  bool ParseArgs(const CompilerInstance &, 
+                 const std::vector<std::string> &) override {
     return true;
   }
 };
