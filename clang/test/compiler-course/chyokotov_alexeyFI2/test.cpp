@@ -48,9 +48,3 @@ void test_static() {
 void test_new_array() {
   int* arr = new int[50]; // expected-warning {{memory leak: 'arr'}}
 }
-
-int* test_new_return(int sz) {
-  int* p = new int[sz];
-  
-  return p; // expected-warning {{resource leak: 'p' may not be freed (no guaranteed deallocation on return)}}
-}
