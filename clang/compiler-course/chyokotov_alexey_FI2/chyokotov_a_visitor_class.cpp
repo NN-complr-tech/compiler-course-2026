@@ -55,20 +55,10 @@ public:
   }
 
   bool VisitReturnStmt(clang::ReturnStmt *ret) {
-    if (!ret)
-      return true;
-
-    clang::Expr *retValue = ret->getRetValue();
-    if (!retValue)
-      return true;
-
-    retValue = retValue->IgnoreParenCasts();
-
-    if (auto *declRef = clang::dyn_cast<clang::DeclRefExpr>(retValue)) {
-      if (auto *var = clang::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
-        if (vars.count(var) && vars[var] == 1) {
-          vars[var] = 2;
-        }
+    for(auto &[var, state] : vars) {
+      if(state == 1) {
+        vars[var] = 2;
+        retLoc[var] = ret->getReturnLoc();
       }
     }
     return true;
@@ -94,15 +84,13 @@ public:
 
     unsigned returnLeakDiagID =
         DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
-                           "resource leak: '%0' may not be freed (no "
-                           "guaranteed deallocation on return)");
+                           "Check");
 
     for (auto &[var, state] : vars) {
       if (state == 1) {
         DE.Report(var->getLocation(), leakDiagID) << var->getNameAsString();
       } else if (state == 2) {
-        DE.Report(var->getLocation(), returnLeakDiagID)
-            << var->getNameAsString();
+        DE.Report(retLoc[var], returnLeakDiagID) << var->getNameAsString();
       }
     }
   }
@@ -134,6 +122,7 @@ private:
 
   clang::ASTContext *m_context;
   std::map<clang::VarDecl *, int> vars;
+  std::map<clang::VarDecl *, clang::SourceLocation> retLoc;
 };
 
 class ExampleConsumer final : public clang::ASTConsumer {
