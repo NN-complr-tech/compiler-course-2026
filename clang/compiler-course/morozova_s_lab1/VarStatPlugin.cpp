@@ -18,11 +18,9 @@ public:
 
     if (VD->isFileVarDecl()) {
       globalCount++;
-    }
-    else if (VD->isLocalVarDecl() && !VD->isStaticLocal()) {
+    } else if (VD->isLocalVarDecl() && !VD->isStaticLocal()) {
       localCount++;
-    }
-    else if (VD->isStaticLocal()) {
+    } else if (VD->isStaticLocal()) {
       staticLocalCount++;
     }
     return true;
@@ -76,9 +74,7 @@ public:
     return true;
   }
 
-  ActionType getActionType() override {
-    return PluginASTAction::ReplaceAction;
-  }
+  ActionType getActionType() override { return PluginASTAction::ReplaceAction; }
 };
 
 static FrontendPluginRegistry::Add<VarStatAction>
