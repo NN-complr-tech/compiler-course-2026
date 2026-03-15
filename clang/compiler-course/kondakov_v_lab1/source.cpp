@@ -1,7 +1,12 @@
 #include "clang/AST/ASTConsumer.h"
+#include "clang/AST/ASTContext.h"
+#include "clang/AST/Decl.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/AST/Type.h"
+#include "clang/AST/TypeLoc.h"
+#include "clang/Basic/SourceManager.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/Rewrite/Core/Rewriter.h"
@@ -35,14 +40,14 @@ public:
 
   bool VisitBinaryOperator(clang::BinaryOperator *Op) {
     if (Op->isAssignmentOp()) {
-      markMutation(Op->getLHS());
+      mark(Op->getLHS(), true, false);
     }
     return true;
   }
 
   bool VisitUnaryOperator(clang::UnaryOperator *Op) {
     if (Op->isIncrementDecrementOp()) {
-      markMutation(Op->getSubExpr());
+      mark(Op->getSubExpr(), true, false);
     }
     return true;
   }
@@ -70,10 +75,14 @@ public:
     }
 
     clang::Expr *Object = ignoreWrappers(Call->getImplicitObjectArgument());
-    if (Object && Object->getType()->isPointerType()) {
-      markPointeeMutation(Object);
+    if (!Object) {
+      return true;
+    }
+
+    if (Object->getType()->isPointerType()) {
+      mark(Object, false, true);
     } else {
-      markMutation(Object);
+      mark(Object, true, false);
     }
     return true;
   }
@@ -96,6 +105,14 @@ public:
         continue;
       }
 
+      const char Last = Replacement.back();
+      const bool IsIdentChar = (Last >= 'a' && Last <= 'z') ||
+                               (Last >= 'A' && Last <= 'Z') ||
+                               (Last >= '0' && Last <= '9') || Last == '_';
+      if (IsIdentChar) {
+        Replacement.push_back(' ');
+      }
+
       Rewriter.ReplaceText(Range, Replacement);
     }
   }
@@ -105,6 +122,10 @@ private:
   clang::Rewriter &Rewriter;
   llvm::DenseSet<const clang::VarDecl *> Candidates;
   llvm::DenseMap<const clang::VarDecl *, MutationState> States;
+
+  clang::Expr *ignoreWrappers(clang::Expr *Expr) const {
+    return Expr ? Expr->IgnoreParenImpCasts() : nullptr;
+  }
 
   bool isSupportedDecl(const clang::VarDecl *Decl) const {
     if (!Decl) {
@@ -126,39 +147,37 @@ private:
       return false;
     }
 
-    // The task is specifically about `T&` (lvalue references) and `T*`.
     return Decl->getType()->isLValueReferenceType() ||
            Decl->getType()->isPointerType();
   }
 
   static bool canAddConst(clang::QualType Type) {
     if (Type->isLValueReferenceType()) {
-      if (Type.getNonReferenceType()->isFunctionType()) {
+      const clang::QualType Referenced = Type.getNonReferenceType();
+      if (Referenced->isFunctionType()) {
         return false;
       }
-      return !Type.getNonReferenceType().isConstQualified();
+      return !Referenced.isConstQualified();
     }
 
     if (Type->isPointerType()) {
-      if (Type->getPointeeType()->isFunctionType()) {
+      const clang::QualType Pointee = Type->getPointeeType();
+      if (Pointee->isFunctionType()) {
         return false;
       }
-      return !Type.isLocalConstQualified() ||
-             !Type->getPointeeType().isConstQualified();
+      return !Type.isLocalConstQualified() || !Pointee.isConstQualified();
     }
 
     return false;
   }
-
-  MutationState &getState(const clang::VarDecl *Decl) { return States[Decl]; }
 
   void markState(const clang::VarDecl *Decl, bool MarkSelf, bool MarkPointee) {
     if (!Decl || !Candidates.count(Decl)) {
       return;
     }
 
-    MutationState &State = getState(Decl);
-    if (Decl->getType()->isReferenceType()) {
+    MutationState &State = States[Decl];
+    if (Decl->getType()->isLValueReferenceType()) {
       State.PointeeMutated |= MarkSelf || MarkPointee;
       return;
     }
@@ -167,11 +186,7 @@ private:
     State.PointeeMutated |= MarkPointee;
   }
 
-  void markDirectMutation(const clang::VarDecl *Decl) {
-    markState(Decl, true, false);
-  }
-
-  void markPointeeMutation(clang::Expr *Expr) {
+  void mark(clang::Expr *Expr, bool MarkSelf, bool MarkPointee) {
     Expr = ignoreWrappers(Expr);
     if (!Expr) {
       return;
@@ -179,108 +194,36 @@ private:
 
     if (auto *Ref = llvm::dyn_cast<clang::DeclRefExpr>(Expr)) {
       if (const auto *Decl = llvm::dyn_cast<clang::VarDecl>(Ref->getDecl())) {
-        markState(Decl, false, true);
+        markState(Decl, MarkSelf, MarkPointee);
       }
       return;
     }
 
     if (auto *Op = llvm::dyn_cast<clang::UnaryOperator>(Expr)) {
-      if (Op->getOpcode() == clang::UO_Deref) {
-        markPointeeMutation(Op->getSubExpr());
-      } else if (Op->getOpcode() == clang::UO_AddrOf) {
-        markAddressEscaped(Op->getSubExpr());
-      } else {
-        markPointeeMutation(Op->getSubExpr());
+      switch (Op->getOpcode()) {
+      case clang::UO_Deref:
+        mark(Op->getSubExpr(), false, true);
+        return;
+      case clang::UO_AddrOf:
+        mark(Op->getSubExpr(), true, true);
+        return;
+      default:
+        mark(Op->getSubExpr(), MarkSelf, MarkPointee);
+        return;
       }
-      return;
     }
 
     if (auto *Member = llvm::dyn_cast<clang::MemberExpr>(Expr)) {
       if (Member->isArrow()) {
-        markPointeeMutation(Member->getBase());
+        mark(Member->getBase(), false, true);
       } else {
-        markMutation(Member->getBase());
+        mark(Member->getBase(), true, false);
       }
       return;
     }
 
     if (auto *Subscript = llvm::dyn_cast<clang::ArraySubscriptExpr>(Expr)) {
-      markPointeeMutation(Subscript->getBase());
-      return;
-    }
-  }
-
-  void markAddressEscaped(clang::Expr *Expr) {
-    Expr = ignoreWrappers(Expr);
-    if (!Expr) {
-      return;
-    }
-
-    if (auto *Ref = llvm::dyn_cast<clang::DeclRefExpr>(Expr)) {
-      if (const auto *Decl = llvm::dyn_cast<clang::VarDecl>(Ref->getDecl())) {
-        markState(Decl, true, true);
-      }
-      return;
-    }
-
-    if (auto *Op = llvm::dyn_cast<clang::UnaryOperator>(Expr)) {
-      if (Op->getOpcode() == clang::UO_Deref) {
-        markPointeeMutation(Op->getSubExpr());
-      } else {
-        markAddressEscaped(Op->getSubExpr());
-      }
-      return;
-    }
-
-    if (auto *Member = llvm::dyn_cast<clang::MemberExpr>(Expr)) {
-      if (Member->isArrow()) {
-        markPointeeMutation(Member->getBase());
-      } else {
-        markMutation(Member->getBase());
-      }
-      return;
-    }
-
-    if (auto *Subscript = llvm::dyn_cast<clang::ArraySubscriptExpr>(Expr)) {
-      markPointeeMutation(Subscript->getBase());
-    }
-  }
-
-  void markMutation(clang::Expr *Expr) {
-    Expr = ignoreWrappers(Expr);
-    if (!Expr) {
-      return;
-    }
-
-    if (auto *Ref = llvm::dyn_cast<clang::DeclRefExpr>(Expr)) {
-      if (const auto *Decl = llvm::dyn_cast<clang::VarDecl>(Ref->getDecl())) {
-        markDirectMutation(Decl);
-      }
-      return;
-    }
-
-    if (auto *Op = llvm::dyn_cast<clang::UnaryOperator>(Expr)) {
-      if (Op->getOpcode() == clang::UO_Deref) {
-        markPointeeMutation(Op->getSubExpr());
-      } else if (Op->getOpcode() == clang::UO_AddrOf) {
-        markAddressEscaped(Op->getSubExpr());
-      } else {
-        markMutation(Op->getSubExpr());
-      }
-      return;
-    }
-
-    if (auto *Member = llvm::dyn_cast<clang::MemberExpr>(Expr)) {
-      if (Member->isArrow()) {
-        markPointeeMutation(Member->getBase());
-      } else {
-        markMutation(Member->getBase());
-      }
-      return;
-    }
-
-    if (auto *Subscript = llvm::dyn_cast<clang::ArraySubscriptExpr>(Expr)) {
-      markPointeeMutation(Subscript->getBase());
+      mark(Subscript->getBase(), false, true);
       return;
     }
   }
@@ -291,57 +234,24 @@ private:
       return;
     }
 
-    if (ParamType->isReferenceType()) {
-      if (ParamType.getNonReferenceType().isConstQualified()) {
+    if (ParamType->isLValueReferenceType()) {
+      const clang::QualType Referenced = ParamType.getNonReferenceType();
+      if (Referenced.isConstQualified()) {
         return;
       }
 
-      if (ParamType.getNonReferenceType()->isPointerType()) {
-        markPointerArgument(Arg, true);
+      if (Referenced->isPointerType()) {
+        mark(Arg, true, true);
       } else {
-        markMutation(Arg);
+        mark(Arg, true, false);
       }
       return;
     }
 
     if (ParamType->isPointerType() &&
         !ParamType->getPointeeType().isConstQualified()) {
-      markPointerArgument(Arg, false);
+      mark(Arg, false, true);
     }
-  }
-
-  void markPointerArgument(clang::Expr *Arg, bool CanRebindPointer) {
-    Arg = ignoreWrappers(Arg);
-    if (!Arg) {
-      return;
-    }
-
-    if (auto *Ref = llvm::dyn_cast<clang::DeclRefExpr>(Arg)) {
-      if (const auto *Decl = llvm::dyn_cast<clang::VarDecl>(Ref->getDecl())) {
-        markState(Decl, CanRebindPointer, true);
-      }
-      return;
-    }
-
-    if (auto *Op = llvm::dyn_cast<clang::UnaryOperator>(Arg)) {
-      if (Op->getOpcode() == clang::UO_AddrOf) {
-        markAddressEscaped(Op->getSubExpr());
-      } else if (Op->getOpcode() == clang::UO_Deref) {
-        markPointeeMutation(Op->getSubExpr());
-      }
-      return;
-    }
-
-    if (auto *Subscript = llvm::dyn_cast<clang::ArraySubscriptExpr>(Arg)) {
-      markPointeeMutation(Subscript->getBase());
-    }
-  }
-
-  clang::Expr *ignoreWrappers(clang::Expr *Expr) const {
-    if (!Expr) {
-      return nullptr;
-    }
-    return Expr->IgnoreParenImpCasts();
   }
 
   std::string buildReplacementType(const clang::VarDecl *Decl,
@@ -350,16 +260,14 @@ private:
     clang::PrintingPolicy Policy(Context.getLangOpts());
 
     if (Type->isLValueReferenceType()) {
-      if (Type.getNonReferenceType().isConstQualified() ||
-          Type.getNonReferenceType()->isFunctionType() ||
+      const clang::QualType Referenced = Type.getNonReferenceType();
+      if (Referenced.isConstQualified() || Referenced->isFunctionType() ||
           State.PointeeMutated) {
         return {};
       }
 
-      const clang::QualType ReferencedType =
-          Context.getConstType(Type.getNonReferenceType());
-      const clang::QualType NewType =
-          Context.getLValueReferenceType(ReferencedType);
+      const clang::QualType NewType = Context.getLValueReferenceType(
+          Context.getConstType(Type.getNonReferenceType()));
       return NewType.getAsString(Policy);
     }
 
@@ -377,10 +285,9 @@ private:
 
     clang::QualType NewType =
         Context.getPointerType(Context.getConstType(Type->getPointeeType()));
-    clang::Qualifiers Quals = NewType.getLocalQualifiers();
+    clang::Qualifiers Quals = Type.getLocalQualifiers();
     Quals.addConst();
     NewType = Context.getQualifiedType(NewType.getUnqualifiedType(), Quals);
-
     return NewType.getAsString(Policy);
   }
 };
