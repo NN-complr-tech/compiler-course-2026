@@ -52,5 +52,5 @@ void test_new_array() {
 int* test_new_return(int sz) {
   int* p = new int[sz];
   
-  return p; // expected-warning {{resource leak: 'p' }}
+  return p; // expected-warning {{resource leak: 'p' may not be freed (no guaranteed deallocation on return)}}
 }

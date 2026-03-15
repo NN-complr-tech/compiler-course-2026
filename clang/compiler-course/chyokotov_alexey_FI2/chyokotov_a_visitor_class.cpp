@@ -55,8 +55,8 @@ public:
   }
 
   bool VisitReturnStmt(clang::ReturnStmt *ret) {
-    for(auto &[var, state] : vars) {
-      if(state == 1) {
+    for (auto &[var, state] : vars) {
+      if (state == 1) {
         vars[var] = 2;
         retLoc[var] = ret->getReturnLoc();
       }
@@ -84,7 +84,8 @@ public:
 
     unsigned returnLeakDiagID =
         DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
-                           "Check");
+                           "resource leak: '%0' may not be freed (no "
+                           "guaranteed deallocation on return)");
 
     for (auto &[var, state] : vars) {
       if (state == 1) {
