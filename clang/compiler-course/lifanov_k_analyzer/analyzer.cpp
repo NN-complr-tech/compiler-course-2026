@@ -119,15 +119,14 @@ private:
     DiagnosticsEngine &diag = context.getDiagnostics();
     unsigned id = diag.getCustomDiagID(
         DiagnosticsEngine::Warning,
-        "ресурс для переменной '%0' может быть не освобождён при выходе.");
+        "ресурс для переменной '%0' может быть не освобождён при выходе");
     diag.Report(loc, id) << var->getName();
   }
 
   void warnFinalize(SourceLocation loc, VarDecl *var) {
     DiagnosticsEngine &diag = context.getDiagnostics();
     unsigned id = diag.getCustomDiagID(
-        DiagnosticsEngine::Warning,
-        "выделенный ресурс для '%0' не освобождён");
+        DiagnosticsEngine::Warning, "выделенный ресурс для '%0' не освобождён");
     diag.Report(loc, id) << var->getName();
   }
 
@@ -153,12 +152,12 @@ private:
 class ResourcePluginAction : public PluginASTAction {
 protected:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &ci,
-                                                  llvm::StringRef) override {
+                                                 llvm::StringRef) override {
     return std::make_unique<ResourceConsumer>(ci.getASTContext());
   }
 
   bool ParseArgs(const CompilerInstance &, 
-                const std::vector<std::string> &) override {
+                 const std::vector<std::string> &) override {
     return true;
   }
 };
@@ -166,5 +165,4 @@ protected:
 } // namespace
 
 static FrontendPluginRegistry::Add<ResourcePluginAction>
-    X("lifanov_k_resource-checker",
-      "detects missing delete/free/fclose");
+    X("lifanov_k_resource-checker", "detects missing delete/free/fclose");
