@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load /home/acheck/labworks/compiler-course-2026/build/lib/chyokotov_alexey_FI2_ClangAST.so -add-plugin chyokotov_a_analyzer_plugin -fsyntax-only -verify %s
+// RUN: %clang_cc1 -load %llvmshlibdir/chyokotov_alexey_FI2_ClangAST%pluginext -add-plugin chyokotov_a_analyzer_plugin -fsyntax-only -verify %s
 extern "C" {
   void* malloc(unsigned long size);
   void free(void* ptr);
