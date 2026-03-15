@@ -119,7 +119,7 @@ private:
       DiagnosticsEngine &diag = context.getDiagnostics();
       unsigned id = diag.getCustomDiagID(
           DiagnosticsEngine::Warning,
-          "ресурс для переменной '%0' может быть не освобождён при выходе");
+          "ресурс для переменной '%0' может быть не освобождён при выходе.");
       diag.Report(loc, id);
   }
 
