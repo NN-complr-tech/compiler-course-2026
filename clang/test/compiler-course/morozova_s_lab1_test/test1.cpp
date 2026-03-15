@@ -1,4 +1,4 @@
-// RUN: %llvm_tools_dir/my_tool %s | FileCheck %s
+// RUN: %build/bin/my_tool %s | FileCheck %s
 
 // CHECK: ========== СТАТИСТИКА ПЕРЕМЕННЫХ ==========
 // CHECK: Глобальных переменных: 23
