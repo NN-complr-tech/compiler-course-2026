@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin_Volkov_A_Task4_ClangAST%pluginext -plugin volkov_a_var_statistic -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/volkov_a_lab1_task4_ClangAST%pluginext -plugin volkov_a_var_statistic -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: Total count : 28
 // CHECK-NEXT: Global variables : 8
