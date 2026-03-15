@@ -17,7 +17,7 @@ namespace ModuleA {
 }
 
 namespace ModuleA {
-    int epsilon;        // игнорируется (повторное объявление в том же namespace)
+    extern int epsilon; // игнорируется (повторное объявление в том же namespace)
     extern double beta; // игнорируется (повторное объявление)
 }
 
@@ -31,7 +31,7 @@ namespace {
 }
 
 extern double beta;     // игнорируется (повторное объявление глобальной ::beta)
-int alpha;              // игнорируется (повторное объявление)
+extern int alpha;       // игнорируется (повторное объявление)
 
 int global_x;           // global: 6
 int global_y;           // global: 7
@@ -39,13 +39,13 @@ int global_z;           // global: 8
 
 struct DataPoint {
     DataPoint(int x, int y) {} // param: 1, param: 2
-    int data_x; // fieldDecl (игнорируется)
-    int data_y; // fieldDecl (игнорируется)
+    int data_x; // FieldDecl (игнорируется)
+    int data_y; // FieldDecl (игнорируется)
 };
 
 template<typename T>
 T algorithm(T input1, T input2) { // param: 3, param: 4
-    static T state;          // static: 4
+    static T state;          // Static: 4
     T intermediate = input1; // local: 1
     return intermediate;
 }
@@ -69,12 +69,3 @@ int main(int argc, char** argv) {     // param: 6, param: 7
     
     return 0;
 }
-
-/*
-точный разбор для FileCheck:
-total count = 28
-global vars = 8 (alpha, ::beta, ModuleA::beta, ModuleA::epsilon, (anon)::zeta, global_x, global_y, global_z)
-static vars = 7 (gamma, ModuleA::delta, (anon)::eta, algorithm::state, dp_static, const_var, final_stat)
-local vars  = 6 (intermediate, tmp1, tmp2, dp_local, const_flt, res)
-func params = 7 (x, y, input1, input2, val, argc, argv)
-*/
