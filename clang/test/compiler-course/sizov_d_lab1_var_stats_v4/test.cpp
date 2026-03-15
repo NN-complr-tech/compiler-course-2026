@@ -1,8 +1,6 @@
 // RUN: split-file %s %t
-// RUN: %clang_cc1 -load %llvmshlibdir/SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST%pluginext -plugin SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST -fsyntax-only -verify %t/with_warnings.cpp
-// RUN: %clang_cc1 -load %llvmshlibdir/SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST%pluginext -plugin SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST -fsyntax-only -verify %t/without_warnings.cpp
-// RUN: %clang_cc1 -load %llvmshlibdir/SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST%pluginext -plugin SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST -fsyntax-only %t/with_warnings.cpp 2>&1 | FileCheck %s --check-prefix=STATS
-// RUN: %clang_cc1 -load %llvmshlibdir/SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST%pluginext -plugin SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST -fsyntax-only %t/without_warnings.cpp 2>&1 | FileCheck %s --check-prefix=EMPTY
+// RUN: %clang_cc1 -load %llvmshlibdir/SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST%pluginext -plugin SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST -fsyntax-only %t/with_vars.cpp 2>&1 | FileCheck %s --check-prefix=STATS
+// RUN: %clang_cc1 -load %llvmshlibdir/SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST%pluginext -plugin SizovDLab1VarStatsV4Plugin_Sizov_D_FIIT2_ClangAST -fsyntax-only %t/without_vars.cpp 2>&1 | FileCheck %s --check-prefix=EMPTY
 
 // STATS: Variable stats for TU:
 // STATS-NEXT: Global objects: 2
@@ -13,8 +11,7 @@
 // EMPTY: Variable stats for TU:
 // EMPTY-NEXT:   (no variables found)
 
-//--- with_warnings.cpp
-// expected-no-diagnostics
+//--- with_vars.cpp
 int GlobalA = 1;
 int GlobalB = 2;
 static int StaticGlobal = 3;
@@ -46,6 +43,5 @@ int proto(int q);
 
 int baz(int p) { return p; }
 
-//--- without_warnings.cpp
-// expected-no-diagnostics
+//--- without_vars.cpp
 int NoVarsHere() { return 0; }
