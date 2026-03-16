@@ -2,8 +2,8 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
-#include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Lex/Lexer.h"
+#include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
@@ -24,19 +24,17 @@ public:
     std::string CastName = "static_cast";
     clang::CastKind Kind = Node->getCastKind();
 
-    if (Kind == clang::CK_BitCast ||
-        Kind == clang::CK_LValueBitCast ||
+    if (Kind == clang::CK_BitCast || Kind == clang::CK_LValueBitCast ||
         Kind == clang::CK_PointerToIntegral ||
         Kind == clang::CK_IntegralToPointer ||
         Kind == clang::CK_ReinterpretMemberPointer) {
       CastName = "reinterpret_cast";
-    }
-    else if (Kind == clang::CK_NoOp) {
+    } else if (Kind == clang::CK_NoOp) {
       clang::QualType SubType = Node->getSubExpr()->getType();
       clang::QualType TargetType = Node->getType();
 
       auto isConstCastCompatible = [&](clang::QualType From,
-                                        clang::QualType To) -> bool {
+                                       clang::QualType To) -> bool {
         if (From->isReferenceType())
           From = From.getNonReferenceType();
         if (To->isReferenceType())
@@ -46,7 +44,8 @@ public:
           clang::QualType FromPointee = From->getPointeeType();
           clang::QualType ToPointee = To->getPointeeType();
           return Context.hasSameUnqualifiedType(FromPointee, ToPointee) &&
-                 (FromPointee.getCVRQualifiers() != ToPointee.getCVRQualifiers());
+                 (FromPointee.getCVRQualifiers() !=
+                  ToPointee.getCVRQualifiers());
         }
 
         return Context.hasSameUnqualifiedType(From, To) &&
@@ -113,6 +112,7 @@ public:
 
   ActionType getActionType() override { return AddBeforeMainAction; }
 };
+
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<CastAction>
