@@ -3,6 +3,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "clang/Lex/Lexer.h"
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
@@ -45,7 +46,9 @@ public:
     std::string Replacement = CastName + "<" + TypeStr + ">(";
     Rewrite.ReplaceText(CastRange, Replacement);
 
-    Rewrite.InsertTextAfter(Node->getEndLoc().getLocWithOffset(1), ")");
+    clang::SourceLocation EndAfterSubExpr = clang::Lexer::getLocForEndOfToken(
+        Node->getSubExpr()->getEndLoc(), 0, Context.getSourceManager(), Context.getLangOpts());
+    Rewrite.InsertTextAfter(EndAfterSubExpr, ")");
 
     return true;
   }

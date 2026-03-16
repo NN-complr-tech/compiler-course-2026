@@ -22,7 +22,6 @@ void test_casts() {
 
     int i = (int)d;
 
-    //int* p = (int*)0x12345;
 
     const int ci = 5;
     int i2 = (int)ci;
