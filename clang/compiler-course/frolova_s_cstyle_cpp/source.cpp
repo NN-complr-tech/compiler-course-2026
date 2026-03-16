@@ -24,14 +24,36 @@ public:
     std::string CastName = "static_cast";
     clang::CastKind Kind = Node->getCastKind();
 
-    if (Kind == clang::CK_BitCast || Kind == clang::CK_LValueBitCast) {
+    if (Kind == clang::CK_BitCast ||
+        Kind == clang::CK_LValueBitCast ||
+        Kind == clang::CK_PointerToIntegral ||
+        Kind == clang::CK_IntegralToPointer ||
+        Kind == clang::CK_ReinterpretMemberPointer) {
       CastName = "reinterpret_cast";
-    } else if (Kind == clang::CK_NoOp) {
+    }
+    else if (Kind == clang::CK_NoOp) {
       clang::QualType SubType = Node->getSubExpr()->getType();
       clang::QualType TargetType = Node->getType();
-      if (Context.hasSameUnqualifiedType(SubType, TargetType) &&
-          (SubType.isConstQualified() != TargetType.isConstQualified() ||
-           SubType.isVolatileQualified() != TargetType.isVolatileQualified())) {
+
+      auto isConstCastCompatible = [&](clang::QualType From,
+                                        clang::QualType To) -> bool {
+        if (From->isReferenceType())
+          From = From.getNonReferenceType();
+        if (To->isReferenceType())
+          To = To.getNonReferenceType();
+
+        if (From->isPointerType() && To->isPointerType()) {
+          clang::QualType FromPointee = From->getPointeeType();
+          clang::QualType ToPointee = To->getPointeeType();
+          return Context.hasSameUnqualifiedType(FromPointee, ToPointee) &&
+                 (FromPointee.getCVRQualifiers() != ToPointee.getCVRQualifiers());
+        }
+
+        return Context.hasSameUnqualifiedType(From, To) &&
+               (From.getCVRQualifiers() != To.getCVRQualifiers());
+      };
+
+      if (isConstCastCompatible(SubType, TargetType)) {
         CastName = "const_cast";
       }
     }
@@ -47,7 +69,7 @@ public:
     Rewrite.ReplaceText(CastRange, Replacement);
 
     clang::SourceLocation EndAfterSubExpr = clang::Lexer::getLocForEndOfToken(
-        Node->getSubExpr()->getEndLoc(), 0, Context.getSourceManager(), Context.getLangOpts());
+        Node->getSubExpr()->getEndLoc(), 0, SM, Context.getLangOpts());
     Rewrite.InsertTextAfter(EndAfterSubExpr, ")");
 
     return true;
