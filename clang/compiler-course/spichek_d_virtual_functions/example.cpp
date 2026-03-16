@@ -10,8 +10,8 @@ namespace {
 class MissingOverrideVisitor final
     : public clang::RecursiveASTVisitor<MissingOverrideVisitor> {
 public:
-  explicit MissingOverrideVisitor(clang::ASTContext *context,
-                                  clang::CompilerInstance &ci)
+  MissingOverrideVisitor(clang::ASTContext *context,
+                         clang::CompilerInstance &ci)
       : m_context(context), m_ci(ci) {
     m_diagID = m_ci.getDiagnostics().getCustomDiagID(
         clang::DiagnosticsEngine::Warning,
@@ -36,8 +36,8 @@ private:
 
 class MissingOverrideConsumer final : public clang::ASTConsumer {
 public:
-  explicit MissingOverrideConsumer(clang::ASTContext *context,
-                                   clang::CompilerInstance &ci)
+  MissingOverrideConsumer(clang::ASTContext *context,
+                          clang::CompilerInstance &ci)
       : m_visitor(context, ci) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {

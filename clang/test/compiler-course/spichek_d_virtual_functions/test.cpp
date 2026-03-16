@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/spichek_d_virtual_functions_ClangAST%pluginext -plugin missing_override_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/spichek_d_virtual_functions_ClangAST%pluginext -plugin missing_override_plugin -fsyntax-only -Wno-everything -verify %s
 class Base {
 public:
     virtual void doSomething();
@@ -10,7 +10,7 @@ public:
 class Derived : public Base {
 public:
     // Случай 1: Отсутствует override у обычного переопределения (должен быть warning)
-    // CHECK: [[@LINE+1]]:10: warning: virtual function overrides a base class virtual function but is not marked with 'override'
+    // expected-warning@+1 {{virtual function overrides a base class virtual function but is not marked with 'override'}}
     void doSomething();
 
     // Случай 2: Правильное переопределение с override (warning нет)
@@ -18,11 +18,11 @@ public:
 
     // Случай 3: Указано virtual, но нет override (должен быть warning)
     // Указание virtual не заменяет необходимость писать override
-    // CHECK: [[@LINE+1]]:18: warning: virtual function overrides a base class virtual function but is not marked with 'override'
+    // expected-warning@+1 {{virtual function overrides a base class virtual function but is not marked with 'override'}}
     virtual void doVirtualThing();
 
     // Случай 4: Деструктор переопределяет виртуальный деструктор базы без override (должен быть warning)
-    // CHECK: [[@LINE+1]]:5: warning: virtual function overrides a base class virtual function but is not marked with 'override'
+    // expected-warning@+1 {{virtual function overrides a base class virtual function but is not marked with 'override'}}
     ~Derived();
 
     // Случай 5: Совершенно новая виртуальная функция (warning нет)
@@ -35,11 +35,11 @@ public:
 class DeepDerived : public Derived {
 public:
     // Случай 7: Глубокое наследование, пропущен override (должен быть warning)
-    // CHECK: [[@LINE+1]]:10: warning: virtual function overrides a base class virtual function but is not marked with 'override'
+    // expected-warning@+1 {{virtual function overrides a base class virtual function but is not marked with 'override'}}
     void doSomething();
     
     // Случай 8: Переопределение новой виртуальной функции из Derived (должен быть warning)
-    // CHECK: [[@LINE+1]]:10: warning: virtual function overrides a base class virtual function but is not marked with 'override'
+    // expected-warning@+1 {{virtual function overrides a base class virtual function but is not marked with 'override'}}
     void newVirtualFunction();
 
     // Случай 9: Деструктор с override (warning нет)
