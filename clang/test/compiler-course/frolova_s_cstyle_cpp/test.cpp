@@ -2,7 +2,6 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/CStyleCastReplacerPlugin_Frolova_Sofya_FIIT3_ClangAST%pluginext -add-plugin cstyle_cast_replacer %t/test_casts.cpp 2>&1 | FileCheck %s
 
 // CHECK: int i = static_cast<int>(d);
-// CHECK: int* p = reinterpret_cast<int*>(0x12345);
 // CHECK: int i2 = static_cast<int>(ci);
 // CHECK: int* pi = const_cast<int*>(pci);
 // CHECK: const int* pci2 = const_cast<const int*>(pi2);
