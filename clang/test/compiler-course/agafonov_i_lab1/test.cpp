@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load /home/ilya/compiler-course-2026/build/lib/agafonov_i_lab1_ClangAST.so -plugin constify_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/agafonov_i_lab1_ClangAST%pluginext -plugin constify_plugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK-LABEL: void test_ref_read(const int &r)
 void test_ref_read(int &r) {
