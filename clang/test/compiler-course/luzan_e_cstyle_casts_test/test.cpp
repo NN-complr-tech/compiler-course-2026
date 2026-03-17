@@ -89,3 +89,27 @@ void manyCasts(float a, float b) {
     // CHECK-LABEL: void sameLine(float a, float b)
     // CHECK: int x = static_cast<int>(a) + static_cast<int>(b);
 }
+
+void removeConst(const int* p) {
+    int* x = (int*)p;
+    // CHECK-LABEL: void removeConst(const int* p)
+    // CHECK: const_cast<int*>(p)
+}
+
+void removeVolatile(const volatile int* p) {
+    int* x = (int*)p;
+    // CHECK-LABEL: void removeVolatile(const int* p)
+    // CHECK: const_cast<int*>(p)
+}
+
+void refCasts0(char x){
+    char* p = (char*)&x;
+    // CHECK: void refCasts0() 
+    // CHECK-NEXT: char* p = reinterpret_cast<char*>(&x);
+}
+
+void refCasts1(int x){
+    int* p = (int*)&x;
+    // CHECK: void refCasts1() 
+    // CHECK-NEXT: char* p = reinterpret_cast<int*>(&x);
+}

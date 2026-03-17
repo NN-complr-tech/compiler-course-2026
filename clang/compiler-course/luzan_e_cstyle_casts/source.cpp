@@ -23,7 +23,7 @@ public:
 
   bool VisitCStyleCastExpr(clang::CStyleCastExpr *expr) {
     /// determine which cast type is it
-    std::string castName = getCastName(expr->getCastKind());
+    std::string castName = isConstCast(expr) ? "const_cast" : getCastName(expr->getCastKind());
     /// get the target type of cast
     std::string targetType = expr->getTypeAsWritten().getAsString();
     /// get positions of token/text to rewrite
@@ -51,7 +51,20 @@ private:
   clang::ASTContext *m_context;
   clang::Rewriter &rewriter;
 
+  bool isConstCast(const clang::CStyleCastExpr *expr) {
+    clang::QualType src = expr->getSubExpr()->getType();
+    clang::QualType dst = expr->getType();
+
+    if (src->isPointerType() && dst->isPointerType()) {
+        src = src->getPointeeType();
+        dst = dst->getPointeeType();
+    }
+
+    return src.isConstQualified() != dst.isConstQualified() || src.isVolatileQualified() != dst.isVolatileQualified();
+  }
+
   std::string getCastName(clang::CastKind kind) {
+
     switch (kind) {
 
     case clang::CK_BitCast:
