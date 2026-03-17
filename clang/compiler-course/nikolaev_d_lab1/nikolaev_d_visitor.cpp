@@ -9,11 +9,7 @@
 
 namespace {
 
-enum class ResourceState {
-  Freed,
-  Allocated,
-  Returned
-};
+enum class ResourceState { Freed, Allocated, Returned };
 
 struct ResourceInfo {
   std::string type;
@@ -25,8 +21,7 @@ class NikolaevDVisitor final
     : public clang::RecursiveASTVisitor<NikolaevDVisitor> {
 
 public:
-  explicit NikolaevDVisitor(clang::ASTContext *context)
-      : m_context(context) {}
+  explicit NikolaevDVisitor(clang::ASTContext *context) : m_context(context) {}
 
   bool VisitBinaryOperator(clang::BinaryOperator *binop) {
 
@@ -113,8 +108,7 @@ public:
 
       if (auto *var = clang::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
 
-        if (vars.count(var) &&
-            vars[var].state == ResourceState::Allocated) {
+        if (vars.count(var) && vars[var].state == ResourceState::Allocated) {
 
           vars[var].state = ResourceState::Returned;
           vars[var].loc = ret->getReturnLoc();
@@ -132,9 +126,8 @@ public:
 
     clang::DiagnosticsEngine &DE = m_context->getDiagnostics();
 
-    unsigned leakDiagID =
-        DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
-                           "%0 resource '%1' is not freed");
+    unsigned leakDiagID = DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
+                                             "%0 resource '%1' is not freed");
 
     unsigned returnLeakDiagID =
         DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
@@ -144,8 +137,7 @@ public:
 
       if (info.state == ResourceState::Allocated) {
 
-        DE.Report(info.loc, leakDiagID)
-            << info.type << var->getNameAsString();
+        DE.Report(info.loc, leakDiagID) << info.type << var->getNameAsString();
 
       } else if (info.state == ResourceState::Returned) {
 
@@ -156,7 +148,6 @@ public:
   }
 
 private:
-
   std::string getAllocationType(clang::Expr *exp) {
 
     clang::Expr *castexp = exp->IgnoreParenCasts();
@@ -204,8 +195,7 @@ private:
 class NikolaevDConsumer final : public clang::ASTConsumer {
 
 public:
-  explicit NikolaevDConsumer(clang::ASTContext *context)
-      : m_visitor(context) {}
+  explicit NikolaevDConsumer(clang::ASTContext *context) : m_visitor(context) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
 
@@ -220,10 +210,8 @@ private:
 class NikolaevDAction final : public clang::PluginASTAction {
 
 public:
-
   std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &ci,
-                    llvm::StringRef) override {
+  CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
 
     return std::make_unique<NikolaevDConsumer>(&ci.getASTContext());
   }
@@ -234,11 +222,9 @@ public:
     return true;
   }
 
-  ActionType getActionType() override {
-    return AddAfterMainAction;
-  }
-}; 
-} //namespace
+  ActionType getActionType() override { return AddAfterMainAction; }
+};
+} // namespace
 
 static clang::FrontendPluginRegistry::Add<NikolaevDAction>
     X("nikolaev_d_analyzer_plugin", "Resource leak analyzer");
