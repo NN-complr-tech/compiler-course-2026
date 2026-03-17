@@ -40,7 +40,8 @@ struct AllocationInfo {
 
 class ResourceLeakAnalyzer {
 public:
-  explicit ResourceLeakAnalyzer(clang::ASTContext &context) : context(context) {}
+  explicit ResourceLeakAnalyzer(clang::ASTContext &context)
+      : context(context) {}
 
   void analyze() {
     visitDecl(context.getTranslationUnitDecl());
@@ -216,9 +217,7 @@ private:
     }
   }
 
-  void visitExpr(const clang::Expr *expr) {
-    visitStmt(expr);
-  }
+  void visitExpr(const clang::Expr *expr) { visitStmt(expr); }
 
   void visitStmt(const clang::Stmt *stmt) {
     if (stmt == nullptr) {
@@ -300,7 +299,8 @@ private:
     }
   }
 
-  void recordAllocation(const clang::Expr *expr, AllocationKind allocationKind) {
+  void recordAllocation(const clang::Expr *expr,
+                        AllocationKind allocationKind) {
     if (!shouldTrack(expr)) {
       return;
     }
@@ -413,9 +413,9 @@ private:
     }
 
     std::vector<std::size_t> &ownerAllocations = ownerIt->second;
-    ownerAllocations.erase(std::remove(ownerAllocations.begin(),
-                                       ownerAllocations.end(), index),
-                           ownerAllocations.end());
+    ownerAllocations.erase(
+        std::remove(ownerAllocations.begin(), ownerAllocations.end(), index),
+        ownerAllocations.end());
     if (ownerAllocations.empty()) {
       outstandingAllocationsByOwner.erase(ownerIt);
     }
