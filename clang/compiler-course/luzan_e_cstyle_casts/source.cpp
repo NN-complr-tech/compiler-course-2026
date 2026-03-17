@@ -23,7 +23,8 @@ public:
 
   bool VisitCStyleCastExpr(clang::CStyleCastExpr *expr) {
     /// determine which cast type is it
-    std::string castName = isConstCast(expr) ? "const_cast" : getCastName(expr->getCastKind());
+    std::string castName =
+        isConstCast(expr) ? "const_cast" : getCastName(expr->getCastKind());
     /// get the target type of cast
     std::string targetType = expr->getTypeAsWritten().getAsString();
     /// get positions of token/text to rewrite
@@ -56,11 +57,12 @@ private:
     clang::QualType dst = expr->getType();
 
     if (src->isPointerType() && dst->isPointerType()) {
-        src = src->getPointeeType();
-        dst = dst->getPointeeType();
+      src = src->getPointeeType();
+      dst = dst->getPointeeType();
     }
 
-    return src.isConstQualified() != dst.isConstQualified() || src.isVolatileQualified() != dst.isVolatileQualified();
+    return src.isConstQualified() != dst.isConstQualified() ||
+           src.isVolatileQualified() != dst.isVolatileQualified();
   }
 
   std::string getCastName(clang::CastKind kind) {
