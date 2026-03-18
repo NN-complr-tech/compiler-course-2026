@@ -1,4 +1,3 @@
-// clang-format off
 // RUN: split-file %s %t
 // RUN: %clang_cc1 -load %llvmshlibdir/konstantinov_s_lab1_ClangAST%pluginext -plugin cast_rewrite_plugin -fsyntax-only %t/source.cpp 2>&1 | FileCheck %s
 
