@@ -20,14 +20,13 @@ public:
         statics++;
       else
         globals++;
-    }
-    else if (var->isLocalVarDecl()) {
+    } else if (var->isLocalVarDecl()) {
       if (var->isStaticLocal())
         statics++;
       else
         locals++;
     }
-    
+
     return true;
   }
 
@@ -53,8 +52,7 @@ private:
 
 class VarCounterConsumer : public clang::ASTConsumer {
 public:
-  explicit VarCounterConsumer(clang::ASTContext *context)
-      : visitor(context) {}
+  explicit VarCounterConsumer(clang::ASTContext *context) : visitor(context) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
     visitor.TraverseDecl(context.getTranslationUnitDecl());
@@ -77,7 +75,7 @@ public:
     return true;
   }
 };
-}
+} // namespace
 
 static clang::FrontendPluginRegistry::Add<VarCounterAction>
     X("var_counter_plugin", "counts different types of variables");
