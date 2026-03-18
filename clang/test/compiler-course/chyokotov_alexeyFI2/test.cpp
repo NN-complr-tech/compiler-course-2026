@@ -83,3 +83,12 @@ bool test_branching(int sz) {
   delete[] p;
   return false;
 }
+
+bool test_branching_with_one(int sz) {
+  int* p = new int[sz];
+  if (sz > 10) {
+    return true; // expected-warning {{resource leak: 'p' may not be freed (no guaranteed deallocation on return)}}
+  }
+  delete[] p;
+  return false; 
+}

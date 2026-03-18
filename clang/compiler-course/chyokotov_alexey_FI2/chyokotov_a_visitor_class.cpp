@@ -1,4 +1,6 @@
 #include "clang/AST/ASTConsumer.h"
+#include "clang/AST/Decl.h"
+#include "clang/AST/ParentMapContext.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendPluginRegistry.h"
@@ -56,17 +58,59 @@ public:
   }
 
   bool VisitReturnStmt(clang::ReturnStmt *ret) {
+    clang::SourceManager &sm = m_context->getSourceManager();
+    clang::SourceLocation retLoc = ret->getBeginLoc();
+
     clang::Expr *retValue = ret->getRetValue();
-    if (!retValue)
-      return true;
+    if (retValue) {
+      retValue = retValue->IgnoreParenCasts();
+      if (auto *declRef = clang::dyn_cast<clang::DeclRefExpr>(retValue)) {
+        if (auto *var = clang::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
+          if (vars[var] == 1 || vars[var] == 3) {
+            vars[var] = 2;
+            Loc[var] = ret->getReturnLoc();
 
-    retValue = retValue->IgnoreParenCasts();
+            clang::DiagnosticsEngine &DE = m_context->getDiagnostics();
+            unsigned returnLeakDiagID =
+                DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
+                                   "resource leak: '%0' may not be freed (no "
+                                   "guaranteed deallocation on return)");
+            DE.Report(ret->getReturnLoc(), returnLeakDiagID)
+                << var->getNameAsString();
+          }
+        }
+      }
+    }
 
-    if (auto *declRef = clang::dyn_cast<clang::DeclRefExpr>(retValue)) {
-      if (auto *var = clang::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
-        if (vars[var] == 1) {
-          vars[var] = 2;
-          Loc[var] = ret->getReturnLoc();
+    for (auto &[var, state] : vars) {
+      if ((state == 1 || state == 3) && state != 2) {
+        clang::FunctionDecl *varFunc = nullptr;
+        clang::DeclContext *dc = var->getDeclContext();
+        while (dc) {
+          if (clang::FunctionDecl *fd =
+                  clang::dyn_cast<clang::FunctionDecl>(dc)) {
+            varFunc = fd;
+            break;
+          }
+          dc = dc->getParent();
+        }
+
+        if (!varFunc)
+          continue;
+
+        clang::SourceLocation funcStart = varFunc->getBeginLoc();
+        clang::SourceLocation funcEnd = varFunc->getEndLoc();
+
+        if (sm.isBeforeInTranslationUnit(funcStart, retLoc) &&
+            sm.isBeforeInTranslationUnit(retLoc, funcEnd)) {
+
+          clang::DiagnosticsEngine &DE = m_context->getDiagnostics();
+          unsigned returnLeakDiagID =
+              DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
+                                 "resource leak: '%0' may not be freed (no "
+                                 "guaranteed deallocation on return)");
+          DE.Report(ret->getReturnLoc(), returnLeakDiagID)
+              << var->getNameAsString();
         }
       }
     }
@@ -92,16 +136,9 @@ public:
     unsigned leakDiagID = DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
                                              "memory leak: '%0'");
 
-    unsigned returnLeakDiagID =
-        DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
-                           "resource leak: '%0' may not be freed (no "
-                           "guaranteed deallocation on return)");
-
     for (auto &[var, state] : vars) {
       if (state == 1) {
         DE.Report(var->getLocation(), leakDiagID) << var->getNameAsString();
-      } else if (state == 2) {
-        DE.Report(Loc[var], returnLeakDiagID) << var->getNameAsString();
       } else if (state == 3) {
         DE.Report(Loc[var], leakDiagID) << var->getNameAsString();
       }
