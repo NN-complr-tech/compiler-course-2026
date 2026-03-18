@@ -33,14 +33,25 @@ public:
   }
 
   bool VisitCallExpr(clang::CallExpr *Call) {
-    if (DetectedThrow)
-      return true;
-    if (auto *Callee = Call->getDirectCallee()) {
-      if (canFunctionThrow(Callee))
-        DetectedThrow = true;
-    }
+  if (DetectedThrow)
     return true;
+
+  if (auto *Callee = Call->getDirectCallee()) {
+    if (canFunctionThrow(Callee))
+      DetectedThrow = true;
+  } else {
+    clang::QualType CalleeType = Call->getCallee()->getType();
+    if (auto *PT = CalleeType->getAs<clang::PointerType>()) {
+      if (auto *FPT = PT->getPointeeType()->getAs<clang::FunctionProtoType>()) {
+        if (FPT->getExceptionSpecType() != clang::EST_BasicNoexcept &&
+            FPT->getExceptionSpecType() != clang::EST_NoexceptTrue) {
+          DetectedThrow = true;
+        }
+      }
+    }
   }
+  return true;
+}
 
   bool VisitCXXConstructExpr(clang::CXXConstructExpr *Ctor) {
     if (DetectedThrow)
@@ -139,7 +150,9 @@ public:
     return true;
   }
 
-  ActionType getActionType() override { return ReplaceAction; }
+  ActionType getActionType() override { 
+      return AddBeforeMainAction;
+  }
 };
 
 } // namespace

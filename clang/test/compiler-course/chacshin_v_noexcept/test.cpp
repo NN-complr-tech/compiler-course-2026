@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -fcxx-exceptions -fexceptions -load %llvmshlibdir/libChacshinNoexcept_Chacshin_Vladimir_FIIT3_ClangAST%pluginext -plugin chacshin_noexcept_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -fcxx-exceptions -fexceptions -load %llvmshlibdir/libChacshinNoexcept_Chacshin_Vladimir_FIIT3_ClangAST%pluginext -add-plugin chacshin_noexcept_plugin -ast-dump %s | FileCheck %s
 
 class Base {
 public:
@@ -88,19 +88,19 @@ void pointerCall(void (*f)(int)) {
     f(42);
 }
 
-// CHECK: Function empty marked noexcept
-// CHECK: Function simpleThrow remains potentially throwing
-// CHECK: Function withNew remains potentially throwing
-// CHECK: Function castToRef remains potentially throwing
-// CHECK: Function castToPtr marked noexcept
-// CHECK: Function callNoThrow marked noexcept
-// CHECK: Function callThrow remains potentially throwing
-// CHECK: Function fact marked noexcept
-// CHECK: Function factThrow remains potentially throwing
-// CHECK: Function lambdaThrow remains potentially throwing
-// CHECK: Function lambdaNoThrow marked noexcept
-// CHECK: Function createCtorThrow remains potentially throwing
-// CHECK: Function createCtorNoThrow marked noexcept
-// CHECK: Function callCtorThrow remains potentially throwing
-// CHECK: Function callCtorNoThrow marked noexcept
-// CHECK: Function pointerCall marked noexcept
+// CHECK: FunctionDecl {{.*}} empty 'void () noexcept'
+// CHECK: FunctionDecl {{.*}} simpleThrow 'void ()'
+// CHECK: FunctionDecl {{.*}} withNew 'void ()'
+// CHECK: FunctionDecl {{.*}} castToRef 'void ()'
+// CHECK: FunctionDecl {{.*}} castToPtr 'void () noexcept'
+// CHECK: FunctionDecl {{.*}} callNoThrow 'void () noexcept'
+// CHECK: FunctionDecl {{.*}} callThrow 'void ()'
+// CHECK: FunctionDecl {{.*}} fact 'int (int) noexcept'
+// CHECK: FunctionDecl {{.*}} factThrow 'int (int)'
+// CHECK: FunctionDecl {{.*}} lambdaThrow 'void ()'
+// CHECK: FunctionDecl {{.*}} lambdaNoThrow 'void () noexcept'
+// CHECK: FunctionDecl {{.*}} createCtorThrow 'void ()'
+// CHECK: FunctionDecl {{.*}} createCtorNoThrow 'void () noexcept'
+// CHECK: FunctionDecl {{.*}} callCtorThrow 'void ()'
+// CHECK: FunctionDecl {{.*}} callCtorNoThrow 'void () noexcept'
+// CHECK: FunctionDecl {{.*}} pointerCall 'void (void (*)(int))'
