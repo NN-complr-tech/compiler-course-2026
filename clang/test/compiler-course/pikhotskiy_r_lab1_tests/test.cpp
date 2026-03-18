@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/pikhotskiy_r_lab_1_ClangAST%pluginext -plugin var_counter_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/pikhotskiy_r_lab1_ClangAST%pluginext -plugin var_counter_plugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK: Global variables: 8
 // CHECK-NEXT: Local variables: 7
