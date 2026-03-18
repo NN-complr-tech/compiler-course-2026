@@ -11,6 +11,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <cstdio>
 
 namespace {
 
@@ -18,16 +19,13 @@ struct Resources {
   clang::SourceLocation loc;
   std::string type;
   std::string varName;
-  const clang::DeclContext *scope;
 
   bool operator<(const Resources &other) const {
     if (loc.getRawEncoding() != other.loc.getRawEncoding())
       return loc.getRawEncoding() < other.loc.getRawEncoding();
     if (type != other.type)
       return type < other.type;
-    if (varName != other.varName)
-      return varName < other.varName;
-    return scope < other.scope;
+    return varName < other.varName;
   }
 };
 
@@ -59,55 +57,90 @@ public:
       return true;
 
     if (name == "malloc" || name == "calloc" || name == "realloc" ||
-        name == "fopen") {
-      std::string varName = "unknown";
-      const clang::DeclContext *scope = nullptr;
+    name == "fopen") {
+  std::string varName = "unknown";
 
-      // Пытаемся найти имя переменной и её область видимости через родительский
-      // узел
-      if (auto *parent = m_context->getParents(*call)
-                             .begin()[0]
-                             .get<clang::BinaryOperator>()) {
-        if (parent->getOpcode() == clang::BO_Assign) {
-          if (auto *declRef = llvm::dyn_cast<clang::DeclRefExpr>(
-                  parent->getLHS()->IgnoreImpCasts())) {
-            if (auto *varDecl =
-                    llvm::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
-              varName = varDecl->getNameAsString();
-              scope = varDecl->getDeclContext(); // Получаем область видимости
-                                                 // переменной
+  // Ищем присваивание или инициализацию с учетом приведения типов
+    const clang::Stmt *currentStmt = call;
+    auto parents = m_context->getParents(*currentStmt);
+    
+    while (!parents.empty()) {
+        if (auto *castExpr = parents.begin()[0].get<clang::CStyleCastExpr>()) {
+            currentStmt = castExpr;
+            parents = m_context->getParents(*currentStmt);
+            continue;
+        }
+        
+        if (auto *binaryOp = parents.begin()[0].get<clang::BinaryOperator>()) {
+            if (binaryOp->getOpcode() == clang::BO_Assign) {
+                if (auto *declRef = llvm::dyn_cast<clang::DeclRefExpr>(
+                        binaryOp->getLHS()->IgnoreImpCasts())) {
+                    if (auto *varDecl =
+                            llvm::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
+                        varName = varDecl->getNameAsString();
+                    }
+                }
             }
-          }
+            break;
         }
-      }
-
-      if (name == "fopen") {
-        m_resources.insert({loc, "file", varName, scope});
-      } else {
-        m_resources.insert({loc, "memory", varName, scope});
-      }
-    } else if (name == "free") {
-      // При освобождении ресурса ищем по типу и области видимости
-      auto it = m_resources.begin();
-      while (it != m_resources.end()) {
-        if (it->type == "memory") {
-          it = m_resources.erase(it);
-          break;
-        } else {
-          ++it;
+        
+        // проверка на VarDecl (для инициализации при объявлении)
+        if (auto *varDecl = parents.begin()[0].get<clang::VarDecl>()) {
+            varName = varDecl->getNameAsString();
+            break;
         }
-      }
-    } else if (name == "fclose") {
-      auto it = m_resources.begin();
-      while (it != m_resources.end()) {
-        if (it->type == "file") {
-          it = m_resources.erase(it);
-          break;
-        } else {
-          ++it;
-        }
-      }
+        
+        break;
     }
+
+  if (name == "fopen") {
+    m_resources.insert({loc, "file", varName});
+  } else {
+    m_resources.insert({loc, "memory", varName});
+  }
+} else if (name == "free") {
+  // При освобождении ресурса ищем по типу и области видимости
+  std::string varName = "unknown";
+  
+  // Пытаемся найти имя переменной, которая освобождается
+  if (auto *declRef = llvm::dyn_cast<clang::DeclRefExpr>(
+          call->getArg(0)->IgnoreImpCasts())) {
+    if (auto *varDecl =
+            llvm::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
+      varName = varDecl->getNameAsString();
+    }
+  }
+
+  auto it = m_resources.begin();
+  while (it != m_resources.end()) {
+    if (it->type == "memory" && it->varName == varName) {
+      it = m_resources.erase(it);
+      break;
+    } else {
+      ++it;
+    }
+  }
+} else if (name == "fclose") {
+  std::string varName = "unknown";
+  
+  if (auto *declRef = llvm::dyn_cast<clang::DeclRefExpr>(
+          call->getArg(0)->IgnoreImpCasts())) {
+    if (auto *varDecl =
+            llvm::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
+      varName = varDecl->getNameAsString();
+    }
+  }
+
+  auto it = m_resources.begin();
+  while (it != m_resources.end()) {
+    if (it->type == "file" && it->varName == varName) {
+      it = m_resources.erase(it);
+      break;
+    } else {
+      ++it;
+    }
+  }
+}
 
     return true;
   }
@@ -119,7 +152,6 @@ public:
       return true;
 
     std::string varName = "unknown";
-    const clang::DeclContext *scope = nullptr;
 
     // Проверяем разные способы инициализации
     if (auto *parent = m_context->getParents(*newExpr)
@@ -131,7 +163,6 @@ public:
           if (auto *varDecl =
                   llvm::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
             varName = varDecl->getNameAsString();
-            scope = varDecl->getDeclContext();
           }
         }
       }
@@ -139,10 +170,9 @@ public:
                                    .begin()[0]
                                    .get<clang::VarDecl>()) {
       varName = varDecl->getNameAsString();
-      scope = varDecl->getDeclContext();
     }
 
-    m_resources.insert({loc, "memory", varName, scope});
+    m_resources.insert({loc, "memory", varName});
     return true;
   }
 
@@ -153,14 +183,12 @@ public:
     if (auto *declRef = llvm::dyn_cast<clang::DeclRefExpr>(arg)) {
       if (auto *varDecl = llvm::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
         std::string varName = varDecl->getNameAsString();
-        const clang::DeclContext *scope = varDecl->getDeclContext();
 
         // Ищем ресурс с таким же именем переменной, типом "memory" и областью
         // видимости
         auto it = m_resources.begin();
         while (it != m_resources.end()) {
-          if (it->type == "memory" && it->varName == varName &&
-              it->scope == scope) {
+          if (it->type == "memory" && it->varName == varName) {
             it = m_resources.erase(it);
             break;
           } else {
@@ -178,9 +206,9 @@ public:
         unsigned lineNum = m_sourceManager.getSpellingLineNumber(res.loc);
 
         if (res.type == "memory") {
-          m_diag.Report(res.loc, m_memDiag) << lineNum << res.varName;
+          m_diag.Report(res.loc, m_memDiag) << lineNum;
         } else if (res.type == "file") {
-          m_diag.Report(res.loc, m_fileDiag) << lineNum << res.varName;
+          m_diag.Report(res.loc, m_fileDiag) << lineNum;
         }
       }
     }
