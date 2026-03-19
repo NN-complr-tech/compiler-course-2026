@@ -24,21 +24,42 @@ struct VolkovA_Metrics {
 class VolkovAVarStatVisitor final
     : public clang::RecursiveASTVisitor<VolkovAVarStatVisitor> {
 public:
-  bool VisitVarDecl(clang::VarDecl *Declaration) {
+  // отключаем обход, чтобы не считать их переменные повторно
+  bool shouldVisitTemplateInstantiations() const { return false; }
 
-    if (!Declaration->isFirstDecl()) {
+  bool VisitVarDecl(clang::VarDecl *Declaration) {
+    // 1. игнорим чистые объявления без определения (например, 'extern int x;')
+    // => нет проблемы дублирования глобальных переменных из заголовочных файлов
+    if (Declaration->isThisDeclarationADefinition() ==
+        clang::VarDecl::DeclarationOnly) {
       return true;
     }
 
-    if (llvm::isa<clang::ParmVarDecl>(Declaration)) {
+    // 2. чекаем параметры функции
+    if (auto *Param = llvm::dyn_cast<clang::ParmVarDecl>(Declaration)) {
+      // игнорим параметры внутри предварительных объявлений функций (например:
+      // int foo(int a);)
+      if (auto *Func =
+              llvm::dyn_cast<clang::FunctionDecl>(Param->getDeclContext())) {
+        if (!Func->isThisDeclarationADefinition()) {
+          return true;
+        }
+      }
       Metrics.Params++;
-    } else if (Declaration->isLocalVarDecl()) {
+      return true;
+    }
+
+    // 3. распределяем локальные переменные
+    if (Declaration->isLocalVarDecl()) {
       if (Declaration->isStaticLocal()) {
         Metrics.Statics++;
       } else {
         Metrics.Locals++;
       }
-    } else if (Declaration->isFileVarDecl()) {
+    }
+    // 4. распределяем файловые переменные (глобальные и статические вне
+    // функций)
+    else if (Declaration->isFileVarDecl()) {
       if (Declaration->getStorageClass() == clang::SC_Static) {
         Metrics.Statics++;
       } else {

@@ -1,51 +1,50 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/volkov_a_lab1_task4_ClangAST%pluginext -plugin volkov_a_var_statistic -fsyntax-only %s 2>&1 | FileCheck %s
 
-// CHECK: Total count : 28
-// CHECK-NEXT: Global variables : 8
+// CHECK: Total count : 26
+// CHECK-NEXT: Global variables : 6
 // CHECK-NEXT: Static variables : 7
 // CHECK-NEXT: Local variables  : 6
 // CHECK-NEXT: Function params  : 7
 
+extern int extern_global_1; // не считается (+0 global)
+extern int extern_global_2; // не считается (+0 global)
+int foo(int a, int b);      // не считается (+0 params)
+
 int alpha = 1;         // global: 1
-extern double beta;    // global: 2
+extern double beta;    // не считается (только объявление)
 static char gamma;     // static: 1
 
-namespace ModuleA {
-    extern double beta; // global: 3 (другой scope, считается новой)
+namespace module_a {
+    extern double beta; // не считается (только объявление)
     static int delta;   // static: 2
-    int epsilon;        // global: 4
+    int epsilon;        // global: 2
 }
 
-namespace ModuleA {
-    extern int epsilon; // игнорируется (повторное объявление в том же namespace)
-    extern double beta; // игнорируется (повторное объявление)
+namespace module_a {
+    extern int epsilon; // не считается (только объявление)
 }
 
 namespace {
-    int zeta = 0;       // global: 5 (anon namespace без static - расценивается как global)
+    int zeta = 0;       // global: 3 (анонимный namespace без static - расценивается как global)
     static float eta;   // static: 3
 }
 
-namespace {
-    extern int zeta;    // игнорируется
-}
+extern double beta;     // не считается (только объявление)
+extern int alpha;       // не считается (только объявление)
 
-extern double beta;     // игнорируется (повторное объявление глобальной ::beta)
-extern int alpha;       // игнорируется (повторное объявление)
+int global_x;           // global: 4
+int global_y;           // global: 5
+int global_z;           // global: 6
 
-int global_x;           // global: 6
-int global_y;           // global: 7
-int global_z;           // global: 8
-
-struct DataPoint {
-    DataPoint(int x, int y) {} // param: 1, param: 2
-    int data_x; // FieldDecl (игнорируется)
-    int data_y; // FieldDecl (игнорируется)
+struct data_point {
+    data_point(int x, int y) {} // param: 1, param: 2
+    int data_x; // поле структуры (не var_decl)
+    int data_y; // поле структуры (не var_decl)
 };
 
 template<typename T>
 T algorithm(T input1, T input2) { // param: 3, param: 4
-    static T state;          // Static: 4
+    static T state;          // static: 4
     T intermediate = input1; // local: 1
     return intermediate;
 }
@@ -57,8 +56,8 @@ long compute_value(long val) { // param: 5
 }
 
 int main(int argc, char** argv) {     // param: 6, param: 7
-    static DataPoint dp_static(0, 0); // static: 5
-    DataPoint dp_local(1, 1);         // local: 4
+    static data_point dp_static(0, 0); // static: 5
+    data_point dp_local(1, 1);         // local: 4
     
     static constexpr int const_var = 100; // static: 6
     constexpr float const_flt = 3.14f;    // local: 5
