@@ -150,8 +150,7 @@ private:
 class ConstQualifierVisitor
     : public clang::RecursiveASTVisitor<ConstQualifierVisitor> {
 public:
-  explicit ConstQualifierVisitor(clang::ASTContext *context,
-                                 clang::Rewriter &rewriter)
+  ConstQualifierVisitor(clang::ASTContext *context, clang::Rewriter &rewriter)
       : context_(context), rewriter_(rewriter) {}
 
   bool VisitFunctionDecl(clang::FunctionDecl *func_decl) {
