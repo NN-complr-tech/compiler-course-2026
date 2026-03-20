@@ -18,15 +18,12 @@ public:
     if (clang::isa<clang::ParmVarDecl>(var))
       return true;
 
-    if (var->getStorageClass() == clang::SC_Static || 
-        var->isStaticLocal() || 
+    if (var->getStorageClass() == clang::SC_Static || var->isStaticLocal() ||
         var->isStaticDataMember()) {
       statics++;
-    }
-    else if (var->isLocalVarDecl()) {
+    } else if (var->isLocalVarDecl()) {
       locals++;
-    }
-    else if (var->isFileVarDecl()) {
+    } else if (var->isFileVarDecl()) {
       globals++;
     }
 
