@@ -15,16 +15,19 @@ public:
     if (var != var->getCanonicalDecl())
       return true;
 
-    if (var->isFileVarDecl()) {
-      if (var->getStorageClass() == clang::SC_Static)
-        statics++;
-      else
-        globals++;
-    } else if (var->isLocalVarDecl()) {
-      if (var->isStaticLocal())
-        statics++;
-      else
-        locals++;
+    if (clang::isa<clang::ParmVarDecl>(var))
+      return true;
+
+    if (var->getStorageClass() == clang::SC_Static || 
+        var->isStaticLocal() || 
+        var->isStaticDataMember()) {
+      statics++;
+    }
+    else if (var->isLocalVarDecl()) {
+      locals++;
+    }
+    else if (var->isFileVarDecl()) {
+      globals++;
     }
 
     return true;
@@ -36,11 +39,11 @@ public:
   }
 
   void printResults() {
-    llvm::outs() << "Global variables: " << globals << "\n";
-    llvm::outs() << "Local variables: " << locals << "\n";
-    llvm::outs() << "Static variables: " << statics << "\n";
-    llvm::outs() << "Function parameters: " << params << "\n";
-    llvm::outs() << "Total: " << globals + locals + statics + params << "\n";
+    llvm::errs() << "Global variables: " << globals << "\n";
+    llvm::errs() << "Local variables: " << locals << "\n";
+    llvm::errs() << "Static variables: " << statics << "\n";
+    llvm::errs() << "Function parameters: " << params << "\n";
+    llvm::errs() << "Total: " << globals + locals + statics + params << "\n";
   }
 
 private:
@@ -73,6 +76,10 @@ public:
   bool ParseArgs(const clang::CompilerInstance &ci,
                  const std::vector<std::string> &args) override {
     return true;
+  }
+
+  PluginASTAction::ActionType getActionType() override {
+    return AddAfterMainAction;
   }
 };
 } // namespace
