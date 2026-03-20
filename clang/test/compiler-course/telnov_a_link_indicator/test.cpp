@@ -5,7 +5,7 @@
 // CHECK-WITH: void ref_read_only(const int& value)
 // CHECK-WITH: void ptr_read_only(const int* const ptr)
 // CHECK-WITH: void ptr_pointee_modified(int* const ptr)
-// CHECK-WITH: void ptr_reassigned(const int* ptr)
+// CHECK-WITH: void ptr_reassigned(int* ptr)
 // CHECK-WITH: const int& ref = value;
 // CHECK-WITH: const int* const ptr = &value;
 // CHECK-WITH: void pass_ref_to_const(const int& value)
