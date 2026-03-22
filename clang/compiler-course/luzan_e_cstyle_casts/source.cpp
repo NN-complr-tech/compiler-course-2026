@@ -87,7 +87,6 @@ private:
       return "static_cast";
 
     default:
-      // llvm::errs() << "\n\nDEFAULT\n\n";
       return std::nullopt;
     }
   }
