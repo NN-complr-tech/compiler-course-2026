@@ -118,7 +118,6 @@ void refCasts1(){
     // CHECK-NEXT:  char& p = reinterpret_cast<char &>(x);
 }
 
-// hard
 void refCasts2(){
     int m = 42;
     int& x = m;
@@ -128,4 +127,3 @@ void refCasts2(){
     // CHECK-NEXT:  int& x = m;
     // CHECK-NEXT:  int& p = static_cast<int &>(x);
 }
-
