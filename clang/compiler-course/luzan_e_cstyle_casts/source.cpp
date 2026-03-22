@@ -25,11 +25,10 @@ public:
   bool VisitCStyleCastExpr(clang::CStyleCastExpr *expr) {
     /// determine which cast type is it
     auto castNameOpt = getCastName(expr->getCastKind());
-    if (!castNameOpt) { 
+    if (!castNameOpt) {
       return true;
     }
-    std::string castName =
-        isConstCast(expr) ? "const_cast" : *castNameOpt;
+    std::string castName = isConstCast(expr) ? "const_cast" : *castNameOpt;
     /// get the target type of cast
     std::string targetType = expr->getTypeAsWritten().getAsString();
     /// get positions of token/text to rewrite
@@ -87,7 +86,7 @@ private:
     case clang::CK_DerivedToBase:
       return "static_cast";
 
-    default: 
+    default:
       // llvm::errs() << "\n\nDEFAULT\n\n";
       return std::nullopt;
     }
