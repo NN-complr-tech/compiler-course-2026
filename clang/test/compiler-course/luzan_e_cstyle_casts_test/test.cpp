@@ -110,20 +110,16 @@ void refCasts0(int x){
 
 void refCasts1(){
     int m = 42;
-    int& x = m;
-    char& p = (char&)x;
+    char& p = (char&)m;
     // CHECK-LABEL: void refCasts1()
     // CHECK-NEXT:  int m = 42;
-    // CHECK-NEXT:  int& x = m;
-    // CHECK-NEXT:  char& p = reinterpret_cast<char &>(x);
+    // CHECK-NEXT:  char& p = reinterpret_cast<char &>(m);
 }
 
 void refCasts2(){
     int m = 42;
-    int& x = m;
-    int& p = (int&)x;
+    int& p = (int&)m;
     // CHECK-LABEL: void refCasts2()
     // CHECK-NEXT:  int m = 42;
-    // CHECK-NEXT:  int& x = m;
-    // CHECK-NEXT:  int& p = static_cast<int &>(x);
+    // CHECK-NEXT:  int& p = static_cast<int &>(m);
 }
