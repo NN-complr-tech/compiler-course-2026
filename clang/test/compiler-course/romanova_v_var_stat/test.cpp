@@ -2,9 +2,9 @@
 
 // CHECK: static variables: 14
 // CHECK-NEXT: local variables: 11
-// CHECK-NEXT: global variables: 18
+// CHECK-NEXT: global variables: 13
 // CHECK-NEXT: function parameters: 6
-// CHECK-NEXT: total: 49
+// CHECK-NEXT: total: 44
 
 static int static_global_1 = 0;           // +1 static
 static int static_global_2 = 1;           // +1 static
@@ -12,42 +12,42 @@ static int static_global_2 = 1;           // +1 static
 long global_long_1 = 0L;                  // +1 global
 int global_int_1 = 42;                    // +1 global
 
-extern int extern_global_1;               // +1 global
-extern int extern_global_2;               // +1 global
+extern int extern_global_1;               // не считается, тк просто extern
+extern int extern_global_2;               // не считается, тк просто extern
 
-extern int global_int_2;                  // +1 global
-int global_int_2;                         //повторное определение              
+extern int global_int_2;                  // не считается, тк просто extern
+int global_int_2;                         // +1 global           
 
 const int const_global = 100;             // +1 global
 
 
 namespace N {
-    extern int nz_extern;                 // +1 global
+    extern int nz_extern;                 // не считается, тк просто extern
     static int n_static;                  // +1 static
-    int n_plain;                          // +1 global
-    extern int n_plain;                   // НЕ считаем (повторное объявление)
+    int nz_plain;                          // +1 global
+    extern int nz_plain;                   // не считается, тк просто extern
 }
 
 namespace Z {
-    extern int nz_extern;                  // +1 global (другой namespace)
+    extern int nz_extern;                  // не считается, тк просто extern
     static int nz_static;                  // +1 static (другой namespace)
     int nz_plain;                          // +1 global (другой namespace)
 }
 
 namespace { // Анонимный namespace
-    extern int anon_1_extern;              // +1 global
+    extern int anon_1_extern;              // не считается, тк просто extern
     static int anon_1_static;              // +1 static
 }
 
 namespace { // Анонимный namespace 
-    extern int anon_2_extern;              // +1 global
+    extern int anon_2_extern;              // не считается, тк просто extern
     static int anon_2_static;              // +1 static
-    int anon_1_extern = 4;                 // НЕ считаем (повторное объявление)
+    int anon_1_extern = 4;                 // +1 global
 }
 
 namespace X {
     int x_plain;                           // +1 global
-    extern int x_plain;                    // НЕ считаем (повторное объявление)
+    extern int x_plain;                    // не считается, тк просто extern
     int x_another;                         // +1 global
 }
 
@@ -82,8 +82,9 @@ int bar(int x, int y, double z) {               // +3 func param
 
 int a, b, c;                                    // +3 global
 
-extern int d;                                   // +1 global
-int d = 10;                                     // НЕ считаем (повторное определение)
+int d = 10;                                     // +1 global
+extern int d;                                   // не считается, тк просто extern
+
 
 
 int main(int argc, char* argv[]) {                 // +2 func param

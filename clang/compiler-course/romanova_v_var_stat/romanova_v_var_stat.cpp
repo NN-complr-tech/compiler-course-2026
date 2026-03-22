@@ -13,8 +13,9 @@ public:
         global_var_counter(0), func_param_counter(0) {}
   bool VisitVarDecl(clang::VarDecl *variable) {
 
-    if (variable !=
-        variable->getCanonicalDecl()) { // для extern и прочих объявлений
+    if (!variable->isThisDeclarationADefinition() &&
+        variable->getStorageClass() ==
+            clang::SC_Extern) { // для extern и прочих объявлений
       return true;
     }
 
