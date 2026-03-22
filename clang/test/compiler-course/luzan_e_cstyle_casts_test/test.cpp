@@ -5,9 +5,9 @@
 
 //--- check.txt
 // CHECK-LABEL: int staticTest0(float a)
-// CHECK-NEXT: return static_cast<int>(a)
+// CHECK-NEXT: return static_cast<int>(a);
 
-// CHECK-LABEL: int staticTest1(float a)
+// CHECK-LABEL: int staticTest1(long a)
 // CHECK-NEXT: return static_cast<int>(a);
 
 // CHECK-LABEL: double staticTest2(float a)
@@ -71,12 +71,10 @@ int foo(int a) {
 }
 int staticTest0(float a) {
     return (int)a; 
-    
 }
 
-int staticTest1(float a) {
+int staticTest1(long a) {
     return (int)a;
-    
 }
 
 double staticTest2(float a) {
@@ -85,22 +83,18 @@ double staticTest2(float a) {
 
 int staticExpressionTest(float a, float b) {
     return (int)(a + b);
-    
 }
 
 int staticCastNegative(double a) {
     return (int)-a;
-
 }
 
 int staticCastTernary(float a, float b) {
     return (int)(a > 0 ? a : b);
-   
 }
 
 int nestedCasts(float a) {
     return (int)(double)a;
-   
 }
 
 int complexNestedCasts(float a, double b) {
@@ -110,57 +104,46 @@ int complexNestedCasts(float a, double b) {
 void multipleCasts(float a, float b) {
     int x = (int)a;
     int y = (int)b;
-
 }
 
 void reinterpretCase(void* p) {
     int* x = (int*)p;
-    
 }
 
 int noCast(int a) {
     return a;
-
 }
 
 int alreadyCpp(float a) {
     return static_cast<int>(a);
-
 }
 
 void sameLine(float a, float b) {
     int x = (int)a, y = (int)b;
-
 }
 
 void manyCasts(float a, float b) {
     int x = (int)a + (int)b;
-
 }
 
 void removeConst(const int* p) {
     int* x = (int*)p;
-   
 }
 
 void removeVolatile(const volatile int* p) {
     int* x = (int*)p;
-   
 }
 
 void refCasts0(int x){
     char* p = (char*)&x;
-  
 }
 
 void refCasts1(){
     int m = 42;
     char& p = (char&)m;
-   
 }
 
 void refCasts2(){
     int m = 42;
     int& p = (int&)m;
- 
 }
