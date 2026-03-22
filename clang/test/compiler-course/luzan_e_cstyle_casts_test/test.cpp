@@ -68,48 +68,64 @@ void reinterpretCase(void* p) {
 
 int noCast(int a) {
     return a;
-    // CHECK-LABEL: int noCast2(int a)
-    // CHECK: return a;
+    // CHECK-LABEL: int noCast(int a)
+    // CHECK-NEXT: return a;
 }
 
 int alreadyCpp(float a) {
     return static_cast<int>(a);
     // CHECK-LABEL: int alreadyCpp(float a)
-    // CHECK: return static_cast<int>(a);
+    // CHECK-NEXT: return static_cast<int>(a);
 }
 
 void sameLine(float a, float b) {
     int x = (int)a, y = (int)b;
     // CHECK-LABEL: void sameLine(float a, float b)
-    // CHECK: int x = static_cast<int>(a), y = static_cast<int>(b);
+    // CHECK-NEXT: int x = static_cast<int>(a), y = static_cast<int>(b);
 }
 
 void manyCasts(float a, float b) {
     int x = (int)a + (int)b;
-    // CHECK-LABEL: void sameLine(float a, float b)
-    // CHECK: int x = static_cast<int>(a) + static_cast<int>(b);
+    // CHECK-LABEL: void manyCasts(float a, float b)
+    // CHECK-NEXT: int x = static_cast<int>(a) + static_cast<int>(b);
 }
 
 void removeConst(const int* p) {
     int* x = (int*)p;
     // CHECK-LABEL: void removeConst(const int* p)
-    // CHECK: const_cast<int*>(p)
+    // CHECK-NEXT: const_cast<int *>(p)
 }
 
 void removeVolatile(const volatile int* p) {
     int* x = (int*)p;
-    // CHECK-LABEL: void removeVolatile(const int* p)
-    // CHECK: const_cast<int*>(p)
+    // CHECK-LABEL: void removeVolatile(const volatile int* p)
+    // CHECK-NEXT: const_cast<int *>(p)
 }
 
-void refCasts0(char x){
+void refCasts0(int x){
     char* p = (char*)&x;
-    // CHECK: void refCasts0() 
-    // CHECK-NEXT: char* p = reinterpret_cast<char*>(&x);
+    // CHECK-LABEL: void refCasts0(int x)
+    // CHECK-NEXT: char* p = reinterpret_cast<char *>(&x);
 }
 
-void refCasts1(int x){
-    int* p = (int*)&x;
-    // CHECK: void refCasts1() 
-    // CHECK-NEXT: char* p = reinterpret_cast<int*>(&x);
+void refCasts1(){
+    int m = 42;
+    int& x = m;
+    char& p = (char&)x;
+    // CHECK-LABEL: void refCasts1()
+    // CHECK-NEXT:  int m = 42;
+    // CHECK-NEXT:  int& x = m;
+    // CHECK-NEXT:  char& p = reinterpret_cast<char &>(x);
 }
+
+// hard
+void refCasts2(){
+    int m = 42;
+    int& x = m;
+    int& p = (int&)x;
+    // CHECK-LABEL: void refCasts2()
+    // CHECK-NEXT:  int m = 42;
+    // CHECK-NEXT:  int& x = m;
+    // CHECK-NEXT:  int& p = static_cast<int &>(x);
+}
+
