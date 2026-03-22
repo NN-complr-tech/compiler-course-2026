@@ -5,6 +5,7 @@
 #include "clang/Lex/Lexer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
+#include <optional>
 
 namespace {
 class LuzanECstyleCastsVisitor final
@@ -23,8 +24,12 @@ public:
 
   bool VisitCStyleCastExpr(clang::CStyleCastExpr *expr) {
     /// determine which cast type is it
+    auto castNameOpt = getCastName(expr->getCastKind());
+    if (!castNameOpt) { 
+      return true;
+    }
     std::string castName =
-        isConstCast(expr) ? "const_cast" : getCastName(expr->getCastKind());
+        isConstCast(expr) ? "const_cast" : *castNameOpt;
     /// get the target type of cast
     std::string targetType = expr->getTypeAsWritten().getAsString();
     /// get positions of token/text to rewrite
@@ -65,7 +70,7 @@ private:
            src.isVolatileQualified() != dst.isVolatileQualified();
   }
 
-  std::string getCastName(clang::CastKind kind) {
+  std::optional<std::string> getCastName(clang::CastKind kind) {
 
     switch (kind) {
 
@@ -82,8 +87,9 @@ private:
     case clang::CK_DerivedToBase:
       return "static_cast";
 
-    default:
-      return "static_cast";
+    default: 
+      // llvm::errs() << "\n\nDEFAULT\n\n";
+      return std::nullopt;
     }
   }
 };
