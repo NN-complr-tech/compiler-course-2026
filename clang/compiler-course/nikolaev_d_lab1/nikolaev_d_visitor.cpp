@@ -185,7 +185,8 @@ public:
     return std::make_unique<NikolaevDConsumer>(&ci.getASTContext());
   }
 
-  bool ParseArgs(const clang::CompilerInstance &ci, const std::vector<std::string> &args) override {
+  bool ParseArgs(const clang::CompilerInstance &ci,
+                 const std::vector<std::string> &args) override {
     return true;
   }
 
