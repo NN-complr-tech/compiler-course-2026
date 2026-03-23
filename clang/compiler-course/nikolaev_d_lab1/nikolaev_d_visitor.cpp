@@ -8,7 +8,6 @@
 #include <string>
 
 namespace {
-
 enum class ResourceState { Freed, Allocated, Returned };
 
 struct ResourceInfo {
@@ -19,12 +18,10 @@ struct ResourceInfo {
 
 class NikolaevDVisitor final
     : public clang::RecursiveASTVisitor<NikolaevDVisitor> {
-
 public:
   explicit NikolaevDVisitor(clang::ASTContext *context) : m_context(context) {}
 
   bool VisitBinaryOperator(clang::BinaryOperator *binop) {
-
     if (!binop || !binop->isAssignmentOp())
       return true;
 
@@ -44,7 +41,6 @@ public:
   }
 
   bool VisitVarDecl(clang::VarDecl *var) {
-
     clang::Expr *exp = var->getInit();
     if (!exp)
       return true;
@@ -59,7 +55,6 @@ public:
   }
 
   bool VisitCallExpr(clang::CallExpr *call) {
-
     clang::FunctionDecl *func = call->getDirectCallee();
     if (!func)
       return true;
@@ -67,13 +62,9 @@ public:
     llvm::StringRef funcName = func->getName();
 
     if (funcName == "free" || funcName == "fclose") {
-
       if (call->getNumArgs() > 0) {
-
         clang::Expr *arg = call->getArg(0)->IgnoreParenCasts();
-
         clang::VarDecl *var = getVarDecl(arg);
-
         if (var && vars.count(var)) {
           vars[var].state = ResourceState::Freed;
         }
@@ -84,9 +75,7 @@ public:
   }
 
   bool VisitCXXDeleteExpr(clang::CXXDeleteExpr *exp) {
-
     clang::Expr *arg = exp->getArgument()->IgnoreParenCasts();
-
     clang::VarDecl *var = getVarDecl(arg);
 
     if (var && vars.count(var)) {
@@ -97,7 +86,6 @@ public:
   }
 
   bool VisitReturnStmt(clang::ReturnStmt *ret) {
-
     clang::Expr *retValue = ret->getRetValue();
     if (!retValue)
       return true;
@@ -105,11 +93,8 @@ public:
     retValue = retValue->IgnoreParenCasts();
 
     if (auto *declRef = clang::dyn_cast<clang::DeclRefExpr>(retValue)) {
-
       if (auto *var = clang::dyn_cast<clang::VarDecl>(declRef->getDecl())) {
-
         if (vars.count(var) && vars[var].state == ResourceState::Allocated) {
-
           vars[var].state = ResourceState::Returned;
           vars[var].loc = ret->getReturnLoc();
         }
@@ -120,7 +105,6 @@ public:
   }
 
   void outputs() {
-
     if (vars.empty())
       return;
 
@@ -128,19 +112,14 @@ public:
 
     unsigned leakDiagID = DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
                                              "%0 resource '%1' is not freed");
-
     unsigned returnLeakDiagID =
         DE.getCustomDiagID(clang::DiagnosticsEngine::Warning,
                            "%0 resource '%1' may escape via return");
 
     for (auto &[var, info] : vars) {
-
       if (info.state == ResourceState::Allocated) {
-
         DE.Report(info.loc, leakDiagID) << info.type << var->getNameAsString();
-
       } else if (info.state == ResourceState::Returned) {
-
         DE.Report(info.loc, returnLeakDiagID)
             << info.type << var->getNameAsString();
       }
@@ -149,13 +128,10 @@ public:
 
 private:
   std::string getAllocationType(clang::Expr *exp) {
-
     clang::Expr *castexp = exp->IgnoreParenCasts();
 
     if (auto *call = clang::dyn_cast<clang::CallExpr>(castexp)) {
-
       if (auto *func = call->getDirectCallee()) {
-
         llvm::StringRef name = func->getName();
 
         if (name == "malloc")
@@ -173,14 +149,12 @@ private:
   }
 
   clang::VarDecl *getVarDecl(clang::Expr *exp) {
-
     if (!exp)
       return nullptr;
 
     clang::Expr *castexp = exp->IgnoreParenCasts();
 
     if (auto *ref = clang::dyn_cast<clang::DeclRefExpr>(castexp)) {
-
       return clang::dyn_cast<clang::VarDecl>(ref->getDecl());
     }
 
@@ -188,17 +162,14 @@ private:
   }
 
   clang::ASTContext *m_context;
-
   std::map<clang::VarDecl *, ResourceInfo> vars;
 };
 
 class NikolaevDConsumer final : public clang::ASTConsumer {
-
 public:
   explicit NikolaevDConsumer(clang::ASTContext *context) : m_visitor(context) {}
 
   void HandleTranslationUnit(clang::ASTContext &context) override {
-
     m_visitor.TraverseDecl(context.getTranslationUnitDecl());
     m_visitor.outputs();
   }
@@ -208,17 +179,13 @@ private:
 };
 
 class NikolaevDAction final : public clang::PluginASTAction {
-
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-
     return std::make_unique<NikolaevDConsumer>(&ci.getASTContext());
   }
 
-  bool ParseArgs(const clang::CompilerInstance &ci,
-                 const std::vector<std::string> &args) override {
-
+  bool ParseArgs(const clang::CompilerInstance &ci, const std::vector<std::string> &args) override {
     return true;
   }
 

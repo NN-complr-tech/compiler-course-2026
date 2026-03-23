@@ -1,10 +1,12 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/nikolaev_d_lab1_ClangAST%pluginext -add-plugin nikolaev_d_analyzer_plugin -fsyntax-only -verify %s
+// RUN: split-file %s %t
+// RUN: %clang_cc1 -load %llvmshlibdir/nikolaev_d_lab1_ClangAST%pluginext -add-plugin nikolaev_d_analyzer_plugin -fsyntax-only -verify %t/leak_tests.cpp
+// RUN: %clang_cc1 -load %llvmshlibdir/nikolaev_d_lab1_ClangAST%pluginext -add-plugin nikolaev_d_analyzer_plugin -fsyntax-only -verify %t/correct_tests.cpp
 
+//--- leak_tests.cpp
 extern "C" {
   void* malloc(unsigned long size);
   void free(void* ptr);
   void* fopen(const char* filename, const char* mode);
-  int fclose(void* stream);
 }
 
 void test_malloc_no_return() {
@@ -12,26 +14,11 @@ void test_malloc_no_return() {
 }
 
 void test_new_no_return() {
-  int* p = new int(42); // expected-warning {{memory resource 'p' is not freed}}
+  int* p = new int(67); // expected-warning {{memory resource 'p' is not freed}}
 }
 
 void test_fopen_no_return() {
   void* f = fopen("test.txt", "r"); // expected-warning {{file resource 'f' is not freed}}
-}
-
-void test_fclose() {
-  void* f = fopen("test.txt", "r");
-  fclose(f);
-}
-
-void test_free() {
-  int* p = (int*)malloc(100);
-  free(p);
-}
-
-void test_delete() {
-  int* p = new int(67);
-  delete p;
 }
 
 void test_multiple_vars() {
@@ -68,6 +55,31 @@ void test_binary_operator() {
 void test_binary_operator_new() {
   int* q;
   q = new int(67); // expected-warning {{memory resource 'q' is not freed}}
+}
+
+//--- correct_tests.cpp
+// expected-no-diagnostics
+
+extern "C" {
+  void* malloc(unsigned long size);
+  void free(void* ptr);
+  void* fopen(const char* filename, const char* mode);
+  int fclose(void* stream);
+}
+
+void test_fclose() {
+  void* f = fopen("test.txt", "r");
+  fclose(f);
+}
+
+void test_free() {
+  int* p = (int*)malloc(100);
+  free(p);
+}
+
+void test_delete() {
+  int* p = new int(67);
+  delete p;
 }
 
 void test_delete_array() {
