@@ -73,9 +73,8 @@ private:
     case llvm::Instruction::FRem: {
       Builder.setFastMathFlags(Remainder.getFastMathFlags());
       Quotient = Builder.CreateFDiv(Dividend, Divisor, "rem.div");
-      llvm::Value *TruncatedQuotient =
-          Builder.CreateUnaryIntrinsic(llvm::Intrinsic::trunc, Quotient,
-                                       nullptr, "rem.trunc");
+      llvm::Value *TruncatedQuotient = Builder.CreateUnaryIntrinsic(
+          llvm::Intrinsic::trunc, Quotient, nullptr, "rem.trunc");
       Product = Builder.CreateFMul(TruncatedQuotient, Divisor, "rem.mul");
       Replacement = Builder.CreateFSub(Dividend, Product, "rem.sub");
       break;
