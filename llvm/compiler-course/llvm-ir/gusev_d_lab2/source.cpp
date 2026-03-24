@@ -85,3 +85,20 @@ private:
   }
 };
 } // namespace
+
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return {LLVM_PLUGIN_API_VERSION, "GusevDLab2Pass", "0.1",
+          [](llvm::PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](llvm::StringRef Name, llvm::FunctionPassManager &FPM,
+                   llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                  if (Name != "gusev-d-lab2") {
+                    return false;
+                  }
+
+                  FPM.addPass(GusevDLab2Pass{});
+                  return true;
+                });
+          }};
+}
