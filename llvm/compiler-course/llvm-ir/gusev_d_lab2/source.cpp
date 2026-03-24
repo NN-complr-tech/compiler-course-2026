@@ -3,6 +3,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
@@ -72,7 +73,10 @@ private:
     case llvm::Instruction::FRem: {
       Builder.setFastMathFlags(Remainder.getFastMathFlags());
       Quotient = Builder.CreateFDiv(Dividend, Divisor, "rem.div");
-      Product = Builder.CreateFMul(Quotient, Divisor, "rem.mul");
+      llvm::Value *TruncatedQuotient =
+          Builder.CreateUnaryIntrinsic(llvm::Intrinsic::trunc, Quotient,
+                                       nullptr, "rem.trunc");
+      Product = Builder.CreateFMul(TruncatedQuotient, Divisor, "rem.mul");
       Replacement = Builder.CreateFSub(Dividend, Product, "rem.sub");
       break;
     }
