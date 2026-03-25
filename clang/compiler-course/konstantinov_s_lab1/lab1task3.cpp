@@ -5,24 +5,25 @@
 #include "clang/Lex/Lexer.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "llvm/Support/raw_ostream.h"
+#include <optional>
 
 namespace {
 enum class ReplacementCastKind { Static, Const, Reinterpret };
 
-static std::string castKindToString(ReplacementCastKind kind) {
+std::optional<std::string> castKindToString(ReplacementCastKind kind) {
   switch (kind) {
   case ReplacementCastKind::Static:
-    return "static_cast";
+    return std::string("static_cast");
   case ReplacementCastKind::Const:
-    return "const_cast";
+    return std::string("const_cast");
   case ReplacementCastKind::Reinterpret:
-    return "reinterpret_cast";
+    return std::string("reinterpret_cast");
   }
 
-  return "static_cast";
+  return std::nullopt;
 }
 
-static bool requiresConstCast(clang::QualType source, clang::QualType target) {
+bool requiresConstCast(clang::QualType source, clang::QualType target) {
   if (source->isPointerType() && target->isPointerType()) {
     source = source->getPointeeType();
     target = target->getPointeeType();
@@ -36,8 +37,7 @@ static bool requiresConstCast(clang::QualType source, clang::QualType target) {
   return constChanged || volatileChanged;
 }
 
-static bool isVoidPointerConversion(clang::QualType source,
-                                    clang::QualType target) {
+bool isVoidPointerConversion(clang::QualType source, clang::QualType target) {
   const bool srcVoidPtr =
       source->isPointerType() && source->getPointeeType()->isVoidType();
   const bool dstVoidPtr =
@@ -46,7 +46,7 @@ static bool isVoidPointerConversion(clang::QualType source,
   return srcVoidPtr || dstVoidPtr;
 }
 
-static ReplacementCastKind classifyCast(const clang::CStyleCastExpr *expr) {
+ReplacementCastKind classifyCast(const clang::CStyleCastExpr *expr) {
   const clang::CastKind kind = expr->getCastKind();
 
   const clang::QualType sourceType = expr->getSubExpr()->getType();
@@ -88,27 +88,22 @@ public:
 
   bool VisitCStyleCastExpr(clang::CStyleCastExpr *expr) {
     const ReplacementCastKind replacementKind = classifyCast(expr);
-
-    const std::string castKeyword = castKindToString(replacementKind);
-
+    const std::optional<std::string> castKeyword =
+        castKindToString(replacementKind);
+    if (!castKeyword.has_value()) {
+      return true;
+    }
     const std::string targetType =
         expr->getTypeAsWritten().getAsString(context->getPrintingPolicy());
-
     clang::Expr *innerExpr = expr->getSubExprAsWritten();
-
     const clang::CharSourceRange innerRange =
         clang::CharSourceRange::getTokenRange(innerExpr->getSourceRange());
-
     const std::string innerText = sourceRewriter.getRewrittenText(innerRange);
-
     const std::string replacement =
-        castKeyword + "<" + targetType + ">(" + innerText + ")";
-
+        *castKeyword + "<" + targetType + ">(" + innerText + ")";
     const clang::CharSourceRange castRange =
         clang::CharSourceRange::getTokenRange(expr->getSourceRange());
-
     sourceRewriter.ReplaceText(castRange, replacement);
-
     return true;
   }
 
@@ -148,7 +143,6 @@ public:
 
   void EndSourceFileAction() override {
     clang::SourceManager &sourceManager = rewriter.getSourceMgr();
-
     rewriter.getEditBuffer(sourceManager.getMainFileID()).write(llvm::outs());
   }
 
