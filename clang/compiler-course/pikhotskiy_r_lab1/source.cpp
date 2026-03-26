@@ -24,8 +24,8 @@ public:
     }
 
     if (var->isStaticLocal()) {
-      const auto *func = llvm::dyn_cast_or_null<clang::FunctionDecl>(
-          var->getDeclContext());
+      const auto *func =
+          llvm::dyn_cast_or_null<clang::FunctionDecl>(var->getDeclContext());
       if (func && llvm::isa<clang::CXXMethodDecl>(func))
         locals++;
       else
@@ -41,8 +41,8 @@ public:
   }
 
   bool VisitParmVarDecl(clang::ParmVarDecl *parm) {
-    const auto *func = llvm::dyn_cast_or_null<clang::FunctionDecl>(
-        parm->getDeclContext());
+    const auto *func =
+        llvm::dyn_cast_or_null<clang::FunctionDecl>(parm->getDeclContext());
     if (func && !llvm::isa<clang::CXXMethodDecl>(func))
       params++;
     return true;
