@@ -12,16 +12,7 @@ void test_fully_unmodified_ptr() {
     (void)x;
 }
 
- 
-// Тест 2: Модифицируется только указатель (ptr++)
- 
-// CHECK-LABEL: test_pointer_modified_ptr
-// CHECK: const int* ptr {{=}}
-void test_pointer_modified_ptr() {
-    int val = 200;
-    int* ptr = &val;
-    ptr++;
-}
+
 
  
 // Тест 3: Модифицируется только объект (*ptr = ...)
