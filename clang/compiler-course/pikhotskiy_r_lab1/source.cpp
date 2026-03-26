@@ -8,14 +8,11 @@
 namespace {
 class VarCounterVisitor : public clang::RecursiveASTVisitor<VarCounterVisitor> {
 public:
-  explicit VarCounterVisitor(clang::ASTContext *context)
+  explicit VarCounterVisitor(clang::ASTContext * /*context*/)
       : globals(0), locals(0), statics(0), params(0) {}
 
   bool VisitVarDecl(clang::VarDecl *var) {
-    if (var != var->getCanonicalDecl())
-      return true;
-
-    if (var->hasExternalStorage() && !var->isThisDeclarationADefinition())
+    if (clang::isa<clang::ParmVarDecl>(var))
       return true;
 
     if (var->isFileVarDecl()) {
@@ -23,18 +20,31 @@ public:
         statics++;
       else
         globals++;
-    } else if (var->isLocalVarDecl()) {
-      if (var->isStaticLocal())
-        statics++;
-      else
+      return true;
+    }
+
+    if (var->isStaticLocal()) {
+      const auto *func = llvm::dyn_cast_or_null<clang::FunctionDecl>(
+          var->getDeclContext());
+      if (func && llvm::isa<clang::CXXMethodDecl>(func))
         locals++;
+      else
+        statics++;
+      return true;
+    }
+
+    if (var->isLocalVarDecl()) {
+      locals++;
     }
 
     return true;
   }
 
   bool VisitParmVarDecl(clang::ParmVarDecl *parm) {
-    params++;
+    const auto *func = llvm::dyn_cast_or_null<clang::FunctionDecl>(
+        parm->getDeclContext());
+    if (func && !llvm::isa<clang::CXXMethodDecl>(func))
+      params++;
     return true;
   }
 
