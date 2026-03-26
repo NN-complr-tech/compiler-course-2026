@@ -28,7 +28,17 @@ define void @test_dead_store(ptr %p, i32 %v1, i32 %v2) {
   ret void
 }
 
-; --- Новые тесты для ревьюера ---
+declare void @unknown_call()
+define i32 @test_clobber(ptr %p) {
+; CHECK-LABEL: @test_clobber(
+; CHECK: store i32 10, ptr %p
+; CHECK: call void @unknown_call()
+; CHECK: %v = load i32, ptr %p
+  store i32 10, ptr %p
+  call void @unknown_call()
+  %v = load i32, ptr %p
+  ret i32 %v
+}
 
 define i32 @test_volatile(ptr %p) {
 ; CHECK-LABEL: @test_volatile(
