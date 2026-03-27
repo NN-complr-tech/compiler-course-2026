@@ -15,6 +15,11 @@ public:
     if (clang::isa<clang::ParmVarDecl>(var))
       return true;
 
+    // Ignore in-class declarations of static data members.
+    // We count only the out-of-class definition to avoid double counting.
+    if (var->isStaticDataMember() && !var->isThisDeclarationADefinition())
+      return true;
+
     if (var->isFileVarDecl()) {
       if (var->getStorageClass() == clang::SC_Static)
         statics++;
