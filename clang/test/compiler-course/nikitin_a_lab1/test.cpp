@@ -15,7 +15,7 @@ void test_fully_unmodified_ptr() {
 
 
  
-// Тест 3: Модифицируется только объект (*ptr = ...)
+// Тест 2: Модифицируется только объект (*ptr = ...)
  
 // CHECK-LABEL: test_pointee_modified_ptr
 // CHECK: int* const ptr {{=}}
@@ -26,7 +26,7 @@ void test_pointee_modified_ptr() {
 }
 
  
-// Тест 4: Модифицируются и указатель, и объект
+// Тест 3: Модифицируются и указатель, и объект
  
 // CHECK-LABEL: test_both_modified_ptr
 // CHECK: int* ptr {{=}}
@@ -38,7 +38,7 @@ void test_both_modified_ptr() {
 }
 
  
-// Тест 5: Неизменяемая ссылка
+// Тест 4: Неизменяемая ссылка
  
 // CHECK-LABEL: test_unmodified_ref
 // CHECK: const int& ref {{=}}
@@ -50,7 +50,7 @@ void test_unmodified_ref() {
 }
 
  
-// Тест 6: Изменяемая ссылка
+// Тест 5: Изменяемая ссылка
  
 // CHECK-LABEL: test_modified_ref
 // CHECK: int& ref {{=}}
@@ -62,7 +62,7 @@ void test_modified_ref() {
 }
 
  
-// Тест 7: Параметр-указатель только для чтения
+// Тест 6: Параметр-указатель только для чтения
  
 // CHECK-LABEL: test_param_ptr_readonly
 // CHECK: void test_param_ptr_readonly(const int* const ptr)
@@ -72,7 +72,7 @@ void test_param_ptr_readonly(int* ptr) {
 }
 
  
-// Тест 8: Параметр-указатель, модифицируется объект
+// Тест 7: Параметр-указатель, модифицируется объект
  
 // CHECK-LABEL: test_param_ptr_pointee_modified
 // CHECK: void test_param_ptr_pointee_modified(int* const ptr)
@@ -81,7 +81,7 @@ void test_param_ptr_pointee_modified(int* ptr) {
 }
 
  
-// Тест 9: Параметр-указатель, переназначается
+// Тест 8: Параметр-указатель, переназначается
  
 // CHECK-LABEL: test_param_ptr_reassigned
 // CHECK: void test_param_ptr_reassigned(int* ptr)
@@ -91,7 +91,7 @@ void test_param_ptr_reassigned(int* ptr) {
 }
 
  
-// Тест 10: Параметр-ссылка только для чтения
+// Тест 9: Параметр-ссылка только для чтения
  
 // CHECK-LABEL: test_param_ref_readonly
 // CHECK: void test_param_ref_readonly(const int& ref)
@@ -101,7 +101,7 @@ void test_param_ref_readonly(int& ref) {
 }
 
  
-// Тест 11: Параметр-ссылка изменяемая
+// Тест 10: Параметр-ссылка изменяемая
  
 // CHECK-LABEL: test_param_ref_modified
 // CHECK: void test_param_ref_modified(int& ref)
@@ -110,7 +110,7 @@ void test_param_ref_modified(int& ref) {
 }
 
  
-// Тест 12: Локальная переменная-указатель
+// Тест 11: Локальная переменная-указатель
  
 // CHECK-LABEL: test_local_ptr_candidate
 // CHECK: const int* const local_ptr {{=}}
@@ -122,7 +122,7 @@ void test_local_ptr_candidate() {
 }
 
  
-// Тест 13: Локальная переменная-ссылка
+// Тест 12: Локальная переменная-ссылка
  
 // CHECK-LABEL: test_local_ref_candidate
 // CHECK: const int& local_ref {{=}}
@@ -134,7 +134,7 @@ void test_local_ref_candidate() {
 }
 
  
-// Тест 14: Доступ к массиву через указатель (модификация)
+// Тест 13: Доступ к массиву через указатель (модификация)
  
 // CHECK-LABEL: test_array_modify
 // CHECK: int* const arr {{=}}
@@ -145,7 +145,7 @@ void test_array_modify() {
 }
 
  
-// Тест 15: Доступ к массиву через указатель (только чтение)
+// Тест 14: Доступ к массиву через указатель (только чтение)
  
 // CHECK-LABEL: test_array_readonly
 // CHECK: const int* const arr {{=}}
@@ -157,7 +157,7 @@ void test_array_readonly() {
 }
 
  
-// Тест 16: Структура с указателем
+// Тест 15: Структура с указателем
  
 struct TestStruct {
     int a;
@@ -182,7 +182,7 @@ void test_struct_pointer_readonly() {
 }
 
  
-// Тест 17: Смешанные параметры
+// Тест 16: Смешанные параметры
  
 // CHECK-LABEL: test_mixed_parameters
 // CHECK: void test_mixed_parameters(const int* const p, const int& r, int* const q)
@@ -192,7 +192,7 @@ void test_mixed_parameters(int* p, int& r, int* q) {
 }
 
  
-// Тест 18: Уже const переменные (не должны меняться)
+// Тест 17: Уже const переменные (не должны меняться)
  
 // CHECK-LABEL: test_already_const_ref
 // CHECK: const int& value
@@ -209,7 +209,7 @@ void test_already_const_ptr(const int* const ptr) {
 }
 
  
-// Тест 19: Передача в функции (анализ вызовов)
+// Тест 18: Передача в функции (анализ вызовов)
  
 void takes_const_ptr(const int*);
 void takes_mut_ptr(int*);
@@ -231,7 +231,7 @@ void test_call_with_mut_accepting(int* ptr, int& ref) {
 }
 
  
-// Тест 20: Цикл for с инкрементом указателя
+// Тест 19: Цикл for с инкрементом указателя
  
 // CHECK-LABEL: test_for_loop_ptr_modified
 // CHECK: void test_for_loop_ptr_modified(const int* ptr)
@@ -253,7 +253,7 @@ void test_for_loop_ptr_readonly(int* ptr) {
 }
 
  
-// Тест 21: Условный оператор
+// Тест 20: Условный оператор
  
 // CHECK-LABEL: test_conditional_ptr
 // CHECK: void test_conditional_ptr(const int* const ptr)
@@ -263,7 +263,7 @@ void test_conditional_ptr(int* ptr) {
 }
 
  
-// Тест 22: Возврат указателя из функции
+// Тест 21: Возврат указателя из функции
  
 int* test_return_ptr(int* ptr) {
     // ptr не модифицируется внутри, но возвращается
@@ -272,7 +272,7 @@ int* test_return_ptr(int* ptr) {
 }
 
  
-// Тест 23: Оператор стрелка (->) и точка (.)
+// Тест 22: Оператор стрелка (->) и точка (.)
  
 struct Node {
     int value;
@@ -297,7 +297,7 @@ void test_arrow_operator_readonly() {
 }
 
  
-// Тест 24: Ссылка на указатель
+// Тест 23: Ссылка на указатель
  
 // CHECK-LABEL: test_ref_to_ptr
 // CHECK: void test_ref_to_ptr(int* const& rptr)
@@ -307,7 +307,7 @@ void test_ref_to_ptr(int*& rptr) {
 }
 
  
-// Тест 25: Указатель на константу (уже const)
+// Тест 24: Указатель на константу (уже const)
  
 // CHECK-LABEL: test_ptr_to_const
 // CHECK: const int* ptr
@@ -317,7 +317,7 @@ void test_ptr_to_const(const int* ptr) {
 }
 
  
-// Тест 26: Модификация через разыменование в составном выражении
+// Тест 25: Модификация через разыменование в составном выражении
  
 // CHECK-LABEL: test_complex_modification
 // CHECK: int* const ptr {{=}}
@@ -329,7 +329,7 @@ void test_complex_modification() {
 }
 
  
-// Тест 27: Лямбда-выражение (если поддерживается C++11)
+// Тест 26: Лямбда-выражение (если поддерживается C++11)
  
 // CHECK-LABEL: test_lambda_capture
 // CHECK: const int* const captured_ptr {{=}}
@@ -344,7 +344,7 @@ void test_lambda_capture() {
 }
 
  
-// Тест 28: Несколько переменных в одном объявлении
+// Тест 27: Несколько переменных в одном объявлении
  
 // CHECK-LABEL: test_multiple_decl
 // CHECK: const int* const a, const int* const b
