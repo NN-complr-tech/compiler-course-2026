@@ -22,3 +22,28 @@ entry:
     %3 = load i32, ptr %x.addr
     ret i32 %3
 }
+
+; CHECK-LABEL: define dso_local noundef i32 @_Z22test_negative_dividendi(i32 noundef %x)
+define dso_local noundef i32 @_Z22test_negative_dividendi(i32 noundef %x) #0 {
+entry:
+  %x.addr = alloca i32, align 4
+  store i32 %x, ptr %x.addr, align 4
+  %0 = load i32, ptr %x.addr, align 4
+
+  ; CHECK: %ashr_opt = ashr i32 %0, 3
+  %div = sdiv i32 %0, 8
+  ret i32 %div
+}
+
+; CHECK-LABEL: define dso_local noundef i32 @_Z21test_negative_divisori(i32 noundef %x)
+define dso_local noundef i32 @_Z21test_negative_divisori(i32 noundef %x) #0 {
+entry:
+  %x.addr = alloca i32, align 4
+  store i32 %x, ptr %x.addr, align 4
+  %0 = load i32, ptr %x.addr, align 4
+
+  ; CHECK: %div = sdiv i32 %0, -8
+  ; CHECK-NOT: ashr
+  %div = sdiv i32 %0, -8
+  ret i32 %div
+}
