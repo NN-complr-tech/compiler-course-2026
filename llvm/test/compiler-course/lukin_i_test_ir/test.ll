@@ -37,7 +37,8 @@ entry:
 }
 
 ; CHECK-LABEL: define dso_local noundef double @_Z9test_pow2d
-; CHECK: [[MUL:%[0-9]+]] = fmul double %0, %0
+; CHECK-NOT: call double @llvm.powi
+; CHECK: [[MUL:%[0-9a-zA-Z_]+]] = fmul double %0, %0
 ; CHECK-NEXT: ret double [[MUL]]
 define dso_local noundef double @_Z9test_pow2d(double noundef %a) #0 {
 entry:
@@ -49,8 +50,9 @@ entry:
 }
 
 ; CHECK-LABEL: define dso_local noundef double @_Z9test_pow3d
-; CHECK: [[MUL2:%[0-9]+]] = fmul double %0, %0
-; CHECK-NEXT: [[MUL3:%[0-9]+]] = fmul double [[MUL2]], %0
+; CHECK-NOT: call double @llvm.powi
+; CHECK: [[MUL2:%[0-9a-zA-Z_]+]] = fmul double %0, %0
+; CHECK-NEXT: [[MUL3:%[0-9a-zA-Z_]+]] = fmul double [[MUL2]], %0
 ; CHECK-NEXT: ret double [[MUL3]]
 define dso_local noundef double @_Z9test_pow3d(double noundef %a) #0 {
 entry:
@@ -62,8 +64,9 @@ entry:
 }
 
 ; CHECK-LABEL: define dso_local noundef double @_Z9test_pow4d
-; CHECK: [[MUL2:%[0-9]+]] = fmul double %0, %0
-; CHECK-NEXT: [[MUL4:%[0-9]+]] = fmul double [[MUL2]], [[MUL2]]
+; CHECK-NOT: call double @llvm.powi
+; CHECK: [[MUL2:%[0-9a-zA-Z_]+]] = fmul double %0, %0
+; CHECK-NEXT: [[MUL4:%[0-9a-zA-Z_]+]] = fmul double [[MUL2]], [[MUL2]]
 ; CHECK-NEXT: ret double [[MUL4]]
 define dso_local noundef double @_Z9test_pow4d(double noundef %a) #0 {
 entry:
@@ -85,10 +88,14 @@ entry:
   ret double %1
 }
 
-; CHECK-LABEL: @_Z17test_pow_multipowd
-; CHECK: fmul double %0, %0
-; CHECK: [[MUL_A:%[0-9]+]] = fmul double %2, %2
-; CHECK: fmul double [[MUL_A]], %2
+; CHECK-LABEL: define dso_local noundef double @_Z17test_pow_multipowd
+; CHECK: [[VAL0:%[0-9a-zA-Z_]+]] = load double, ptr %a.addr, align 8
+; CHECK-NEXT: [[MUL1:%[0-9a-zA-Z_]+]] = fmul double [[VAL0]], [[VAL0]]
+; CHECK-NEXT: store double [[MUL1]], ptr %tmp, align 8
+; CHECK-NEXT: [[VAL2:%[0-9a-zA-Z_]+]] = load double, ptr %tmp, align 8
+; CHECK-NEXT: [[MUL2:%[0-9a-zA-Z_]+]] = fmul double [[VAL2]], [[VAL2]]
+; CHECK-NEXT: [[MUL3:%[0-9a-zA-Z_]+]] = fmul double [[MUL2]], [[VAL2]]
+; CHECK-NEXT: ret double [[MUL3]]
 define dso_local noundef double @_Z17test_pow_multipowd(double noundef %a) #0 {
 entry:
   %a.addr = alloca double, align 8
@@ -102,10 +109,20 @@ entry:
   ret double %3
 }
 
-; CHECK-LABEL: @_Z21test_pow_loopmultipowd
+; CHECK-LABEL: define dso_local noundef double @_Z21test_pow_loopmultipowd
+; CHECK: [[VAL0:%[0-9a-zA-Z_]+]] = load double, ptr %a.addr, align 8
+; CHECK-NEXT: [[MUL1:%[0-9a-zA-Z_]+]] = fmul double [[VAL0]], [[VAL0]]
+; CHECK-NEXT: store double [[MUL1]], ptr %tmp, align 8
+; CHECK-NEXT: br label %while.body
 ; CHECK: while.body:
-; CHECK: fmul double %2, %2
-; CHECK-NOT: call double @llvm.powi
+; CHECK-NEXT: [[VAL2:%[0-9a-zA-Z_]+]] = load double, ptr %tmp, align 8
+; CHECK-NEXT: [[MUL2:%[0-9a-zA-Z_]+]] = fmul double [[VAL2]], [[VAL2]]
+; CHECK-NEXT: store double [[MUL2]], ptr %tmp, align 8
+; CHECK-NEXT: br label %while.end
+; CHECK: while.end:
+; CHECK-NEXT: [[VAL4:%[0-9a-zA-Z_]+]] = load double, ptr %tmp, align 8
+; CHECK-NEXT: [[MUL4:%[0-9a-zA-Z_]+]] = fmul double [[VAL4]], [[VAL4]]
+; CHECK-NEXT: ret double [[MUL4]]
 define dso_local noundef double @_Z21test_pow_loopmultipowd(double noundef %a) #0 {
 entry:
   %a.addr = alloca double, align 8
@@ -128,7 +145,7 @@ while.end:
   ret double %5
 }
 
-; CHECK-LABEL: @_Z17test_pow_variabledi
+; CHECK-LABEL: define dso_local noundef double @_Z17test_pow_variabledi
 ; CHECK: %2 = call double @llvm.powi.f64.i32(double %0, i32 %1)
 define dso_local noundef double @_Z17test_pow_variabledi(double noundef %a, i32 noundef %n) #0 {
 entry:
