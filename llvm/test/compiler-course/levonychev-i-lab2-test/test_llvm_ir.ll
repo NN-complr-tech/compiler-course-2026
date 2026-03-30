@@ -2,6 +2,7 @@
 ; RUN: -passes=Icmp -S %s | FileCheck %s
 
 
+
 ; CHECK-LABEL: @test1
 ; CHECK: %cmp = icmp sle i32 %a, %b
 ; CHECK: %cmp.not = xor i1 %cmp, true
