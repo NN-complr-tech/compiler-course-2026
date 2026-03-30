@@ -1,10 +1,9 @@
 #include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/IR/IRBuilder.h"
-
 
 namespace {
 struct IcmpPass : llvm::PassInfoMixin<IcmpPass> {
@@ -30,11 +29,11 @@ struct IcmpPass : llvm::PassInfoMixin<IcmpPass> {
             continue;
           }
 
-
           Icmp->setPredicate(NewPredicate);
 
           llvm::IRBuilder<> Builder(Icmp->getNextNode());
-          llvm::Value *NotIcmp = Builder.CreateNot(Icmp, Icmp->getName() + ".not");
+          llvm::Value *NotIcmp =
+              Builder.CreateNot(Icmp, Icmp->getName() + ".not");
 
           Icmp->replaceAllUsesWith(NotIcmp);
           llvm::cast<llvm::User>(NotIcmp)->setOperand(0, Icmp);
@@ -44,14 +43,13 @@ struct IcmpPass : llvm::PassInfoMixin<IcmpPass> {
       }
     }
 
-    return is_changed ? llvm::PreservedAnalyses::none() : llvm::PreservedAnalyses::all();
+    return is_changed ? llvm::PreservedAnalyses::none()
+                      : llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
 };
 } // namespace
-
-
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
