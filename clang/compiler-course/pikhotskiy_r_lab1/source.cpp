@@ -20,6 +20,10 @@ public:
     if (var->isStaticDataMember() && !var->isThisDeclarationADefinition())
       return true;
 
+    // File-scope declarations like `extern int X;` are not counted.
+    if (var->isFileVarDecl() && !var->isThisDeclarationADefinition())
+      return true;
+
     if (var->isFileVarDecl()) {
       if (var->getStorageClass() == clang::SC_Static)
         statics++;
@@ -48,17 +52,19 @@ public:
   bool VisitParmVarDecl(clang::ParmVarDecl *parm) {
     const auto *func =
         llvm::dyn_cast_or_null<clang::FunctionDecl>(parm->getDeclContext());
-    if (func && !llvm::isa<clang::CXXMethodDecl>(func))
+    if (func && !llvm::isa<clang::CXXMethodDecl>(func) &&
+        func->isThisDeclarationADefinition())
       params++;
     return true;
   }
 
   void printResults() {
-    llvm::outs() << "Global variables: " << globals << "\n";
-    llvm::outs() << "Local variables: " << locals << "\n";
-    llvm::outs() << "Static variables: " << statics << "\n";
-    llvm::outs() << "Function parameters: " << params << "\n";
-    llvm::outs() << "Total: " << globals + locals + statics + params << "\n";
+    auto &out = llvm::outs();
+    out << "Global variables: " << globals << "\n";
+    out << "Local variables: " << locals << "\n";
+    out << "Static variables: " << statics << "\n";
+    out << "Function parameters: " << params << "\n";
+    out << "Total: " << globals + locals + statics + params << "\n";
   }
 
 private:
