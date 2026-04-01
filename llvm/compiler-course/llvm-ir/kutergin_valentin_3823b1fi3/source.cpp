@@ -48,11 +48,13 @@ struct StrengthReductionPass : PassInfoMixin<StrengthReductionPass> {
           } else if (OpCode == Instruction::SDiv) {
             uint64_t BiasVal = (1ULL << ShiftAmount) - 1;
             Value *X = BinOp->getOperand(0);
-            Value *IsNeg = Builder.CreateICmpSLT(X, ConstantInt::get(Ty, 0), "is_neg");
-            Value *Bias = Builder.CreateSelect(IsNeg, ConstantInt::get(Ty, BiasVal), ConstantInt::get(Ty, 0), "bias");
+            Value *IsNeg =
+                Builder.CreateICmpSLT(X, ConstantInt::get(Ty, 0), "is_neg");
+            Value *Bias =
+                Builder.CreateSelect(IsNeg, ConstantInt::get(Ty, BiasVal),
+                                     ConstantInt::get(Ty, 0), "bias");
             Value *AddBias = Builder.CreateAdd(X, Bias, "add_bias");
-            NewInst = Builder.CreateAShr(AddBias, ShiftConst,
-                                         "ashr_opt");
+            NewInst = Builder.CreateAShr(AddBias, ShiftConst, "ashr_opt");
           }
 
           if (NewInst) {
