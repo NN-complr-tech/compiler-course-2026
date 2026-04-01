@@ -8,19 +8,18 @@ entry:
     %0 = load i32, ptr %x.addr
 
     ; CHECK: %shl_opt = shl i32 %0, 3
+    ; CHECK-NOT: mul nsw i32 %0, 8
     %mul = mul nsw i32 %0, 8
 
-    ; CHECK: %ashr_opt = ashr i32 %1, 2
+    ; CHECK: icmp slt i32 %1, 0
+    ; CHECK: select i1 {{.*}}, i32 3, i32 0
+    ; CHECK: add i32 %1, {{.*}}
+    ; CHECK: %ashr_opt = ashr i32 {{.*}}, 2
+    ; CHECK-NOT: sdiv i32 %1, 4
     %1 = load i32, ptr %x.addr
     %div = sdiv i32 %1, 4
 
-    ; CHECK: %ashr_opt1 = ashr i32 %2, 4
-    %2 = load i32, ptr %x.addr
-    %div1 = sdiv i32 %2, 16
-
-    ; CHECK: ret i32
-    %3 = load i32, ptr %x.addr
-    ret i32 %3
+    ret i32 %div
 }
 
 ; CHECK-LABEL: define dso_local noundef i32 @_Z22test_negative_dividendi(i32 noundef %x)
@@ -30,8 +29,21 @@ entry:
   store i32 %x, ptr %x.addr, align 4
   %0 = load i32, ptr %x.addr, align 4
 
-  ; CHECK: %ashr_opt = ashr i32 %0, 3
+  ; CHECK: icmp slt i32 %0, 0
+  ; CHECK: select i1 {{.*}}, i32 7, i32 0
+  ; CHECK: add i32 %0, {{.*}}
+  ; CHECK: %ashr_opt{{.*}} = ashr i32 {{.*}}, 3
+  ; CHECK-NOT: sdiv i32 %0, 8
   %div = sdiv i32 %0, 8
+  ret i32 %div
+}
+
+; CHECK-LABEL: define dso_local noundef i32 @test_udiv(i32 %x)
+define dso_local noundef i32 @test_udiv(i32 %x) {
+entry:
+  ; CHECK: %lshr_opt = lshr i32 %x, 4
+  ; CHECK-NOT: udiv i32 %x, 16
+  %div = udiv i32 %x, 16
   ret i32 %div
 }
 
