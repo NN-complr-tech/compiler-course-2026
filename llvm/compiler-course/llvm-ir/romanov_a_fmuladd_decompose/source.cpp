@@ -33,6 +33,8 @@ struct RomanovAFmuladdDecomposePass
         llvm::Value *mul = builder.CreateFMul(a, b, "decomp.mul");
         llvm::Value *add = builder.CreateFAdd(mul, c, "decomp.add");
 
+        llvm::cast<llvm::Instruction>(add)->copyMetadata(*intr);
+
         intr->replaceAllUsesWith(add);
         intr->eraseFromParent();
       }
