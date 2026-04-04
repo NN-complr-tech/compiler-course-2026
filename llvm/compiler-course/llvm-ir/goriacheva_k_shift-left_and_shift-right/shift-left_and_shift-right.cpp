@@ -52,13 +52,7 @@ struct ShiftPass : llvm::PassInfoMixin<ShiftPass> {
         } else if (opcode == Instruction::UDiv) {
           newInstr = builder.CreateLShr(var, shift);
         } else if (opcode == Instruction::SDiv) {
-          Value *isNegative =
-              builder.CreateICmpSLT(var, ConstantInt::get(var->getType(), 0));
-          Value *bias = builder.CreateSelect(
-              isNegative, ConstantInt::get(var->getType(), (1 << shift) - 1),
-              ConstantInt::get(var->getType(), 0));
-          Value *adjusted = builder.CreateAdd(var, bias);
-          newInstr = builder.CreateAShr(adjusted, shift);
+          newInstr = builder.CreateAShr(var, shift);
         }
 
         if (newInstr) {
