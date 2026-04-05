@@ -5,7 +5,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 namespace {
-struct ExamplePass : llvm::PassInfoMixin<ExamplePass> {
+struct LE_FmullAddDecPass : llvm::PassInfoMixin<LE_FmullAddDecPass> {
   llvm::PreservedAnalyses run(llvm::Function &func,
                               llvm::FunctionAnalysisManager &) {
     llvm::outs() << func.getName() << '\n';
@@ -18,13 +18,13 @@ struct ExamplePass : llvm::PassInfoMixin<ExamplePass> {
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "ExamplePass", "0.1",
+  return {LLVM_PLUGIN_API_VERSION, "LE_FmullAddDecPass", "0.1",
           [](llvm::PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](llvm::StringRef name, llvm::FunctionPassManager &FPM,
                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
                   if (name == "fmuladddec") {
-                    FPM.addPass(ExamplePass{});
+                    FPM.addPass(LE_FmullAddDecPass{});
                     return true;
                   }
                   return false;
