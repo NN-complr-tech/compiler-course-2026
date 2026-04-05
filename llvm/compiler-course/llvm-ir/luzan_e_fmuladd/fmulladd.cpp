@@ -20,7 +20,10 @@ struct LE_FmullAddDecPass : llvm::PassInfoMixin<LE_FmullAddDecPass> {
             llvm::Value* b = intrinsic->getArgOperand(1);
             llvm::Value* c = intrinsic->getArgOperand(2);
 
+            llvm::FastMathFlags flags = intrinsic->getFastMathFlags();
             llvm::IRBuilder<> builder(intrinsic);
+            builder.setFastMathFlags(flags);
+
             llvm::Value* mul_res = builder.CreateFMul(a, b, "fmul"); 
             llvm::Value* add_res = builder.CreateFAdd(mul_res, c, "fadd");
 
