@@ -1,4 +1,4 @@
-; RUN: opt -load-pass-plugin %llvmshlibdir/shkrebko_m_lab2_LLVM_IR%pluginext
+; RUN: opt -load-pass-plugin %llvmshlibdir/shkrebko_m_lab2_LLVM_IR%pluginext\
 ; RUN: -passes=invert-relational-icmp -S %s | FileCheck %s
 
 ; CHECK-LABEL: @slt_i64
