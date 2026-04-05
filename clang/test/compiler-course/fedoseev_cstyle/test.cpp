@@ -1,5 +1,6 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/CstyleCastPlugin_Fedoseev_Sergey_FIIT0_ClangAST%pluginext -plugin cstyle_cast_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: split-file %s %t && %clang_cc1 -load %llvmshlibdir/CstyleCastPlugin_Fedoseev_Sergey_FIIT0_ClangAST%pluginext -plugin cstyle_cast_plugin -fsyntax-only %t/input.cpp 2>&1 | FileCheck %t/input.cpp
 
+//--- input.cpp
 // Арифметические приведения
 void arithmetic() {
     int i = 10;
