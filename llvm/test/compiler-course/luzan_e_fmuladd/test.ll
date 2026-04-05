@@ -11,6 +11,14 @@ define float @test_basic(float %a, float %b, float %c) {
   ret float %res
 }
 
+define float @test_no_intr(float %a, float %b, float %c) {
+; CHECK-LABEL: @test_no_intr
+; CHECK-NOT: fmuladd
+
+  %res = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
+  ret float %res
+}
+
 define float @test_two_intr(float %a, float %b, float %c) {
 ; CHECK-LABEL: @test_two_intr
 ; CHECK-NEXT: %fmul = fmul float %a, %b
@@ -18,6 +26,7 @@ define float @test_two_intr(float %a, float %b, float %c) {
 ; CHECK-NEXT: %fmul1 = fmul float %fadd, %b
 ; CHECK-NEXT: %fadd2 = fadd float %fmul1, %c
 
+  
   %x = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
   %y = call float @llvm.fmuladd.f32(float %x, float %b, float %c)
   ret float %y
@@ -62,4 +71,14 @@ define float @test_fast(float %a, float %b, float %c) {
 
   %res = call fast float @llvm.fmuladd.f64(float %a, float %b, float %c)
   ret float %res
+}
+
+define <4 x float> @test_vec4xf32(<4 x float> %a, <4 x float> %b, <4 x float> %c) {
+; CHECK-LABEL: define <4 x float> @test_vec4xf32(
+; CHECK-NEXT:  %fmul = fmul <4 x float> %a, %b
+; CHECK-NEXT:  %fadd = fadd <4 x float> %fmul, %c
+; CHECK-NEXT:  ret <4 x float> %fadd
+
+  %res = call <4 x float> @llvm.fmuladd.v4f32(<4 x float> %a, <4 x float> %b, <4 x float> %c)
+  ret <4 x float> %res
 }
