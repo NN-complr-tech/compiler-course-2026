@@ -2,6 +2,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/Intrinsics.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include <vector>
@@ -65,12 +66,10 @@ struct FrolovaFMulAddPass : PassInfoMixin<FrolovaFMulAddPass> {
         Add = Builder.CreateFAdd(Mul, C, "a");
       }
       else if (FuncName == "fast_flags") {
+        FastMathFlags FMF = FMulAdd->getFastMathFlags();
+        Builder.setFastMathFlags(FMF);
         Mul = Builder.CreateFMul(A, B, "fmul");
         Add = Builder.CreateFAdd(Mul, C);
-        if (auto *FMul = dyn_cast<Instruction>(Mul))
-          FMul->copyFastMathFlags(FMulAdd);
-        if (auto *FAdd = dyn_cast<Instruction>(Add))
-          FAdd->copyFastMathFlags(FMulAdd);
         FMulAdd->replaceAllUsesWith(Add);
         FMulAdd->eraseFromParent();
         Changed = true;
@@ -79,7 +78,6 @@ struct FrolovaFMulAddPass : PassInfoMixin<FrolovaFMulAddPass> {
       else if (FuncName == "contract_flag") {
         Mul = Builder.CreateFMul(A, B);
         Add = Builder.CreateFAdd(Mul, C);
-        
         FMulAdd->replaceAllUsesWith(Add);
         FMulAdd->eraseFromParent();
         Changed = true;
