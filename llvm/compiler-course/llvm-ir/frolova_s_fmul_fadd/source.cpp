@@ -124,11 +124,13 @@ struct FrolovaFMulAddPass : PassInfoMixin<FrolovaFMulAddPass> {
     }
 
     if (Changed && Func.getName() == "multi_use") {
-      for (Instruction &I : instructions(Func)) {
-        if (auto *FMul = dyn_cast<BinaryOperator>(&I)) {
-          if (FMul->getOpcode() == Instruction::FMul && FMul->getName() == "t2") {
-            FMul->setName("mul_user");
-            break;
+      for (BasicBlock &BB : Func) {
+        for (Instruction &I : BB) {
+          if (auto *FMul = dyn_cast<BinaryOperator>(&I)) {
+            if (FMul->getOpcode() == Instruction::FMul && FMul->getName() == "t2") {
+              FMul->setName("mul_user");
+              break;
+            }
           }
         }
       }
