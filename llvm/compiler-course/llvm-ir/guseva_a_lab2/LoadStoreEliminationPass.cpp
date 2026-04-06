@@ -35,6 +35,8 @@ struct LoadStoreEliminationPass
             LI->replaceAllUsesWith(It->second);
             ToErase.push_back(LI);
             Changed = true;
+          } else {
+            LastStoredValue[Ptr] = LI;
           }
 
           if (LastStoreInst.count(Ptr))
