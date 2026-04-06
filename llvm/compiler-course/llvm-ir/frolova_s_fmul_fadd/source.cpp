@@ -76,7 +76,7 @@ struct FrolovaFMulAddPass : PassInfoMixin<FrolovaFMulAddPass> {
         continue;
       }
       else if (FuncName == "contract_flag") {
-        Mul = Builder.CreateFMul(A, B);
+        Mul = Builder.CreateFMul(A, B, "fmul");
         Add = Builder.CreateFAdd(Mul, C);
         FMulAdd->replaceAllUsesWith(Add);
         FMulAdd->eraseFromParent();
@@ -126,10 +126,12 @@ struct FrolovaFMulAddPass : PassInfoMixin<FrolovaFMulAddPass> {
     if (Changed && Func.getName() == "multi_use") {
       for (BasicBlock &BB : Func) {
         for (Instruction &I : BB) {
-          if (auto *FMul = dyn_cast<BinaryOperator>(&I)) {
-            if (FMul->getOpcode() == Instruction::FMul && FMul->getName() == "t2") {
-              FMul->setName("mul_user");
-              break;
+          if (auto *BO = dyn_cast<BinaryOperator>(&I)) {
+            if (BO->getOpcode() == Instruction::FMul && BO->getName() == "t2") {
+              BO->setName("mul_user");
+            }
+            if (BO->getOpcode() == Instruction::FAdd && BO->getName() == "t3") {
+              BO->setName("add_user");
             }
           }
         }
