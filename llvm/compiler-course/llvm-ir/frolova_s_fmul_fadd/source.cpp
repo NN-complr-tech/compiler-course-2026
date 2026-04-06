@@ -1,11 +1,9 @@
 #include "llvm/IR/Function.h"
-#include "llvm/IR/Instructions.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
-#include "llvm/Support/raw_ostream.h"
-#include <vector>
 
 namespace {
 
@@ -34,12 +32,20 @@ struct FrolovaFMulAddPass : llvm::PassInfoMixin<FrolovaFMulAddPass> {
       llvm::Value *Mul = Builder.CreateFMul(A, B, "mul_part");
       llvm::Value *Add = Builder.CreateFAdd(Mul, C, "add_part");
 
+      if (auto *FMul = llvm::dyn_cast<llvm::Instruction>(Mul)) {
+        FMul->copyFastMathFlags(FMulAdd);
+      }
+      if (auto *FAdd = llvm::dyn_cast<llvm::Instruction>(Add)) {
+        FAdd->copyFastMathFlags(FMulAdd);
+      }
+
       FMulAdd->replaceAllUsesWith(Add);
       FMulAdd->eraseFromParent();
       Changed = true;
     }
 
-    return Changed ? llvm::PreservedAnalyses::none() : llvm::PreservedAnalyses::all();
+      return Changed ? llvm::PreservedAnalyses::none()
+                   : llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
