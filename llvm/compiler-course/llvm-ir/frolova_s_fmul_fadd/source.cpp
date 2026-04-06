@@ -5,47 +5,49 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 
+#include <vector>
+
 namespace {
 
 struct FrolovaFMulAddPass : llvm::PassInfoMixin<FrolovaFMulAddPass> {
   llvm::PreservedAnalyses run(llvm::Function &Func,
-                              llvm::FunctionAnalysisManager &) llvm::PreservedAnalyses run(llvm::Function &Func,
-                            llvm::FunctionAnalysisManager &) {
-  bool Changed = false;
-  std::vector<llvm::IntrinsicInst *> Worklist;
+                              llvm::FunctionAnalysisManager &) {
+    bool Changed = false;
+    std::vector<llvm::IntrinsicInst *> Worklist;
 
-  for (llvm::BasicBlock &BB : Func) {
-    for (llvm::Instruction &I : BB) {
-      if (auto *II = llvm::dyn_cast<llvm::IntrinsicInst>(&I)) {
-        if (II->getIntrinsicID() == llvm::Intrinsic::fmuladd) {
-          Worklist.push_back(II);
+    for (llvm::BasicBlock &BB : Func) {
+      for (llvm::Instruction &I : BB) {
+        if (auto *II = llvm::dyn_cast<llvm::IntrinsicInst>(&I)) {
+          if (II->getIntrinsicID() == llvm::Intrinsic::fmuladd) {
+            Worklist.push_back(II);
+          }
         }
       }
     }
+
+    for (llvm::IntrinsicInst *FMulAdd : Worklist) {
+      llvm::IRBuilder<> Builder(FMulAdd);
+      llvm::Value *A = FMulAdd->getOperand(0);
+      llvm::Value *B = FMulAdd->getOperand(1);
+      llvm::Value *C = FMulAdd->getOperand(2);
+
+      llvm::Value *Mul = Builder.CreateFMul(A, B, "mul_part");
+      llvm::Value *Add = Builder.CreateFAdd(Mul, C, "add_part");
+
+      if (auto *FMul = llvm::dyn_cast<llvm::Instruction>(Mul))
+        FMul->copyFastMathFlags(FMulAdd);
+      if (auto *FAdd = llvm::dyn_cast<llvm::Instruction>(Add))
+        FAdd->copyFastMathFlags(FMulAdd);
+
+      FMulAdd->replaceAllUsesWith(Add);
+      FMulAdd->eraseFromParent();
+      Changed = true;
+    }
+
+    return Changed ? llvm::PreservedAnalyses::none()
+                   : llvm::PreservedAnalyses::all();
   }
 
-  for (llvm::IntrinsicInst *FMulAdd : Worklist) {
-    llvm::IRBuilder<> Builder(FMulAdd);
-    llvm::Value *A = FMulAdd->getOperand(0);
-    llvm::Value *B = FMulAdd->getOperand(1);
-    llvm::Value *C = FMulAdd->getOperand(2);
-
-    llvm::Value *Mul = Builder.CreateFMul(A, B, "mul_part");
-    llvm::Value *Add = Builder.CreateFAdd(Mul, C, "add_part");
-
-    if (auto *FMul = llvm::dyn_cast<llvm::Instruction>(Mul))
-      FMul->copyFastMathFlags(FMulAdd);
-    if (auto *FAdd = llvm::dyn_cast<llvm::Instruction>(Add))
-      FAdd->copyFastMathFlags(FMulAdd);
-
-    FMulAdd->replaceAllUsesWith(Add);
-    FMulAdd->eraseFromParent();
-    Changed = true;
-  }
-
-  return Changed ? llvm::PreservedAnalyses::none()
-                 : llvm::PreservedAnalyses::all();
-}
   static bool isRequired() { return true; }
 };
 
