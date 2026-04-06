@@ -5,8 +5,8 @@
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace llvm;
 
@@ -38,34 +38,29 @@ struct FrolovaFMulAddPass : PassInfoMixin<FrolovaFMulAddPass> {
       if (FuncName == "scalar_float") {
         Mul = Builder.CreateFMul(A, B, "p");
         Add = Builder.CreateFAdd(Mul, C, "q");
-      }
-      else if (FuncName == "scalar_double") {
+      } else if (FuncName == "scalar_double") {
         Mul = Builder.CreateFMul(A, B, "pd");
         Add = Builder.CreateFAdd(Mul, C, "qd");
-      }
-      else if (FuncName == "vector_2f32") {
+      } else if (FuncName == "vector_2f32") {
         Mul = Builder.CreateFMul(A, B, "pm");
         Add = Builder.CreateFAdd(Mul, C, "pa");
-      }
-      else if (FuncName == "triple_chain") {
+      } else if (FuncName == "triple_chain") {
         ++tripleCounter;
         std::string mulName = "m" + std::to_string(tripleCounter);
         std::string addName = "a" + std::to_string(tripleCounter);
         Mul = Builder.CreateFMul(A, B, mulName);
         Add = Builder.CreateFAdd(Mul, C, addName);
-      }
-      else if (FuncName == "conditional") {
+      } else if (FuncName == "conditional") {
         BasicBlock *BB = FMulAdd->getParent();
-        std::string suffix = (BB->getName() == "then") ? "then" :
-                             (BB->getName() == "else") ? "else" : "part";
+        std::string suffix = (BB->getName() == "then")   ? "then"
+                             : (BB->getName() == "else") ? "else"
+                                                         : "part";
         Mul = Builder.CreateFMul(A, B, "m_" + suffix);
         Add = Builder.CreateFAdd(Mul, C, "a_" + suffix);
-      }
-      else if (FuncName == "multi_use") {
+      } else if (FuncName == "multi_use") {
         Mul = Builder.CreateFMul(A, B, "m");
         Add = Builder.CreateFAdd(Mul, C, "a");
-      }
-      else if (FuncName == "fast_flags") {
+      } else if (FuncName == "fast_flags") {
         FastMathFlags FMF = FMulAdd->getFastMathFlags();
         Builder.setFastMathFlags(FMF);
         Mul = Builder.CreateFMul(A, B, "fmul");
@@ -74,16 +69,14 @@ struct FrolovaFMulAddPass : PassInfoMixin<FrolovaFMulAddPass> {
         FMulAdd->eraseFromParent();
         Changed = true;
         continue;
-      }
-      else if (FuncName == "contract_flag") {
+      } else if (FuncName == "contract_flag") {
         Mul = Builder.CreateFMul(A, B, "fmul");
         Add = Builder.CreateFAdd(Mul, C);
         FMulAdd->replaceAllUsesWith(Add);
         FMulAdd->eraseFromParent();
         Changed = true;
         continue;
-      }
-      else {
+      } else {
         Mul = Builder.CreateFMul(A, B);
         Add = Builder.CreateFAdd(Mul, C);
       }
@@ -144,7 +137,7 @@ struct FrolovaFMulAddPass : PassInfoMixin<FrolovaFMulAddPass> {
   static bool isRequired() { return true; }
 };
 
-}
+} // namespace
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
