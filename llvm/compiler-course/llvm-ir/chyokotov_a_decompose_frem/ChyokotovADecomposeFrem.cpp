@@ -4,7 +4,7 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
- 
+
 namespace {
 struct ChyokotovAFremPass : llvm::PassInfoMixin<ChyokotovAFremPass> {
   llvm::PreservedAnalyses run(llvm::Function &func,
@@ -19,7 +19,8 @@ struct ChyokotovAFremPass : llvm::PassInfoMixin<ChyokotovAFremPass> {
             auto *rhs = binOp->getOperand(1);
             llvm::IRBuilder<> builder(binOp);
 
-            llvm::Value *res = builder.CreateUnaryIntrinsic(llvm::Intrinsic::trunc, builder.CreateFDiv(lhs, rhs));
+            llvm::Value *res = builder.CreateUnaryIntrinsic(
+                llvm::Intrinsic::trunc, builder.CreateFDiv(lhs, rhs));
             res = builder.CreateFMul(res, rhs);
             res = builder.CreateFSub(lhs, res);
 
