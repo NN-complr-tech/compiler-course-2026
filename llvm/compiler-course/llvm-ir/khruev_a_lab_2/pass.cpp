@@ -73,7 +73,6 @@ public:
         }
       }
     }
-    llvm::errs() << "FOUND POWI\n";
     return updated ? PreservedAnalyses::none() : PreservedAnalyses::all();
   }
 
