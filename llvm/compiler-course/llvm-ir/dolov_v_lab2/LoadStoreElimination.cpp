@@ -23,8 +23,10 @@ struct LoadStoreEliminationPass
             continue;
 
           llvm::Value *ptr = load->getPointerOperand();
-          if (memValues.count(ptr)) {
-            load->replaceAllUsesWith(memValues[ptr]);
+          auto valIt = memValues.find(ptr);
+
+          if (valIt != memValues.end()) {
+            load->replaceAllUsesWith(valIt->second);
             load->eraseFromParent();
             changed = true;
           } else {
@@ -35,13 +37,21 @@ struct LoadStoreEliminationPass
             continue;
 
           llvm::Value *ptr = store->getPointerOperand();
+          llvm::Value *valToStore = store->getValueOperand();
+
+          if (memValues.count(ptr) && memValues[ptr] == valToStore) {
+            store->eraseFromParent();
+            changed = true;
+            continue;
+          }
+
           if (lastStores.count(ptr)) {
             lastStores[ptr]->eraseFromParent();
             changed = true;
           }
 
           lastStores[ptr] = store;
-          memValues[ptr] = store->getValueOperand();
+          memValues[ptr] = valToStore;
         } else if (inst.mayWriteToMemory()) {
           memValues.clear();
           lastStores.clear();
@@ -49,10 +59,8 @@ struct LoadStoreEliminationPass
       }
     }
 
-    if (changed) {
-      return llvm::PreservedAnalyses::none();
-    }
-    return llvm::PreservedAnalyses::all();
+    return changed ? llvm::PreservedAnalyses::none()
+                   : llvm::PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }
