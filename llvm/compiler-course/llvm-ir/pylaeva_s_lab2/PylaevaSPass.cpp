@@ -9,10 +9,11 @@ namespace {
 struct PylaevaSPass : llvm::PassInfoMixin<PylaevaSPass> {
   llvm::PreservedAnalyses run(llvm::Function &func,
                               llvm::FunctionAnalysisManager &) {
-  bool changed = false;
+    bool changed = false;
     for (llvm::BasicBlock &bb : func) {
       for (llvm::Instruction &instr : llvm::make_early_inc_range(bb)) {
-        if (llvm::BinaryOperator *binOp = llvm::dyn_cast<llvm::BinaryOperator>(&instr)) {
+        if (llvm::BinaryOperator *binOp =
+                llvm::dyn_cast<llvm::BinaryOperator>(&instr)) {
 
           llvm::Value *lhs = binOp->getOperand(0);
           llvm::Value *rhs = binOp->getOperand(1);
@@ -22,8 +23,10 @@ struct PylaevaSPass : llvm::PassInfoMixin<PylaevaSPass> {
 
             // trunc(a/b)
             // a-(trunc(a/b)*b)
-            llvm::Value *fdiv = builder.CreateUnaryIntrinsic(llvm::Intrinsic::trunc, builder.CreateFDiv(lhs, rhs));
-            llvm::Value *fsub = builder.CreateFSub(lhs, builder.CreateFMul(fdiv, rhs));
+            llvm::Value *fdiv = builder.CreateUnaryIntrinsic(
+                llvm::Intrinsic::trunc, builder.CreateFDiv(lhs, rhs));
+            llvm::Value *fsub =
+                builder.CreateFSub(lhs, builder.CreateFMul(fdiv, rhs));
 
             binOp->replaceAllUsesWith(fsub);
             binOp->eraseFromParent();
@@ -32,7 +35,8 @@ struct PylaevaSPass : llvm::PassInfoMixin<PylaevaSPass> {
           } else if (binOp->getOpcode() == llvm::Instruction::URem) {
 
             // a-((a/b)*b)
-            llvm::Value *sub = builder.CreateSub(lhs, builder.CreateMul(builder.CreateUDiv(lhs, rhs), rhs));
+            llvm::Value *sub = builder.CreateSub(
+                lhs, builder.CreateMul(builder.CreateUDiv(lhs, rhs), rhs));
 
             binOp->replaceAllUsesWith(sub);
             binOp->eraseFromParent();
@@ -41,7 +45,8 @@ struct PylaevaSPass : llvm::PassInfoMixin<PylaevaSPass> {
           } else if (binOp->getOpcode() == llvm::Instruction::SRem) {
 
             // a-((a/b)*b)
-            llvm::Value *sub = builder.CreateSub(lhs, builder.CreateMul(builder.CreateSDiv(lhs, rhs), rhs));
+            llvm::Value *sub = builder.CreateSub(
+                lhs, builder.CreateMul(builder.CreateSDiv(lhs, rhs), rhs));
 
             binOp->replaceAllUsesWith(sub);
             binOp->eraseFromParent();
@@ -52,7 +57,7 @@ struct PylaevaSPass : llvm::PassInfoMixin<PylaevaSPass> {
     }
 
     if (changed) {
-        return llvm::PreservedAnalyses::none(); 
+      return llvm::PreservedAnalyses::none();
     }
     return llvm::PreservedAnalyses::all();
   }
@@ -76,4 +81,3 @@ llvmGetPassPluginInfo() {
                 });
           }};
 }
-
