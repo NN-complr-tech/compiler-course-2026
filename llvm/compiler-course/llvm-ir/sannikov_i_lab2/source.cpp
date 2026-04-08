@@ -49,7 +49,6 @@ struct FmuladdScanner {
     }
 };
 
-// Сам pass
 struct SannikovVerFmullAddDecPass : llvm::PassInfoMixin<SannikovVerFmullAddDecPass> {
     llvm::PreservedAnalyses run(llvm::Function &func,
                                 llvm::FunctionAnalysisManager &) {
