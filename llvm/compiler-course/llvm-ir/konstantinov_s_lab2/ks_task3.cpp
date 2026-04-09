@@ -69,7 +69,7 @@ llvmGetPassPluginInfo() {
             PB.registerPipelineParsingCallback(
                 [](llvm::StringRef name, llvm::FunctionPassManager &FPM,
                    llvm::ArrayRef<llvm::PassBuilder::PipelineElement>) -> bool {
-                  if (name == "example") {
+                  if (name == "expandfma") {
                     FPM.addPass(ExpandFmulAddPass{});
                     return true;
                   }
