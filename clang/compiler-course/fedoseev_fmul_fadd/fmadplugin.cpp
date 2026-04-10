@@ -6,7 +6,6 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/Statistic.h"
-#include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 
@@ -31,6 +30,7 @@ struct FMADecompose : public PassInfoMixin<FMADecompose> {
       Value *A = Call->getOperand(0);
       Value *B = Call->getOperand(1);
       Value *C = Call->getOperand(2);
+
       IRBuilder<> Builder(Call);
       FastMathFlags FMF = Call->getFastMathFlags();
       Builder.setFastMathFlags(FMF);
