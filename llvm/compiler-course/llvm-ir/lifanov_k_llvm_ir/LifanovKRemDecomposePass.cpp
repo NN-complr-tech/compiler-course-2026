@@ -3,7 +3,10 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
+
+#define DEBUG_TYPE "lifanov-rem-decompose"
 
 using namespace llvm;
 
@@ -13,7 +16,7 @@ struct LifanovKRemDecompose : public PassInfoMixin<LifanovKRemDecompose> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
     bool Changed = false;
 
-    outs() << "Analyzing function: '" << F.getName() << "'\n";
+    LLVM_DEBUG(dbgs() << "Analyzing function: '" << F.getName() << "'\n");
 
     for (auto &BB : F) {
       for (Instruction &I : make_early_inc_range(BB)) {
