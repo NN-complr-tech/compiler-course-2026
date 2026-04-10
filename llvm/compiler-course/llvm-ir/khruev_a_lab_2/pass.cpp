@@ -44,21 +44,17 @@ public:
         case 0:
           Result = ConstantFP::get(Base->getType(), 1.0);
           break;
-
         case 1:
           Result = Base;
           break;
-
         case 2:
           Result = B.CreateFMul(Base, Base);
           break;
-
         case 3: {
           Value *Sq = B.CreateFMul(Base, Base);
           Result = B.CreateFMul(Sq, Base);
           break;
         }
-
         case 4: {
           Value *Sq = B.CreateFMul(Base, Base);
           Result = B.CreateFMul(Sq, Sq);
