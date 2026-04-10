@@ -1,22 +1,23 @@
 // LoadStoreElimination.cpp
-#include "llvm/Passes/PassPlugin.h"
-#include "llvm/Passes/PassBuilder.h"
-#include "llvm/IR/PassManager.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Value.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/IRBuilder.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/IR/Value.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 
 namespace {
 
-class LoadStoreEliminationPass : public PassInfoMixin<LoadStoreEliminationPass> {
+class LoadStoreEliminationPass
+    : public PassInfoMixin<LoadStoreEliminationPass> {
 public:
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM) {
     bool Changed = false;
@@ -32,10 +33,10 @@ public:
 
 private:
   bool eliminateInBasicBlock(BasicBlock &BB) {
-    DenseMap<Value*, Value*> LastStoredValue;   
-    DenseMap<Value*, StoreInst*> LastStoreInst; 
+    DenseMap<Value *, Value *> LastStoredValue;
+    DenseMap<Value *, StoreInst *> LastStoreInst;
 
-    SmallVector<Instruction*, 16> ToErase;
+    SmallVector<Instruction *, 16> ToErase;
     bool Changed = false;
 
     for (Instruction &I : make_early_inc_range(BB)) {
@@ -55,15 +56,14 @@ private:
             LI->replaceAllUsesWith(CachedVal);
             ToErase.push_back(LI);
             Changed = true;
-            continue; 
+            continue;
           }
         }
 
         LastStoredValue[Ptr] = LI;
 
         LastStoreInst.erase(Ptr);
-      }
-      else if (auto *SI = dyn_cast<StoreInst>(&I)) {
+      } else if (auto *SI = dyn_cast<StoreInst>(&I)) {
         if (SI->isVolatile() || SI->isAtomic()) {
           LastStoredValue.clear();
           LastStoreInst.clear();
@@ -81,8 +81,7 @@ private:
 
         LastStoredValue[Ptr] = StoredVal;
         LastStoreInst[Ptr] = SI;
-      }
-      else {
+      } else {
         if (I.mayReadOrWriteMemory() || I.mayHaveSideEffects()) {
           LastStoredValue.clear();
           LastStoreInst.clear();
@@ -115,8 +114,7 @@ llvm::PassPluginLibraryInfo getLoadStoreEliminationPluginInfo() {
                   return false;
                 });
             PB.registerPipelineStartEPCallback(
-                [](ModulePassManager &MPM, OptimizationLevel Level) {
-                });
+                [](ModulePassManager &MPM, OptimizationLevel Level) {});
           }};
 }
 
