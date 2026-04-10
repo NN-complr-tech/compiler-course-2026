@@ -1,17 +1,12 @@
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/PassPlugin.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Intrinsics.h"
-#include "llvm/Passes/PassBuilder.h"
-#include "llvm/Passes/PassPlugin.h"
-#include "llvm/Support/Statistic.h"
+#include "llvm/IR/IntrinsicInst.h"
 
 using namespace llvm;
-
-#define DEBUG_TYPE "decompose-fmuladd"
-
-STATISTIC(NumDecomposed, "Number of llvm.fmuladd calls decomposed");
 
 namespace {
 
@@ -38,14 +33,11 @@ struct FMADecompose : public PassInfoMixin<FMADecompose> {
       Value *Mul = Builder.CreateFMul(A, B, "fmul");
       Value *Add = Builder.CreateFAdd(Mul, C, "fadd");
 
-      if (auto *I = dyn_cast<Instruction>(Mul))
-        I->setFastMathFlags(FMF);
-      if (auto *I = dyn_cast<Instruction>(Add))
-        I->setFastMathFlags(FMF);
+      if (auto *I = dyn_cast<Instruction>(Mul)) I->setFastMathFlags(FMF);
+      if (auto *I = dyn_cast<Instruction>(Add)) I->setFastMathFlags(FMF);
 
       Call->replaceAllUsesWith(Add);
       Call->eraseFromParent();
-      ++NumDecomposed;
       Changed = true;
     }
 
@@ -53,20 +45,22 @@ struct FMADecompose : public PassInfoMixin<FMADecompose> {
   }
 };
 
-} // namespace
+}
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "FMADecompose", LLVM_VERSION_STRING,
-          [](PassBuilder &PB) {
-            PB.registerPipelineParsingCallback(
-                [](StringRef Name, FunctionPassManager &FPM,
-                   ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "decompose-fmuladd") {
-                    FPM.addPass(FMADecompose());
-                    return true;
-                  }
-                  return false;
-                });
-          }};
+  return {
+    LLVM_PLUGIN_API_VERSION, "FMADecompose", LLVM_VERSION_STRING,
+    [](PassBuilder &PB) {
+      PB.registerPipelineParsingCallback(
+        [](StringRef Name, FunctionPassManager &FPM,
+           ArrayRef<PassBuilder::PipelineElement>) {
+          if (Name == "decompose-fmuladd") {
+            FPM.addPass(FMADecompose());
+            return true;
+          }
+          return false;
+        });
+    }
+  };
 }

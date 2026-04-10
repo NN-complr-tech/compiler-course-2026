@@ -1,5 +1,6 @@
 ; RUN: split-file %s %t
-; RUN: opt -load-pass-plugin=%libdir/fmadplugin.so -passes=decompose-fmuladd -S %t/input.ll | FileCheck %t/expected.ll
+; RUN: env FMADPLUGIN_PATH=%libdir/fmadplugin.so \
+; RUN:   opt -load-pass-plugin=$FMADPLUGIN_PATH -passes=decompose-fmuladd -S %t/input.ll | FileCheck %t/expected.ll
 ; REQUIRES: plugin
 
 ; --- input.ll
