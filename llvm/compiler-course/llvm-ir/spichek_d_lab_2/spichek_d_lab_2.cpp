@@ -1,4 +1,5 @@
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
@@ -15,8 +16,8 @@ struct LoadStoreEliminationPass : PassInfoMixin<LoadStoreEliminationPass> {
       DenseMap<Value *, Value *> AvailableValues;
       DenseMap<Value *, StoreInst *> LastStore;
 
-      for (auto I = BB.begin(); I != BB.end();) {
-        Instruction *Inst = &*I++;
+      for (Instruction &I : llvm::make_early_inc_range(BB)) {
+        Instruction *Inst = &I;
 
         if (auto *Load = dyn_cast<LoadInst>(Inst)) {
           Value *Ptr = Load->getPointerOperand();
