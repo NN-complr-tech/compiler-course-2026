@@ -1,18 +1,12 @@
-cmake_minimum_required(VERSION 3.13)
-project(FMADecomposePlugin)
+get_filename_component(CURRENT_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+set(TARGET_NAME "${CURRENT_DIR_NAME}_LLVM_IR")
 
-find_package(LLVM REQUIRED CONFIG)
-
-add_definitions(${LLVM_DEFINITIONS})
-include_directories(${LLVM_INCLUDE_DIRS})
-link_directories(${LLVM_LIBRARY_DIRS})
-
-add_library(fmadplugin SHARED fmadplugin.cpp)
-
-set_target_properties(fmadplugin PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-target_link_libraries(fmadplugin PRIVATE ${LLVM_LIBS})
-
-set_target_properties(fmadplugin PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-)
+if (NOT WIN32 AND NOT CYGWIN)
+    file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
+    add_llvm_pass_plugin(${TARGET_NAME} ${SOURCES}
+        DEPENDS
+        intrinsics_gen
+        BUILDTREE_ONLY
+    )
+    set(LLVM_TEST_DEPENDS ${TARGET_NAME} ${LLVM_TEST_DEPENDS} PARENT_SCOPE)
+endif()

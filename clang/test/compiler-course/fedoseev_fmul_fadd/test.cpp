@@ -1,6 +1,5 @@
 ; RUN: split-file %s %t
-; RUN: env FMADPLUGIN_PATH=%libdir/fmadplugin.so \
-; RUN:   opt -load-pass-plugin=$FMADPLUGIN_PATH -passes=decompose-fmuladd -S %t/input.ll | FileCheck %t/expected.ll
+; RUN: opt -load-pass-plugin=%builddir/lib/fmadplugin.so -passes=decompose-fmuladd -S %t/input.ll | FileCheck %s --check-prefix=CHECK --implicit-check-not="llvm.fmuladd"
 ; REQUIRES: plugin
 
 ; --- input.ll
@@ -58,60 +57,51 @@ declare half @llvm.fmuladd.f16(half, half, half)
 declare <4 x float> @llvm.fmuladd.v4f32(<4 x float>, <4 x float>, <4 x float>)
 declare <2 x double> @llvm.fmuladd.v2f64(<2 x double>, <2 x double>, <2 x double>)
 
-; --- expected.ll
-define float @test_f32(float %a, float %b, float %c) {
-  %fmul = fmul float %a, %b
-  %fadd = fadd float %fmul, %c
-  ret float %fadd
-}
+; --- ожидаемый вывод (используется для CHECK)
+; CHECK-LABEL: define float @test_f32
+; CHECK: %fmul = fmul float %a, %b
+; CHECK: %fadd = fadd float %fmul, %c
+; CHECK-NEXT: ret float %fadd
 
-define double @test_f64(double %a, double %b, double %c) {
-  %fmul = fmul double %a, %b
-  %fadd = fadd double %fmul, %c
-  ret double %fadd
-}
+; CHECK-LABEL: define double @test_f64
+; CHECK: %fmul = fmul double %a, %b
+; CHECK: %fadd = fadd double %fmul, %c
+; CHECK-NEXT: ret double %fadd
 
-define half @test_f16(half %a, half %b, half %c) {
-  %fmul = fmul half %a, %b
-  %fadd = fadd half %fmul, %c
-  ret half %fadd
-}
+; CHECK-LABEL: define half @test_f16
+; CHECK: %fmul = fmul half %a, %b
+; CHECK: %fadd = fadd half %fmul, %c
+; CHECK-NEXT: ret half %fadd
 
-define <4 x float> @test_vec4(<4 x float> %a, <4 x float> %b, <4 x float> %c) {
-  %fmul = fmul <4 x float> %a, %b
-  %fadd = fadd <4 x float> %fmul, %c
-  ret <4 x float> %fadd
-}
+; CHECK-LABEL: define <4 x float> @test_vec4
+; CHECK: %fmul = fmul <4 x float> %a, %b
+; CHECK: %fadd = fadd <4 x float> %fmul, %c
+; CHECK-NEXT: ret <4 x float> %fadd
 
-define <2 x double> @test_vec2f64(<2 x double> %a, <2 x double> %b, <2 x double> %c) {
-  %fmul = fmul <2 x double> %a, %b
-  %fadd = fadd <2 x double> %fmul, %c
-  ret <2 x double> %fadd
-}
+; CHECK-LABEL: define <2 x double> @test_vec2f64
+; CHECK: %fmul = fmul <2 x double> %a, %b
+; CHECK: %fadd = fadd <2 x double> %fmul, %c
+; CHECK-NEXT: ret <2 x double> %fadd
 
-define float @test_fast(float %a, float %b, float %c) {
-  %fmul = fmul fast float %a, %b
-  %fadd = fadd fast float %fmul, %c
-  ret float %fadd
-}
+; CHECK-LABEL: define float @test_fast
+; CHECK: %fmul = fmul fast float %a, %b
+; CHECK: %fadd = fadd fast float %fmul, %c
+; CHECK-NEXT: ret float %fadd
 
-define float @test_nnan_ninf(float %a, float %b, float %c) {
-  %fmul = fmul nnan ninf float %a, %b
-  %fadd = fadd nnan ninf float %fmul, %c
-  ret float %fadd
-}
+; CHECK-LABEL: define float @test_nnan_ninf
+; CHECK: %fmul = fmul nnan ninf float %a, %b
+; CHECK: %fadd = fadd nnan ninf float %fmul, %c
+; CHECK-NEXT: ret float %fadd
 
-define float @test_contract(float %a, float %b, float %c) {
-  %fmul = fmul contract float %a, %b
-  %fadd = fadd contract float %fmul, %c
-  ret float %fadd
-}
+; CHECK-LABEL: define float @test_contract
+; CHECK: %fmul = fmul contract float %a, %b
+; CHECK: %fadd = fadd contract float %fmul, %c
+; CHECK-NEXT: ret float %fadd
 
-define float @test_multi_use(float %a, float %b, float %c) {
-  %fmul = fmul float %a, %b
-  %fadd = fadd float %fmul, %c
-  %add1 = fadd float %fadd, 1.0
-  %add2 = fadd float %fadd, 2.0
-  %r = fadd float %add1, %add2
-  ret float %r
-}
+; CHECK-LABEL: define float @test_multi_use
+; CHECK: %fmul = fmul float %a, %b
+; CHECK: %fadd = fadd float %fmul, %c
+; CHECK: %add1 = fadd float %fadd, 1.0
+; CHECK: %add2 = fadd float %fadd, 2.0
+; CHECK: %r = fadd float %add1, %add2
+; CHECK-NEXT: ret float %r
