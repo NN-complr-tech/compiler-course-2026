@@ -19,12 +19,12 @@ struct ChyokotovAFremPass : llvm::PassInfoMixin<ChyokotovAFremPass> {
             auto *rhs = binOp->getOperand(1);
             llvm::IRBuilder<> builder(binOp);
 
-            llvm::Value *res = builder.CreateUnaryIntrinsic(
+            llvm::Value *div = builder.CreateUnaryIntrinsic(
                 llvm::Intrinsic::trunc, builder.CreateFDiv(lhs, rhs));
-            res = builder.CreateFMul(res, rhs);
-            res = builder.CreateFSub(lhs, res);
+            auto *mul = builder.CreateFMul(div, rhs);
+            auto *sub = builder.CreateFSub(lhs, mul);
 
-            binOp->replaceAllUsesWith(res);
+            binOp->replaceAllUsesWith(sub);
             binOp->eraseFromParent();
             changed = true;
           } else if (opCode == llvm::Instruction::URem) {
@@ -32,11 +32,11 @@ struct ChyokotovAFremPass : llvm::PassInfoMixin<ChyokotovAFremPass> {
             auto *rhs = binOp->getOperand(1);
             llvm::IRBuilder<> builder(binOp);
 
-            auto *res = builder.CreateUDiv(lhs, rhs);
-            res = builder.CreateMul(res, rhs);
-            res = builder.CreateSub(lhs, res);
+            auto *div = builder.CreateUDiv(lhs, rhs);
+            auto *mul = builder.CreateMul(div, rhs);
+            auto *sub = builder.CreateSub(lhs, mul);
 
-            binOp->replaceAllUsesWith(res);
+            binOp->replaceAllUsesWith(sub);
             binOp->eraseFromParent();
             changed = true;
           } else if (opCode == llvm::Instruction::SRem) {
@@ -44,11 +44,11 @@ struct ChyokotovAFremPass : llvm::PassInfoMixin<ChyokotovAFremPass> {
             auto *rhs = binOp->getOperand(1);
             llvm::IRBuilder<> builder(binOp);
 
-            auto *res = builder.CreateSDiv(lhs, rhs);
-            res = builder.CreateMul(res, rhs);
-            res = builder.CreateSub(lhs, res);
+            auto *div = builder.CreateSDiv(lhs, rhs);
+            auto *mul = builder.CreateMul(div, rhs);
+            auto *sub = builder.CreateSub(lhs, mul);
 
-            binOp->replaceAllUsesWith(res);
+            binOp->replaceAllUsesWith(sub);
             binOp->eraseFromParent();
             changed = true;
           }
