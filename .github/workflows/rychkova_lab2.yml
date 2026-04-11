@@ -1,0 +1,35 @@
+name: Rychkova Lab2 - MulDiv to Shift
+
+on:
+  push:
+    paths:
+      - 'llvm/compiler-course/llvm-ir/rychkova_lab2/**'
+  pull_request:
+    paths:
+      - 'llvm/compiler-course/llvm-ir/rychkova_lab2/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install LLVM
+      run: |
+        sudo apt update
+        sudo apt install -y llvm-14 clang-14 lld-14
+        sudo ln -sf /usr/bin/llvm-config-14 /usr/bin/llvm-config
+    
+    - name: Build Pass
+      run: |
+        cd llvm/compiler-course/llvm-ir/rychkova_lab2
+        mkdir -p build
+        cd build
+        cmake -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm ..
+        make
+    
+    - name: Test Pass
+      run: |
+        cd llvm/compiler-course/llvm-ir/rychkova_lab2/build
+        opt -load-pass-plugin ./librychkova_lab2_LLVM_IR.so -passes=div2shift -S ../test.ll
