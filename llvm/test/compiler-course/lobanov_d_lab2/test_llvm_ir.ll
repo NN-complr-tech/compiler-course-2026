@@ -1,4 +1,4 @@
-; RUN: opt -load-pass-plugin %llvmshlibdir/lobanov_d_lab2%pluginext -passes=mul-div-to-shift -S %s | FileCheck %s
+; RUN: opt -load-pass-plugin %llvmshlibdir/lobanov_d_lab2_LLVM_IR%pluginext -passes=mul-div-to-shift -S %s | FileCheck %s
 
 define i16 @mul_i16_32(i16 %x) {
 ; CHECK-LABEL: @mul_i16_32
