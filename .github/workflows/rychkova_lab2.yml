@@ -38,5 +38,5 @@ jobs:
         run: |
           cd llvm/compiler-course/llvm-ir/rychkova_lab2/build
           opt --version
-          echo "=== Running test ==="
+          echo "=== Test mul 8 ==="
           opt -load-pass-plugin ./librychkova_lab2_LLVM_IR.so -passes=muldiv_to_shift -S ../test.ll
