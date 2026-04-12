@@ -2,34 +2,41 @@ name: Rychkova Lab2 - MulDiv to Shift
 
 on:
   push:
-    paths:
-      - 'llvm/compiler-course/llvm-ir/rychkova_lab2/**'
+    branches: [ main, master ]
   pull_request:
-    paths:
-      - 'llvm/compiler-course/llvm-ir/rychkova_lab2/**'
+    branches: [ main, master ]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install LLVM
-      run: |
-        sudo apt update
-        sudo apt install -y llvm-14 clang-14 lld-14
-        sudo ln -sf /usr/bin/llvm-config-14 /usr/bin/llvm-config
-    
-    - name: Build Pass
-      run: |
-        cd llvm/compiler-course/llvm-ir/rychkova_lab2
-        mkdir -p build
-        cd build
-        cmake -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm ..
-        make
-    
-    - name: Test Pass
-      run: |
-        cd llvm/compiler-course/llvm-ir/rychkova_lab2/build
-        opt -load-pass-plugin ./librychkova_lab2_LLVM_IR.so -passes=div2shift -S ../test.ll
+      - uses: actions/checkout@v3
+      
+      - name: Install LLVM
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lsb-release wget software-properties-common
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-14 main"
+          sudo apt-get update
+          sudo apt-get install -y llvm-14 llvm-14-dev llvm-14-tools clang-14 lld-14 cmake build-essential
+          sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-14 100
+          sudo update-alternatives --install /usr/bin/opt opt /usr/bin/opt-14 100
+          
+      - name: Build pass
+        run: |
+          cd llvm/compiler-course/llvm-ir/rychkova_lab2
+          rm -rf build
+          mkdir build
+          cd build
+          cmake -DLLVM_DIR=/usr/lib/llvm-14/lib/cmake/llvm ..
+          make
+          ls -la lib*.so
+      
+      - name: Test pass
+        run: |
+          cd llvm/compiler-course/llvm-ir/rychkova_lab2/build
+          opt --version
+          echo "=== Running test ==="
+          opt -load-pass-plugin ./librychkova_lab2_LLVM_IR.so -passes=muldiv_to_shift -S ../test.ll
