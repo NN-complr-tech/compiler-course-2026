@@ -31,7 +31,8 @@ struct VolkovPowiPass : llvm::PassInfoMixin<VolkovPowiPass> {
     }
 
     for (auto *powiInst : worklist) {
-      auto *constExp = llvm::dyn_cast<llvm::ConstantInt>(powiInst->getOperand(1));
+      auto *constExp =
+          llvm::dyn_cast<llvm::ConstantInt>(powiInst->getOperand(1));
       if (!constExp)
         continue;
 
@@ -47,7 +48,7 @@ struct VolkovPowiPass : llvm::PassInfoMixin<VolkovPowiPass> {
       if (expVal == 0) {
         llvm::Type *bType = baseVal->getType();
         llvm::Value *fpOne = llvm::ConstantFP::get(bType->getScalarType(), 1.0);
-        
+
         if (bType->isVectorTy()) {
           fpOne = llvm::ConstantVector::getSplat(
               llvm::cast<llvm::VectorType>(bType)->getElementCount(),
