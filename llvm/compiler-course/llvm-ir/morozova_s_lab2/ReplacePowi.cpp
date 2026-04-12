@@ -2,36 +2,36 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/Support/raw_ostream.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/PassPlugin.h"
 
 using namespace llvm;
 
 namespace {
 
-class ReplacePowi {
-public:
-  bool runOnFunction(Function &F) {
+struct ReplacePowi : public PassInfoMixin<ReplacePowi> {
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
     bool Changed = false;
 
     for (BasicBlock &BB : F) {
+      SmallVector<CallInst *, 4> PowiCalls;
+
       for (Instruction &I : BB) {
-        auto *Call = dyn_cast<CallInst>(&I);
-        if (!Call)
-          continue;
+        if (auto *Call = dyn_cast<CallInst>(&I)) {
+          Function *Callee = Call->getCalledFunction();
+          if (Callee && Callee->getName().contains("llvm.powi")) {
+            PowiCalls.push_back(Call);
+          }
+        }
+      }
 
-        Function *Callee = Call->getCalledFunction();
-        if (!Callee)
-          continue;
-
-        StringRef Name = Callee->getName();
-        if (!Name.contains("llvm.powi"))
-          continue;
-
+      for (CallInst *Call : PowiCalls) {
         if (Call->arg_size() < 2)
           continue;
 
         Value *PowerArg = Call->getArgOperand(1);
-        ConstantInt *ConstPower = dyn_cast<ConstantInt>(PowerArg);
+        auto *ConstPower = dyn_cast<ConstantInt>(PowerArg);
         if (!ConstPower)
           continue;
 
@@ -65,36 +65,23 @@ public:
       }
     }
 
-    return Changed;
+    return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
   }
 };
 
 } // namespace
 
-namespace llvm {
-void initializeReplacePowiLegacyPass(PassRegistry &);
+extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
+llvmGetPassPluginInfo() {
+  return {LLVM_PLUGIN_API_VERSION, "ReplacePowi", "v0.1", [](PassBuilder &PB) {
+            PB.registerPipelineParsingCallback(
+                [](StringRef Name, FunctionPassManager &FPM,
+                   ArrayRef<PassBuilder::PipelineElement>) {
+                  if (Name == "replace-powi") {
+                    FPM.addPass(ReplacePowi());
+                    return true;
+                  }
+                  return false;
+                });
+          }};
 }
-
-namespace {
-struct ReplacePowiLegacy : public FunctionPass {
-  static char ID;
-  ReplacePowiLegacy() : FunctionPass(ID) {
-    initializeReplacePowiLegacyPass(*PassRegistry::getPassRegistry());
-  }
-
-  bool runOnFunction(Function &F) override {
-    ReplacePowi Pass;
-    return Pass.runOnFunction(F);
-  }
-
-  StringRef getPassName() const override { return "ReplacePowi"; }
-};
-
-char ReplacePowiLegacy::ID = 0;
-} // namespace
-
-INITIALIZE_PASS(ReplacePowiLegacy, "replace-powi-legacy",
-                "Replace powi with multiplications", false, false)
-
-static RegisterPass<ReplacePowiLegacy> X("replace-powi",
-                                         "Replace powi with multiplications");
