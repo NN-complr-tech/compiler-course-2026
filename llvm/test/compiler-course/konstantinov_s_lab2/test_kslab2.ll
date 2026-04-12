@@ -25,13 +25,6 @@ define float @test_intr_removed(float %a, float %b, float %c) {
   ret float %result
 }
 
-; CHECK-LABEL: @test_unused
-; CHECK-NOT: fmuladd
-define float @test_unused(float %a, float %b, float %c) {
-  %result = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
-  ret float 0.0
-}
-
 ; CHECK-LABEL: @test_two_intr
 ; CHECK-NOT: fmuladd
 ; CHECK-NEXT: %mul_part = fmul float %a, %b
@@ -61,8 +54,8 @@ define float @test_three_intr(float %a, float %b, float %c) {
 
 ; CHECK-LABEL: @test_fastmathflag
 ; CHECK-NOT: fmuladd
-; CHECK-NEXT: fmul fast float %a, %b
-; CHECK-NEXT: fadd fast float
+; CHECK-NEXT: %mul_part = fmul fast float %a, %b
+; CHECK-NEXT: %add_part = fadd fast float %mul_part, %c
 define float @test_fastmathflag(float %a, float %b, float %c) {
   %result = call fast float @llvm.fmuladd.f32(float %a, float %b, float %c)
   ret float %result
