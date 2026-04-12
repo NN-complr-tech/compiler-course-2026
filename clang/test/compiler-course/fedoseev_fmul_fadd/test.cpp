@@ -1,8 +1,6 @@
-; RUN: split-file %s %t
-; RUN: opt -load-pass-plugin=%builddir/lib/fmadplugin.so -passes=decompose-fmuladd -S %t/input.ll | FileCheck %s --check-prefix=CHECK --implicit-check-not="llvm.fmuladd"
+; RUN: opt -load-pass-plugin=%builddir/lib/fmadplugin.so -passes=decompose-fmuladd -S %s | FileCheck %s --check-prefix=CHECK --implicit-check-not="llvm.fmuladd"
 ; REQUIRES: plugin
 
-; --- input.ll
 define float @test_f32(float %a, float %b, float %c) {
   %res = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
   ret float %res
@@ -51,13 +49,19 @@ define float @test_multi_use(float %a, float %b, float %c) {
   ret float %r
 }
 
+define float @test_two_fmas(float %a, float %b, float %c, float %d, float %e, float %f) {
+  %fma1 = call float @llvm.fmuladd.f32(float %a, float %b, float %c)
+  %fma2 = call float @llvm.fmuladd.f32(float %d, float %e, float %f)
+  %sum = fadd float %fma1, %fma2
+  ret float %sum
+}
+
 declare float @llvm.fmuladd.f32(float, float, float)
 declare double @llvm.fmuladd.f64(double, double, double)
 declare half @llvm.fmuladd.f16(half, half, half)
 declare <4 x float> @llvm.fmuladd.v4f32(<4 x float>, <4 x float>, <4 x float>)
 declare <2 x double> @llvm.fmuladd.v2f64(<2 x double>, <2 x double>, <2 x double>)
 
-; --- ожидаемый вывод (используется для CHECK)
 ; CHECK-LABEL: define float @test_f32
 ; CHECK: %fmul = fmul float %a, %b
 ; CHECK: %fadd = fadd float %fmul, %c
@@ -105,3 +109,11 @@ declare <2 x double> @llvm.fmuladd.v2f64(<2 x double>, <2 x double>, <2 x double
 ; CHECK: %add2 = fadd float %fadd, 2.0
 ; CHECK: %r = fadd float %add1, %add2
 ; CHECK-NEXT: ret float %r
+
+; CHECK-LABEL: define float @test_two_fmas
+; CHECK: %fmul = fmul float %a, %b
+; CHECK: %fadd = fadd float %fmul, %c
+; CHECK: %fmul1 = fmul float %d, %e
+; CHECK: %fadd2 = fadd float %fmul1, %f
+; CHECK: %sum = fadd float %fadd, %fadd2
+; CHECK-NEXT: ret float %sum
