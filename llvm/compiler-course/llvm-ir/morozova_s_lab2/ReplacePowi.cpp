@@ -22,10 +22,11 @@ struct ReplacePowi : public PassInfoMixin<ReplacePowi> {
           continue;
 
         Function *Callee = Call->getCalledFunction();
-        if (!Callee || !Callee->isIntrinsic())
+        if (!Callee)
           continue;
 
-        if (Callee->getIntrinsicID() != Intrinsic::powi)
+        StringRef FuncName = Callee->getName();
+        if (!FuncName.starts_with("llvm.powi"))
           continue;
 
         Value *PowerArg = Call->getArgOperand(1);
@@ -49,10 +50,9 @@ struct ReplacePowi : public PassInfoMixin<ReplacePowi> {
         case 1:
           NewResult = Base;
           break;
-        case 2: {
+        case 2:
           NewResult = Builder.CreateFMul(Base, Base);
           break;
-        }
         case 3: {
           Value *Sq = Builder.CreateFMul(Base, Base);
           NewResult = Builder.CreateFMul(Sq, Base);
