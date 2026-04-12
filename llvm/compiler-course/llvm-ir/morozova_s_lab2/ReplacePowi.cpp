@@ -1,16 +1,16 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/PassManager.h"
-#include "llvm/Passes/PassBuilder.h"
-#include "llvm/Passes/PassPlugin.h"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 
 namespace {
 
-struct ReplacePowi : public PassInfoMixin<ReplacePowi> {
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM) {
+class ReplacePowi {
+public:
+  bool runOnFunction(Function &F) {
     bool Changed = false;
 
     for (BasicBlock &BB : F) {
@@ -24,13 +24,14 @@ struct ReplacePowi : public PassInfoMixin<ReplacePowi> {
           continue;
 
         StringRef Name = Callee->getName();
-        if (!Name.contains("powi"))
+        if (!Name.contains("llvm.powi"))
           continue;
 
-        if (Call->arg_size() != 2)
+        if (Call->arg_size() < 2)
           continue;
 
-        auto *ConstPower = dyn_cast<ConstantInt>(Call->getArgOperand(1));
+        Value *PowerArg = Call->getArgOperand(1);
+        ConstantInt *ConstPower = dyn_cast<ConstantInt>(PowerArg);
         if (!ConstPower)
           continue;
 
@@ -39,21 +40,21 @@ struct ReplacePowi : public PassInfoMixin<ReplacePowi> {
           continue;
 
         Value *Base = Call->getArgOperand(0);
+        IRBuilder<> Builder(Call);
         Value *NewResult = nullptr;
 
-        // Создаём новое значение в зависимости от степени
         if (Power == 0) {
           NewResult = ConstantFP::get(Base->getType(), 1.0);
         } else if (Power == 1) {
           NewResult = Base;
         } else if (Power == 2) {
-          NewResult = BinaryOperator::CreateFMul(Base, Base, "", Call);
+          NewResult = Builder.CreateFMul(Base, Base);
         } else if (Power == 3) {
-          Value *Sq = BinaryOperator::CreateFMul(Base, Base, "", Call);
-          NewResult = BinaryOperator::CreateFMul(Sq, Base, "", Call);
+          Value *Sq = Builder.CreateFMul(Base, Base);
+          NewResult = Builder.CreateFMul(Sq, Base);
         } else if (Power == 4) {
-          Value *Sq = BinaryOperator::CreateFMul(Base, Base, "", Call);
-          NewResult = BinaryOperator::CreateFMul(Sq, Sq, "", Call);
+          Value *Sq = Builder.CreateFMul(Base, Base);
+          NewResult = Builder.CreateFMul(Sq, Sq);
         }
 
         if (NewResult) {
@@ -64,23 +65,36 @@ struct ReplacePowi : public PassInfoMixin<ReplacePowi> {
       }
     }
 
-    return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+    return Changed;
   }
 };
 
 } // namespace
 
-extern "C" ::llvm::PassPluginLibraryInfo LLVM_ATTRIBUTE_WEAK
-llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "ReplacePowi", "v0.1", [](PassBuilder &PB) {
-            PB.registerPipelineParsingCallback(
-                [](StringRef Name, FunctionPassManager &FPM,
-                   ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "replace-powi") {
-                    FPM.addPass(ReplacePowi());
-                    return true;
-                  }
-                  return false;
-                });
-          }};
+namespace llvm {
+void initializeReplacePowiLegacyPass(PassRegistry &);
 }
+
+namespace {
+struct ReplacePowiLegacy : public FunctionPass {
+  static char ID;
+  ReplacePowiLegacy() : FunctionPass(ID) {
+    initializeReplacePowiLegacyPass(*PassRegistry::getPassRegistry());
+  }
+
+  bool runOnFunction(Function &F) override {
+    ReplacePowi Pass;
+    return Pass.runOnFunction(F);
+  }
+
+  StringRef getPassName() const override { return "ReplacePowi"; }
+};
+
+char ReplacePowiLegacy::ID = 0;
+} // namespace
+
+INITIALIZE_PASS(ReplacePowiLegacy, "replace-powi-legacy",
+                "Replace powi with multiplications", false, false)
+
+static RegisterPass<ReplacePowiLegacy> X("replace-powi",
+                                         "Replace powi with multiplications");
