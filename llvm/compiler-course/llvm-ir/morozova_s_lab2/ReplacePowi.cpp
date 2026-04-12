@@ -1,8 +1,6 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
-#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
@@ -25,54 +23,41 @@ struct ReplacePowi : public PassInfoMixin<ReplacePowi> {
         if (!Callee)
           continue;
 
-        StringRef FuncName = Callee->getName();
-        if (!FuncName.contains("powi"))
+        if (!Callee->getName().contains("powi"))
+          continue;
+        if (Call->arg_size() != 2)
           continue;
 
-        if (Call->arg_size() < 2)
-          continue;
-
-        Value *PowerArg = Call->getArgOperand(1);
-        ConstantInt *ConstPower = dyn_cast<ConstantInt>(PowerArg);
+        auto *ConstPower = dyn_cast<ConstantInt>(Call->getArgOperand(1));
         if (!ConstPower)
           continue;
 
         int64_t Power = ConstPower->getSExtValue();
-
         if (Power < 0 || Power > 4)
           continue;
 
         Value *Base = Call->getArgOperand(0);
-        IRBuilder<> Builder(Call);
         Value *NewResult = nullptr;
 
-        switch (Power) {
-        case 0:
+        if (Power == 0) {
           NewResult = ConstantFP::get(Base->getType(), 1.0);
-          break;
-        case 1:
+        } else if (Power == 1) {
           NewResult = Base;
-          break;
-        case 2:
-          NewResult = Builder.CreateFMul(Base, Base);
-          break;
-        case 3: {
-          Value *Sq = Builder.CreateFMul(Base, Base);
-          NewResult = Builder.CreateFMul(Sq, Base);
-          break;
-        }
-        case 4: {
-          Value *Sq = Builder.CreateFMul(Base, Base);
-          NewResult = Builder.CreateFMul(Sq, Sq);
-          break;
-        }
-        default:
-          continue;
+        } else if (Power == 2) {
+          NewResult = BinaryOperator::CreateFMul(Base, Base, "", Call);
+        } else if (Power == 3) {
+          Value *Sq = BinaryOperator::CreateFMul(Base, Base, "", Call);
+          NewResult = BinaryOperator::CreateFMul(Sq, Base, "", Call);
+        } else if (Power == 4) {
+          Value *Sq = BinaryOperator::CreateFMul(Base, Base, "", Call);
+          NewResult = BinaryOperator::CreateFMul(Sq, Sq, "", Call);
         }
 
-        Call->replaceAllUsesWith(NewResult);
-        Call->eraseFromParent();
-        Changed = true;
+        if (NewResult) {
+          Call->replaceAllUsesWith(NewResult);
+          Call->eraseFromParent();
+          Changed = true;
+        }
       }
     }
 
