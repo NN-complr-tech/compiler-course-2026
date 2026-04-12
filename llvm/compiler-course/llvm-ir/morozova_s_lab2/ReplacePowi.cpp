@@ -23,8 +23,10 @@ struct ReplacePowi : public PassInfoMixin<ReplacePowi> {
         if (!Callee)
           continue;
 
-        if (!Callee->getName().contains("powi"))
+        StringRef Name = Callee->getName();
+        if (!Name.contains("powi"))
           continue;
+
         if (Call->arg_size() != 2)
           continue;
 
@@ -39,6 +41,7 @@ struct ReplacePowi : public PassInfoMixin<ReplacePowi> {
         Value *Base = Call->getArgOperand(0);
         Value *NewResult = nullptr;
 
+        // Создаём новое значение в зависимости от степени
         if (Power == 0) {
           NewResult = ConstantFP::get(Base->getType(), 1.0);
         } else if (Power == 1) {
