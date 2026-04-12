@@ -1,4 +1,3 @@
-; RUN: split-file %s %t
 ; RUN: opt -load-pass-plugin %llvmshlibdir/frolova_s_fmul_fadd%pluginext \
 ; RUN: -passes=frolova_s_fmul_fadd -S %t/input.ll | FileCheck %s
 
