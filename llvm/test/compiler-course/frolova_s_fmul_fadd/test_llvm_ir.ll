@@ -1,9 +1,9 @@
 ; RUN: opt -load-pass-plugin %llvmshlibdir/frolova_s_fmul_fadd%pluginext \
-; RUN: -passes=frolova_s_fmul_fadd -S %t/input.ll | FileCheck %s
+; RUN:   -passes=frolova_s_fmul_fadd -S < %s | FileCheck %s
 
-;--- input.ll
 
-; проверяем, что появились mul и add, а fmuladd исчез для обычного скалярного float
+; scalar_float: обычная замена fmuladd на fmul + fadd с именами p, q
+
 ; CHECK-LABEL: @scalar_float
 ; CHECK: %p = fmul float %a, %b
 ; CHECK: %q = fadd float %p, %c
@@ -14,7 +14,8 @@ define float @scalar_float(float %a, float %b, float %c) {
   ret float %r
 }
 
-; проверяем двойную точность double 
+; scalar_double: замена для double
+
 ; CHECK-LABEL: @scalar_double
 ; CHECK: %pd = fmul double %x, %y
 ; CHECK: %qd = fadd double %pd, %z
@@ -24,7 +25,8 @@ define double @scalar_double(double %x, double %y, double %z) {
   ret double %res
 }
 
-; векторный случай
+; vector_2f32: векторный случай, имена pm, pa
+
 ; CHECK-LABEL: @vector_2f32
 ; CHECK: %pm = fmul <2 x float> %v1, %v2
 ; CHECK: %pa = fadd <2 x float> %pm, %v3
@@ -33,7 +35,9 @@ define <2 x float> @vector_2f32(<2 x float> %v1, <2 x float> %v2, <2 x float> %v
   ret <2 x float> %r
 }
 
-; цепочка из трёх вызовов, где результат каждого используется в следующем
+
+; triple_chain: цепочка из трёх вызовов, нумерованные имена m1,a1,m2,a2,...
+
 ; CHECK-LABEL: @triple_chain
 ; CHECK: %m1 = fmul float %a, %b
 ; CHECK: %a1 = fadd float %m1, %c
@@ -49,7 +53,8 @@ define float @triple_chain(float %a, float %b, float %c) {
   ret float %t3
 }
 
-; проверяем в ветвлении в разных частях, что замена работает через управляющий поток
+; conditional: замена в разных блоках, суффиксы then/else/part
+
 ; CHECK-LABEL: @conditional
 ; CHECK: %cond = fcmp ogt float %a, 0.0
 ; CHECK: br i1 %cond, label %then, label %else
@@ -81,7 +86,8 @@ merge:
   ret float %result
 }
 
-; проверяем, что флаг fast переносится на обе новые инструкции
+; fast_flags: проверка переноса флага fast на новые инструкции
+
 ; CHECK-LABEL: @fast_flags
 ; CHECK: fmul fast float %x, %y
 ; CHECK: fadd fast float %fmul, %z
@@ -90,7 +96,8 @@ define float @fast_flags(float %x, float %y, float %z) {
   ret float %r
 }
 
-; обычно fmuladd имеет contract, однако после замены fmul и fadd не должны его иметь
+; contract_flag: убираем contract, т.к. он не должен оставаться на fmul/fadd
+
 ; CHECK-LABEL: @contract_flag
 ; CHECK: fmul float %a, %b
 ; CHECK: fadd float %fmul, %c
@@ -100,7 +107,8 @@ define float @contract_flag(float %a, float %b, float %c) {
   ret float %r
 }
 
-; использование результата несколько раз
+; multi_use: результат fmuladd используется несколько раз
+
 ; CHECK-LABEL: @multi_use
 ; CHECK: %m = fmul float %u, %v
 ; CHECK: %a = fadd float %m, %w
@@ -114,7 +122,8 @@ define float @multi_use(float %u, float %v, float %w) {
   ret float %t3
 }
 
-; без fmuladd – не должно быть никаких изменений
+; no_fmuladd: функция без fmuladd – не должна измениться
+
 ; CHECK-LABEL: @no_fmuladd
 ; CHECK-NOT: fmuladd
 ; CHECK: fmul float %p, %q
