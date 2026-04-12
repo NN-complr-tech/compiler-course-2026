@@ -52,9 +52,13 @@ struct FrolovaFMulAddPass : PassInfoMixin<FrolovaFMulAddPass> {
         Add = Builder.CreateFAdd(Mul, C, addName);
       } else if (FuncName == "conditional") {
         BasicBlock *BB = FMulAdd->getParent();
-        std::string suffix = (BB->getName() == "then")   ? "then"
-                             : (BB->getName() == "else") ? "else"
-                                                         : "part";
+        std::string suffix;
+        if (BB->getName() == "then")
+          suffix = "then";
+        else if (BB->getName() == "else")
+          suffix = "else";
+        else
+          suffix = "part";
         Mul = Builder.CreateFMul(A, B, "m_" + suffix);
         Add = Builder.CreateFAdd(Mul, C, "a_" + suffix);
       } else if (FuncName == "multi_use") {
