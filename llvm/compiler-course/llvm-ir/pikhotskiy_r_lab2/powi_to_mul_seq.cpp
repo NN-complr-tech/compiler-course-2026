@@ -54,7 +54,8 @@ struct PikhotskiyPowiPass : llvm::PassInfoMixin<PikhotskiyPowiPass> {
         if (!Powi || Powi->getIntrinsicID() != llvm::Intrinsic::powi)
           continue;
 
-        auto *ConstExp = llvm::dyn_cast<llvm::ConstantInt>(Powi->getArgOperand(1));
+        auto *ConstExp =
+            llvm::dyn_cast<llvm::ConstantInt>(Powi->getArgOperand(1));
         if (!ConstExp)
           continue;
 
@@ -65,7 +66,8 @@ struct PikhotskiyPowiPass : llvm::PassInfoMixin<PikhotskiyPowiPass> {
         llvm::IRBuilder<> Builder(Powi);
         Builder.setFastMathFlags(Powi->getFastMathFlags());
 
-        llvm::Value *NewValue = expandPowi(Builder, Powi->getArgOperand(0), Exp);
+        llvm::Value *NewValue =
+            expandPowi(Builder, Powi->getArgOperand(0), Exp);
         if (!NewValue)
           continue;
 
@@ -103,3 +105,4 @@ llvmGetPassPluginInfo() {
                 });
           }};
 }
+

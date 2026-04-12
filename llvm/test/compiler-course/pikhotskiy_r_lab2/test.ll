@@ -80,7 +80,8 @@ define float @pow_var_keep(float %x, i32 %n) {
 
 define <2 x float> @pow0_vec(<2 x float> %v) {
 ; CHECK-LABEL: @pow0_vec
-; CHECK-NEXT:    ret <2 x float> <float 1.000000e+00, float 1.000000e+00>
+; CHECK-NEXT:    ret <2 x float> splat (float 1.000000e+00)
   %r = call <2 x float> @llvm.powi.v2f32.i32(<2 x float> %v, i32 0)
   ret <2 x float> %r
 }
+
