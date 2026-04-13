@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.13)
 project(ReplacePowi)
 
+if(WIN32)
+    message(STATUS "ReplacePowi: skipping on Windows")
+    return()
+endif()
+
 find_package(LLVM REQUIRED CONFIG)
 
 add_definitions(${LLVM_DEFINITIONS})
