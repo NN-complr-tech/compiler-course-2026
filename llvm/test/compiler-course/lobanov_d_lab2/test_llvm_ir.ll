@@ -44,9 +44,12 @@ define i32 @multi_ops(i32 %a, i32 %b, i32 %c) {
 ; CHECK-LABEL: @multi_ops
 ; CHECK-DAG:     [[A_SHIFT:%.*]] = shl i32 %a, 3
 ; CHECK-DAG:     [[B_SHIFT:%.*]] = lshr i32 %b, 4
-; CHECK-DAG:     [[C_DIV:%.*]] = sdiv i32 %c, 4
+; CHECK-DAG:     [[C_ICMP:%.*]] = icmp slt i32 %c, 0
+; CHECK-DAG:     [[C_ADD:%.*]] = add i32 %c, 3
+; CHECK-DAG:     [[C_SELECT:%.*]] = select i1 [[C_ICMP]], i32 [[C_ADD]], i32 %c
+; CHECK-DAG:     [[C_SHIFT:%.*]] = ashr i32 [[C_SELECT]], 2
 ; CHECK-NEXT:    [[SUM1:%.*]] = add i32 [[A_SHIFT]], [[B_SHIFT]]
-; CHECK-NEXT:    [[SUM2:%.*]] = add i32 [[SUM1]], [[C_DIV]]
+; CHECK-NEXT:    [[SUM2:%.*]] = add i32 [[SUM1]], [[C_SHIFT]]
 ; CHECK-NEXT:    ret i32 [[SUM2]]
   %mul_a = mul i32 %a, 8
   %udiv_b = udiv i32 %b, 16
@@ -76,9 +79,12 @@ define i32 @mixed_replace(i32 %a, i32 %b) {
 ; CHECK-LABEL: @mixed_replace
 ; CHECK:         [[MUL1:%.*]] = shl i32 %a, 1
 ; CHECK-NEXT:    [[MUL2:%.*]] = mul i32 %b, 7
-; CHECK-NEXT:    [[DIV:%.*]] = sdiv i32 %b, 8
+; CHECK-NEXT:    [[DIV_ICMP:%.*]] = icmp slt i32 %b, 0
+; CHECK-NEXT:    [[DIV_ADD:%.*]] = add i32 %b, 7
+; CHECK-NEXT:    [[DIV_SELECT:%.*]] = select i1 [[DIV_ICMP]], i32 [[DIV_ADD]], i32 %b
+; CHECK-NEXT:    [[DIV_SHIFT:%.*]] = ashr i32 [[DIV_SELECT]], 3
 ; CHECK-NEXT:    [[ADD1:%.*]] = add i32 [[MUL1]], [[MUL2]]
-; CHECK-NEXT:    [[RES:%.*]] = add i32 [[ADD1]], [[DIV]]
+; CHECK-NEXT:    [[RES:%.*]] = add i32 [[ADD1]], [[DIV_SHIFT]]
 ; CHECK-NEXT:    ret i32 [[RES]]
   %mul1 = mul i32 %a, 2
   %mul2 = mul i32 %b, 7
@@ -86,4 +92,15 @@ define i32 @mixed_replace(i32 %a, i32 %b) {
   %add = add i32 %mul1, %mul2
   %result = add i32 %add, %div
   ret i32 %result
+}
+
+define i32 @sdiv_bias_test(i32 %x) {
+; CHECK-LABEL: @sdiv_bias_test
+; CHECK:         [[ICMP:%.*]] = icmp slt i32 %x, 0
+; CHECK-NEXT:    [[ADD:%.*]] = add i32 %x, 1
+; CHECK-NEXT:    [[SEL:%.*]] = select i1 [[ICMP]], i32 [[ADD]], i32 %x
+; CHECK-NEXT:    [[SHR:%.*]] = ashr i32 [[SEL]], 1
+; CHECK-NEXT:    ret i32 [[SHR]]
+  %div = sdiv i32 %x, 2
+  ret i32 %div
 }
