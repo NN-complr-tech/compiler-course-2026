@@ -3,7 +3,8 @@
 
 ; CHECK-LABEL: @test_no_intr_replace
 ; CHECK-NOT: fmuladd
-; CHECK-NEXT: fadd float %a, %b
+; CHECK-NEXT: %o = fadd float %a, %b
+; CHECK-NEXT: ret float %o
 define float @test_no_intr_replace(float %a, float %b) {
   %o = fadd float %a, %b
   ret float %o
@@ -63,8 +64,8 @@ define float @test_fastmathflag(float %a, float %b, float %c) {
 
 ; CHECK-LABEL: @test_double
 ; CHECK-NOT: fmuladd
-; CHECK-NEXT: fmul double %a, %b
-; CHECK-NEXT: fadd double
+; CHECK-NEXT: %mul_part = fmul double %a, %b
+; CHECK-NEXT: %add_part = fadd double %mul_part, %c
 define double @test_double(double %a, double %b, double %c) {
   %result = call double @llvm.fmuladd.f64(double %a, double %b, double %c)
   ret double %result
