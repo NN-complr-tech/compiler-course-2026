@@ -1,4 +1,5 @@
 #include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
@@ -10,11 +11,10 @@ namespace {
 
 struct MulDivToShiftPass : PassInfoMixin<MulDivToShiftPass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    std::vector<std::pair<Instruction *, BinaryOperator *>> replacements;
+    bool changed = false;
 
     for (BasicBlock &BB : F) {
-      for (Instruction &I : BB) {
-
+      for (Instruction &I : make_early_inc_range(BB)) {
         auto *BinOp = dyn_cast<BinaryOperator>(&I);
         if (!BinOp)
           continue;
@@ -24,57 +24,59 @@ struct MulDivToShiftPass : PassInfoMixin<MulDivToShiftPass> {
             Opcode != Instruction::SDiv)
           continue;
 
-        ConstantInt *ConstOp = nullptr;
-        Value *OtherOp = nullptr;
+        Value *LHS = BinOp->getOperand(0);
+        Value *RHS = BinOp->getOperand(1);
+        ConstantInt *LHSConst = dyn_cast<ConstantInt>(LHS);
+        ConstantInt *RHSConst = dyn_cast<ConstantInt>(RHS);
 
-        if (Opcode == Instruction::Mul) {
-          if ((ConstOp = dyn_cast<ConstantInt>(BinOp->getOperand(0))) &&
-              !isa<ConstantInt>(BinOp->getOperand(1))) {
-            OtherOp = BinOp->getOperand(1);
-          } else if ((ConstOp = dyn_cast<ConstantInt>(BinOp->getOperand(1))) &&
-                     !isa<ConstantInt>(BinOp->getOperand(0))) {
-            OtherOp = BinOp->getOperand(0);
+        if (!LHSConst && !RHSConst)
+          continue;
+
+        IRBuilder<> Builder(BinOp);
+
+        if (LHSConst && LHSConst->getValue().isPowerOf2()) {
+          unsigned Shift = LHSConst->getValue().logBase2();
+          if (Opcode == Instruction::Mul) {
+            Value *NewInst = Builder.CreateShl(RHS, Shift);
+            BinOp->replaceAllUsesWith(NewInst);
+            BinOp->eraseFromParent();
+            changed = true;
+            continue;
           }
-        } else {
-          ConstOp = dyn_cast<ConstantInt>(BinOp->getOperand(1));
-          if (ConstOp)
-            OtherOp = BinOp->getOperand(0);
         }
 
-        if (ConstOp && OtherOp) {
-          APInt Val = ConstOp->getValue();
-          if (Val.isPowerOf2() && Val.isNonNegative()) {
-            unsigned ShiftAmt = Val.logBase2();
-            Type *IntTy = OtherOp->getType();
+        if (RHSConst && RHSConst->getValue().isPowerOf2()) {
+          unsigned Shift = RHSConst->getValue().logBase2();
+          Value *NewInst = nullptr;
 
-            Constant *ShiftConst =
-                ConstantInt::get(OtherOp->getType(), ShiftAmt);
+          if (Opcode == Instruction::Mul) {
+            NewInst = Builder.CreateShl(LHS, Shift);
+          } else if (Opcode == Instruction::UDiv) {
+            NewInst = Builder.CreateLShr(LHS, Shift);
+          } else if (Opcode == Instruction::SDiv) {
+            if (BinOp->isExact()) {
+              NewInst = Builder.CreateAShr(LHS, Shift);
+            } else {
+              uint64_t MaskVal = (1ULL << Shift) - 1;
+              Constant *MaskConst = ConstantInt::get(BinOp->getType(), MaskVal);
+              Constant *ZeroConst = ConstantInt::get(BinOp->getType(), 0);
+              Value *IsNeg = Builder.CreateICmpSLT(LHS, ZeroConst);
+              Value *AdjustedLHS = Builder.CreateAdd(LHS, MaskConst);
+              Value *Selected = Builder.CreateSelect(IsNeg, AdjustedLHS, LHS);
+              NewInst = Builder.CreateAShr(Selected, Shift);
+            }
+          }
 
-            Instruction::BinaryOps ShiftOp;
-            if (Opcode == Instruction::Mul)
-              ShiftOp = Instruction::Shl;
-            else if (Opcode == Instruction::UDiv)
-              ShiftOp = Instruction::LShr;
-            else // SDiv
-              ShiftOp = Instruction::AShr;
-
-            BinaryOperator *NewInst = BinaryOperator::Create(
-                ShiftOp, OtherOp, ShiftConst, BinOp->getName(), &I);
-            replacements.emplace_back(BinOp, NewInst);
+          if (NewInst) {
+            BinOp->replaceAllUsesWith(NewInst);
+            BinOp->eraseFromParent();
+            changed = true;
           }
         }
       }
     }
 
-    for (auto &Pair : replacements) {
-      Instruction *Old = Pair.first;
-      BinaryOperator *New = Pair.second;
-      Old->replaceAllUsesWith(New);
-      Old->eraseFromParent();
-    }
-
-    return replacements.empty() ? PreservedAnalyses::all()
-                                : PreservedAnalyses::none();
+    return changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
   }
 
   static bool isRequired() { return true; }

@@ -44,9 +44,9 @@ define i32 @multi_ops(i32 %a, i32 %b, i32 %c) {
 ; CHECK-LABEL: @multi_ops
 ; CHECK-DAG:     [[A_SHIFT:%.*]] = shl i32 %a, 3
 ; CHECK-DAG:     [[B_SHIFT:%.*]] = lshr i32 %b, 4
-; CHECK-DAG:     [[C_SHIFT:%.*]] = ashr i32 %c, 2
+; CHECK-DAG:     [[C_DIV:%.*]] = sdiv i32 %c, 4
 ; CHECK-NEXT:    [[SUM1:%.*]] = add i32 [[A_SHIFT]], [[B_SHIFT]]
-; CHECK-NEXT:    [[SUM2:%.*]] = add i32 [[SUM1]], [[C_SHIFT]]
+; CHECK-NEXT:    [[SUM2:%.*]] = add i32 [[SUM1]], [[C_DIV]]
 ; CHECK-NEXT:    ret i32 [[SUM2]]
   %mul_a = mul i32 %a, 8
   %udiv_b = udiv i32 %b, 16
@@ -76,7 +76,7 @@ define i32 @mixed_replace(i32 %a, i32 %b) {
 ; CHECK-LABEL: @mixed_replace
 ; CHECK:         [[MUL1:%.*]] = shl i32 %a, 1
 ; CHECK-NEXT:    [[MUL2:%.*]] = mul i32 %b, 7
-; CHECK-NEXT:    [[DIV:%.*]] = ashr i32 %b, 3
+; CHECK-NEXT:    [[DIV:%.*]] = sdiv i32 %b, 8
 ; CHECK-NEXT:    [[ADD1:%.*]] = add i32 [[MUL1]], [[MUL2]]
 ; CHECK-NEXT:    [[RES:%.*]] = add i32 [[ADD1]], [[DIV]]
 ; CHECK-NEXT:    ret i32 [[RES]]
