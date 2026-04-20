@@ -9,7 +9,10 @@
 
 namespace {
 
-static llvm::Constant *buildOneConstant(llvm::Type *Ty) {
+llvm::Constant *buildOneConstant(llvm::Type *Ty) {
+  if (!Ty)
+    return nullptr;
+
   llvm::Type *ScalarTy = Ty->getScalarType();
   llvm::Constant *OneScalar = llvm::ConstantFP::get(ScalarTy, 1.0);
 
@@ -21,8 +24,14 @@ static llvm::Constant *buildOneConstant(llvm::Type *Ty) {
   return OneScalar;
 }
 
-static llvm::Value *expandPowi(llvm::IRBuilder<> &Builder, llvm::Value *Base,
-                               int64_t Exp) {
+llvm::Value *expandPowi(llvm::IRBuilder<> &Builder,
+                        llvm::Instruction *InsertBefore, llvm::Value *Base,
+                        int64_t Exp) {
+  if (!InsertBefore || !Base)
+    return nullptr;
+
+  Builder.SetInsertPoint(InsertBefore);
+
   switch (Exp) {
   case 0:
     return buildOneConstant(Base->getType());
@@ -67,7 +76,7 @@ struct PikhotskiyPowiPass : llvm::PassInfoMixin<PikhotskiyPowiPass> {
         Builder.setFastMathFlags(Powi->getFastMathFlags());
 
         llvm::Value *NewValue =
-            expandPowi(Builder, Powi->getArgOperand(0), Exp);
+            expandPowi(Builder, Powi, Powi->getArgOperand(0), Exp);
         if (!NewValue)
           continue;
 
