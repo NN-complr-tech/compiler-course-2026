@@ -28,12 +28,12 @@
 ---
 # CHECK-LABEL: name: _Z4loopPii
 # CHECK: bb.3.for.body
-# CHECK: PHI
+# CHECK: %1:gr64_nosp = PHI
 # CHECK: ADD32mi
-# CHECK: PHI
+# CHECK: {{%[0-9]+}}:gr64_nosp = PHI
 # CHECK: ADD32mi
-# CHECK: JCC_1
-# CHECK-NEXT: JMP_1
+# CHECK: JCC_1 %bb.2, 4, implicit $eflags
+# CHECK-NEXT: JMP_1 %bb.3
 # CHECK-NOT: JMP_1
 
 name:            _Z4loopPii
