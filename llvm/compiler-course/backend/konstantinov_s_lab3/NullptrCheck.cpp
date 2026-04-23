@@ -19,8 +19,7 @@ private:
   bool shouldCheckRegister(llvm::Register Reg) const;
   void insertCheck(llvm::MachineBasicBlock &MBB,
                    llvm::MachineBasicBlock::iterator InsertPt,
-                   llvm::DebugLoc DL,
-                   const llvm::TargetInstrInfo *TII,
+                   llvm::DebugLoc DL, const llvm::TargetInstrInfo *TII,
                    llvm::Register Reg) const;
 };
 
@@ -36,8 +35,7 @@ InsertNullCheckPass::extractBaseRegister(llvm::MachineInstr &MI) const {
 
   MemOp += X86II::getOperandBias(Desc);
 
-  const llvm::MachineOperand &Base =
-      MI.getOperand(MemOp + X86::AddrBaseReg);
+  const llvm::MachineOperand &Base = MI.getOperand(MemOp + X86::AddrBaseReg);
 
   if (!Base.isReg())
     return llvm::Register();
@@ -53,14 +51,11 @@ bool InsertNullCheckPass::shouldCheckRegister(llvm::Register Reg) const {
 }
 
 void InsertNullCheckPass::insertCheck(
-    llvm::MachineBasicBlock &MBB,
-    llvm::MachineBasicBlock::iterator InsertPt,
-    llvm::DebugLoc DL,
-    const llvm::TargetInstrInfo *TII,
+    llvm::MachineBasicBlock &MBB, llvm::MachineBasicBlock::iterator InsertPt,
+    llvm::DebugLoc DL, const llvm::TargetInstrInfo *TII,
     llvm::Register Reg) const {
 
-  llvm::BuildMI(MBB, InsertPt, DL, TII->get(llvm::TargetOpcode::COPY),
-                X86::RDI)
+  llvm::BuildMI(MBB, InsertPt, DL, TII->get(llvm::TargetOpcode::COPY), X86::RDI)
       .addReg(Reg);
 
   llvm::BuildMI(MBB, InsertPt, DL, TII->get(X86::CALL64pcrel32))
@@ -70,8 +65,7 @@ void InsertNullCheckPass::insertCheck(
 bool InsertNullCheckPass::runOnMachineFunction(llvm::MachineFunction &MF) {
   bool Modified = false;
 
-  const llvm::TargetInstrInfo *TII =
-      MF.getSubtarget().getInstrInfo();
+  const llvm::TargetInstrInfo *TII = MF.getSubtarget().getInstrInfo();
 
   for (llvm::MachineBasicBlock &MBB : MF) {
     for (auto It = MBB.begin(); It != MBB.end(); ++It) {
@@ -95,5 +89,5 @@ bool InsertNullCheckPass::runOnMachineFunction(llvm::MachineFunction &MF) {
 }
 } // namespace
 
-static RegisterPass<InsertNullCheckPass> X("nullptrcheckpass", "description pass", false,
-                                   false);
+static RegisterPass<InsertNullCheckPass> X("nullptrcheckpass",
+                                           "description pass", false, false);
