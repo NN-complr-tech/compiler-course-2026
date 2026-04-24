@@ -1,0 +1,150 @@
+; RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/inlining%shlibext \
+; RUN: -run-pass=inlining %s -o - | FileCheck %s
+
+--- |
+  define i32 @add(i32 %a, i32 %b) {
+    %sum = add i32 %a, %b
+    ret i32 %sum
+  }
+  
+  define i32 @multiply(i32 %a, i32 %b) {
+    %prod = mul i32 %a, %b
+    ret i32 %prod
+  }
+  
+  define i32 @small(i32 %x) {
+    %a = add i32 %x, 1
+    %b = add i32 %a, 2
+    %c = add i32 %b, 3
+    ret i32 %c
+  }
+  
+  define i32 @medium(i32 %x) {
+    %a = add i32 %x, 1
+    %b = add i32 %a, 2
+    %c = add i32 %b, 3
+    %d = add i32 %c, 4
+    %e = add i32 %d, 5
+    %f = add i32 %e, 6
+    ret i32 %f
+  }
+  
+  define i32 @large(i32 %x) {
+    %1 = add i32 %x, 1
+    %2 = add i32 %1, 2
+    %3 = add i32 %2, 3
+    %4 = add i32 %3, 4
+    %5 = add i32 %4, 5
+    %6 = add i32 %5, 6
+    %7 = add i32 %6, 7
+    %8 = add i32 %7, 8
+    %9 = add i32 %8, 9
+    %10 = add i32 %9, 10
+    %11 = add i32 %10, 11
+    %12 = add i32 %11, 12
+    %13 = add i32 %12, 13
+    %14 = add i32 %13, 14
+    %15 = add i32 %14, 15
+    %16 = add i32 %15, 16
+    ret i32 %16
+  }
+  
+  define i32 @factorial(i32 %n) {
+    %cmp = icmp sle i32 %n, 1
+    br i1 %cmp, label %end, label %rec
+  end:
+    ret i32 1
+  rec:
+    %sub = sub i32 %n, 1
+    %call = call i32 @factorial(i32 %sub)
+    %mul = mul i32 %n, %call
+    ret i32 %mul
+  }
+
+  define i32 @main() {
+    %r1 = call i32 @add(i32 10, i32 20)
+    %r2 = call i32 @multiply(i32 5, i32 6)
+    %r3 = call i32 @small(i32 1)
+    %r4 = call i32 @medium(i32 2)
+    %r5 = call i32 @large(i32 3)
+    %r6 = call i32 @factorial(i32 4)
+    %s1 = add i32 %r1, %r2
+    %s2 = add i32 %s1, %r3
+    %s3 = add i32 %s2, %r4
+    %s4 = add i32 %s3, %r5
+    %res = add i32 %s4, %r6
+    ret i32 %res
+  }
+
+---
+
+# CHECK-LABEL: name: main
+name: main
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: gr32 }
+  - { id: 1, class: gr32 }
+  - { id: 2, class: gr32 }
+  - { id: 3, class: gr32 }
+  - { id: 4, class: gr32 }
+  - { id: 5, class: gr32 }
+body: |
+  bb.0:
+    ; CHECK:      %0:gr32 = MOV32ri 10
+    ; CHECK-NEXT: %1:gr32 = MOV32ri 20
+    ; CHECK-NEXT: %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
+    
+    ; CHECK-NEXT: %3:gr32 = MOV32ri 5
+    ; CHECK-NEXT: %4:gr32 = MOV32ri 6
+    ; CHECK-NEXT: %5:gr32 = IMUL32rr %3, %4, implicit-def dead $eflags
+    
+    ; CHECK-NEXT: %6:gr32 = MOV32ri 1
+    ; CHECK-NEXT: %7:gr32 = ADD32ri %6, 1
+    ; CHECK-NEXT: %8:gr32 = ADD32ri %7, 2
+    ; CHECK-NEXT: %9:gr32 = ADD32ri %8, 3
+    
+    ; CHECK-NEXT: %10:gr32 = MOV32ri 2
+    ; CHECK-NEXT: %11:gr32 = ADD32ri %10, 1
+    ; CHECK-NEXT: %12:gr32 = ADD32ri %11, 2
+    ; CHECK-NEXT: %13:gr32 = ADD32ri %12, 3
+    ; CHECK-NEXT: %14:gr32 = ADD32ri %13, 4
+    ; CHECK-NEXT: %15:gr32 = ADD32ri %14, 5
+    ; CHECK-NEXT: %16:gr32 = ADD32ri %15, 6
+    
+    ; CHECK: call64pcrel32 @large
+    ; CHECK: call64pcrel32 @factorial
+    
+    %0:gr32 = MOV32ri 10
+    %1:gr32 = MOV32ri 20
+    %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
+    
+    %3:gr32 = MOV32ri 5
+    %4:gr32 = MOV32ri 6
+    %5:gr32 = IMUL32rr %3, %4, implicit-def dead $eflags
+    
+    %6:gr32 = MOV32ri 1
+    %7:gr32 = ADD32ri %6, 1
+    %8:gr32 = ADD32ri %7, 2
+    %9:gr32 = ADD32ri %8, 3
+    
+    %10:gr32 = MOV32ri 2
+    %11:gr32 = ADD32ri %10, 1
+    %12:gr32 = ADD32ri %11, 2
+    %13:gr32 = ADD32ri %12, 3
+    %14:gr32 = ADD32ri %13, 4
+    %15:gr32 = ADD32ri %14, 5
+    %16:gr32 = ADD32ri %15, 6
+    
+    %17:gr32 = MOV32ri 3
+    %18:gr32 = call64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit $eflags
+    
+    %19:gr32 = MOV32ri 4
+    %20:gr32 = call64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit $eflags
+    
+    %21:gr32 = ADD32rr %2, %5, implicit-def dead $eflags
+    %22:gr32 = ADD32rr %21, %9, implicit-def dead $eflags
+    %23:gr32 = ADD32rr %22, %16, implicit-def dead $eflags
+    %24:gr32 = ADD32rr %23, %18, implicit-def dead $eflags
+    %25:gr32 = ADD32rr %24, %20, implicit-def dead $eflags
+    $eax = COPY %25
+    RET 0, $eax
