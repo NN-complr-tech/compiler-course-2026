@@ -63,7 +63,6 @@ bool SpichekLab3Pass::runOnMachineFunction(MachineFunction &MF) {
 
       I = MBB.erase(StartI, I);
 
-      // 2. ТЕПЕРЬ генерируем новую инструкцию перед позицией I
       if (Delta > 0) {
         unsigned AddOpc = Is32 ? X86::ADD32ri : X86::ADD64ri32;
         BuildMI(MBB, I, DL, TII->get(AddOpc), TargetReg)
