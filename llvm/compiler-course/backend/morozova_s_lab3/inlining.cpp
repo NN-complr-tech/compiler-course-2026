@@ -36,7 +36,8 @@ private:
     for (unsigned i = 0; i < Call.getNumOperands(); i++) {
       MachineOperand &Op = Call.getOperand(i);
       if (Op.isGlobal()) {
-        if (Function *F = dyn_cast<Function>(Op.getGlobal())) {
+        if (Function *F =
+                const_cast<Function *>(dyn_cast<Function>(Op.getGlobal()))) {
           if (!F->isDeclaration()) {
             unsigned Size = countInstructions(F);
             if (Size <= MAX_INSTS) {
