@@ -28,8 +28,7 @@ bool canInlineCallee(const llvm::Function *Callee) {
   return getInstructionCount(*Callee) <= MaxInlineInstructions;
 }
 
-struct PikhotskiyInliningPass
-    : llvm::PassInfoMixin<PikhotskiyInliningPass> {
+struct PikhotskiyInliningPass : llvm::PassInfoMixin<PikhotskiyInliningPass> {
   llvm::PreservedAnalyses run(llvm::Function &F,
                               llvm::FunctionAnalysisManager &) {
     bool Changed = false;
