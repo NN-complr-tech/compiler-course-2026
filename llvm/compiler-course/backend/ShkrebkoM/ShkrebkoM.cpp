@@ -22,11 +22,11 @@ public:
 
 char NullCheckPass::ID = 0;
 
-static bool isMemoryAccess(const MachineInstr &MI) {
+bool isMemoryAccess(const MachineInstr &MI) {
   return MI.mayLoad() || MI.mayStore();
 }
 
-static Register getBaseRegister(const MachineInstr &MI) {
+Register getBaseRegister(const MachineInstr &MI) {
   const MCInstrDesc &Desc = MI.getDesc();
   int MemOpOffset = X86II::getMemoryOperandNo(Desc.TSFlags);
   if (MemOpOffset < 0)
