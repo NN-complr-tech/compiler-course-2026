@@ -88,10 +88,12 @@ body: |
     %6:gr32 = ADD32ri %5, 3, implicit-def dead $eflags
 
     %7:gr32 = MOV32ri 3
-    %8:gr32 = CALL64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit $eflags
+    CALL64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit $eflags, implicit-def $eax
+    %8:gr32 = COPY $eax
 
     %9:gr32 = MOV32ri 4
-    %10:gr32 = CALL64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit $eflags
+    CALL64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit $eflags, implicit-def $eax
+    %10:gr32 = COPY $eax
 
     %11:gr32 = ADD32rr %2, %6, implicit-def dead $eflags
     %12:gr32 = ADD32rr %11, %8, implicit-def dead $eflags
