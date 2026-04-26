@@ -98,17 +98,17 @@ body: |
     ; CHECK-NEXT: %5:gr32 = IMUL32rr %3, %4, implicit-def dead $eflags
 
     ; CHECK-NEXT: %6:gr32 = MOV32ri 1
-    ; CHECK-NEXT: %7:gr32 = ADD32ri %6, 1
-    ; CHECK-NEXT: %8:gr32 = ADD32ri %7, 2
-    ; CHECK-NEXT: %9:gr32 = ADD32ri %8, 3
+    ; CHECK-NEXT: %7:gr32 = ADD32ri %6, 1, implicit-def dead $eflags
+    ; CHECK-NEXT: %8:gr32 = ADD32ri %7, 2, implicit-def dead $eflags
+    ; CHECK-NEXT: %9:gr32 = ADD32ri %8, 3, implicit-def dead $eflags
 
     ; CHECK-NEXT: %10:gr32 = MOV32ri 2
-    ; CHECK-NEXT: %11:gr32 = ADD32ri %10, 1
-    ; CHECK-NEXT: %12:gr32 = ADD32ri %11, 2
-    ; CHECK-NEXT: %13:gr32 = ADD32ri %12, 3
-    ; CHECK-NEXT: %14:gr32 = ADD32ri %13, 4
-    ; CHECK-NEXT: %15:gr32 = ADD32ri %14, 5
-    ; CHECK-NEXT: %16:gr32 = ADD32ri %15, 6
+    ; CHECK-NEXT: %11:gr32 = ADD32ri %10, 1, implicit-def dead $eflags
+    ; CHECK-NEXT: %12:gr32 = ADD32ri %11, 2, implicit-def dead $eflags
+    ; CHECK-NEXT: %13:gr32 = ADD32ri %12, 3, implicit-def dead $eflags
+    ; CHECK-NEXT: %14:gr32 = ADD32ri %13, 4, implicit-def dead $eflags
+    ; CHECK-NEXT: %15:gr32 = ADD32ri %14, 5, implicit-def dead $eflags
+    ; CHECK-NEXT: %16:gr32 = ADD32ri %15, 6, implicit-def dead $eflags
 
     ; CHECK: call64pcrel32 @large
     ; CHECK: call64pcrel32 @factorial
@@ -122,23 +122,23 @@ body: |
     %5:gr32 = IMUL32rr %3, %4, implicit-def dead $eflags
 
     %6:gr32 = MOV32ri 1
-    %7:gr32 = ADD32ri %6, 1
-    %8:gr32 = ADD32ri %7, 2
-    %9:gr32 = ADD32ri %8, 3
+    %7:gr32 = ADD32ri %6, 1, implicit-def dead $eflags
+    %8:gr32 = ADD32ri %7, 2, implicit-def dead $eflags
+    %9:gr32 = ADD32ri %8, 3, implicit-def dead $eflags
 
     %10:gr32 = MOV32ri 2
-    %11:gr32 = ADD32ri %10, 1
-    %12:gr32 = ADD32ri %11, 2
-    %13:gr32 = ADD32ri %12, 3
-    %14:gr32 = ADD32ri %13, 4
-    %15:gr32 = ADD32ri %14, 5
-    %16:gr32 = ADD32ri %15, 6
+    %11:gr32 = ADD32ri %10, 1, implicit-def dead $eflags
+    %12:gr32 = ADD32ri %11, 2, implicit-def dead $eflags
+    %13:gr32 = ADD32ri %12, 3, implicit-def dead $eflags
+    %14:gr32 = ADD32ri %13, 4, implicit-def dead $eflags
+    %15:gr32 = ADD32ri %14, 5, implicit-def dead $eflags
+    %16:gr32 = ADD32ri %15, 6, implicit-def dead $eflags
 
     %17:gr32 = MOV32ri 3
-    %18:gr32 = call64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit $eflags
+    %18:gr32 = CALL64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit $eflags
 
     %19:gr32 = MOV32ri 4
-    %20:gr32 = call64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit $eflags
+    %20:gr32 = CALL64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit $eflags
 
     %21:gr32 = ADD32rr %2, %5, implicit-def dead $eflags
     %22:gr32 = ADD32rr %21, %9, implicit-def dead $eflags
