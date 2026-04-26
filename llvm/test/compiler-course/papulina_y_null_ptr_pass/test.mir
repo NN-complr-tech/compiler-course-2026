@@ -1,0 +1,46 @@
+# RUN: llc -mtriple x86_64-unknown-linux-gnu -load=%llvmshlibdir/papulina_y_null_ptr_pass_BACKEND%shlibext -run-pass=check-null-ptr-x86 %s -o - | FileCheck %s
+
+--- |
+  define i32 @test_load(ptr %ptr) {
+  entry:
+    %val = load i32, ptr %ptr
+    ret i32 %val
+  }
+
+  define void @test_store(ptr %ptr, i32 %value) {
+  entry:
+    store i32 %value, ptr %ptr
+    ret void
+  }
+...
+---
+name:            test_load
+tracksRegLiveness: true
+body:             |
+  bb.0.entry:
+    liveins: $rdi
+    %0:gr64 = COPY $rdi
+    %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
+    $eax = COPY %1
+    RET 0, $eax
+
+# CHECK-LABEL: name: test_load
+# CHECK: $rdi = MOV64rr [[REG1:%[0-9]+]]
+# CHECK-NEXT: CALL64pcrel32 &checkPointer
+# CHECK-NEXT: {{%[0-9]+}}:gr32 = MOV32rm [[REG1]], 1, $noreg, 0, $noreg
+
+---
+name:            test_store
+tracksRegLiveness: true
+body:             |
+  bb.0.entry:
+    liveins: $rdi, $esi
+    %1:gr32 = COPY $esi
+    %0:gr64 = COPY $rdi
+    MOV32mr %0, 1, $noreg, 0, $noreg, %1
+    RET 0
+
+# CHECK-LABEL: name: test_store
+# CHECK: $rdi = MOV64rr [[REG2:%[0-9]+]]
+# CHECK-NEXT: CALL64pcrel32 &checkPointer
+# CHECK-NEXT: MOV32mr [[REG2]], 1, $noreg, 0, $noreg, {{%[0-9]+}}
