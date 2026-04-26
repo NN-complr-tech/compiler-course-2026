@@ -65,12 +65,12 @@ body: |
   bb.0:
     ; CHECK: %0:gr32 = MOV32ri 10
     ; CHECK: %1:gr32 = MOV32ri 20
-    ; CHECK: %2:gr32 = ADD32rr %0, %1
+    ; CHECK: %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
 
     ; CHECK: %3:gr32 = MOV32ri 1
-    ; CHECK: %4:gr32 = ADD32ri %3, 1
-    ; CHECK: %5:gr32 = ADD32ri %4, 2
-    ; CHECK: %6:gr32 = ADD32ri %5, 3
+    ; CHECK: %4:gr32 = ADD32ri %3, 1, implicit-def dead $eflags
+    ; CHECK: %5:gr32 = ADD32ri %4, 2, implicit-def dead $eflags
+    ; CHECK: %6:gr32 = ADD32ri %5, 3, implicit-def dead $eflags
 
     ; CHECK: %7:gr32 = MOV32ri 3
     ; CHECK: CALL64pcrel32 @large
@@ -80,21 +80,21 @@ body: |
 
     %0:gr32 = MOV32ri 10
     %1:gr32 = MOV32ri 20
-    %2:gr32 = ADD32rr %0, %1
+    %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
 
     %3:gr32 = MOV32ri 1
-    %4:gr32 = ADD32ri %3, 1
-    %5:gr32 = ADD32ri %4, 2
-    %6:gr32 = ADD32ri %5, 3
+    %4:gr32 = ADD32ri %3, 1, implicit-def dead $eflags
+    %5:gr32 = ADD32ri %4, 2, implicit-def dead $eflags
+    %6:gr32 = ADD32ri %5, 3, implicit-def dead $eflags
 
     %7:gr32 = MOV32ri 3
-    %8:gr32 = CALL64pcrel32 @large
+    %8:gr32 = CALL64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit $eflags
 
     %9:gr32 = MOV32ri 4
-    %10:gr32 = CALL64pcrel32 @factorial
+    %10:gr32 = CALL64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit $eflags
 
-    %11:gr32 = ADD32rr %2, %6
-    %12:gr32 = ADD32rr %11, %8
-    %13:gr32 = ADD32rr %12, %10
+    %11:gr32 = ADD32rr %2, %6, implicit-def dead $eflags
+    %12:gr32 = ADD32rr %11, %8, implicit-def dead $eflags
+    %13:gr32 = ADD32rr %12, %10, implicit-def dead $eflags
     $eax = COPY %13
     RET 0, $eax
