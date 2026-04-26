@@ -110,8 +110,8 @@ body: |
     ; CHECK-NEXT: %15:gr32 = ADD32ri %14, 5, implicit-def dead $eflags
     ; CHECK-NEXT: %16:gr32 = ADD32ri %15, 6, implicit-def dead $eflags
 
-    ; CHECK: call64pcrel32 @large
-    ; CHECK: call64pcrel32 @factorial
+    ; CHECK: CALL64pcrel32 @large
+    ; CHECK: CALL64pcrel32 @factorial
 
     %0:gr32 = MOV32ri 10
     %1:gr32 = MOV32ri 20
@@ -134,11 +134,15 @@ body: |
     %15:gr32 = ADD32ri %14, 5, implicit-def dead $eflags
     %16:gr32 = ADD32ri %15, 6, implicit-def dead $eflags
 
+    ; CALL инструкции не должны иметь результат в регистре.
+    ; Результат call'а сохраняется в EAX/RAX, и мы копируем его в нужный регистр.
     %17:gr32 = MOV32ri 3
-    %18:gr32 = CALL64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit $eflags
+    CALL64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit $eflags, implicit-def $eax
+    %18:gr32 = COPY $eax
 
     %19:gr32 = MOV32ri 4
-    %20:gr32 = CALL64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit $eflags
+    CALL64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit $eflags, implicit-def $eax
+    %20:gr32 = COPY $eax
 
     %21:gr32 = ADD32rr %2, %5, implicit-def dead $eflags
     %22:gr32 = ADD32rr %21, %9, implicit-def dead $eflags
@@ -147,4 +151,3 @@ body: |
     %25:gr32 = ADD32rr %24, %20, implicit-def dead $eflags
     $eax = COPY %25
     RET 0, $eax
-
