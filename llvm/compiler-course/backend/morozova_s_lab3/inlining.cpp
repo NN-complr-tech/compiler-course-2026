@@ -44,7 +44,7 @@ private:
             unsigned Size = countInstructions(F);
             if (Size <= MAX_INSTS) {
               if (isRecursive(F)) {
-                return checkRecursionDepth(F);
+                return false;
               }
               return true;
             }
@@ -76,20 +76,6 @@ private:
       }
     }
     return false;
-  }
-
-  bool checkRecursionDepth(Function *F) {
-    static std::map<Function *, unsigned> DepthMap;
-    unsigned &Depth = DepthMap[F];
-    Depth++;
-
-    if (Depth > MAX_DEPTH) {
-      Depth--;
-      return false;
-    }
-
-    Depth--;
-    return true;
   }
 };
 
