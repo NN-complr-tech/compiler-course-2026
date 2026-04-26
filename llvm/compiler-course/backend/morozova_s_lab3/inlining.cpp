@@ -18,12 +18,14 @@ public:
 
   bool runOnMachineFunction(MachineFunction &MF) override {
     bool Changed = false;
+
     for (MachineBasicBlock &MBB : MF) {
       for (MachineInstr &MI : MBB) {
         if (MI.isCall()) {
           if (canInline(MI)) {
             MI.eraseFromParent();
             Changed = true;
+            break;
           }
         }
       }
@@ -38,7 +40,7 @@ private:
       if (Op.isGlobal()) {
         if (Function *F =
                 const_cast<Function *>(dyn_cast<Function>(Op.getGlobal()))) {
-          if (!F->isDeclaration()) {
+          if (F && !F->isDeclaration()) {
             unsigned Size = countInstructions(F);
             if (Size <= MAX_INSTS) {
               if (isRecursive(F)) {
@@ -78,15 +80,15 @@ private:
 
   bool checkRecursionDepth(Function *F) {
     static std::map<Function *, unsigned> DepthMap;
-    if (DepthMap.find(F) == DepthMap.end()) {
-      DepthMap[F] = 1;
-    } else {
-      DepthMap[F]++;
-    }
-    if (DepthMap[F] > MAX_DEPTH) {
-      DepthMap[F]--;
+    unsigned &Depth = DepthMap[F];
+    Depth++;
+
+    if (Depth > MAX_DEPTH) {
+      Depth--;
       return false;
     }
+
+    Depth--;
     return true;
   }
 };
