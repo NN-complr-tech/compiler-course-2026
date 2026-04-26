@@ -91,8 +91,7 @@ bool inlineCall(MachineFunction &CallerMF, MachineInstr &CallMI,
     if (MI.isTerminator())
       continue;
 
-    MachineInstr *Cloned =
-        cloneWithRegMap(CallerMF, MI, CalleeMRI, VRegMap);
+    MachineInstr *Cloned = cloneWithRegMap(CallerMF, MI, CalleeMRI, VRegMap);
     CallerMBB->insert(InsertIt, Cloned);
   }
 
