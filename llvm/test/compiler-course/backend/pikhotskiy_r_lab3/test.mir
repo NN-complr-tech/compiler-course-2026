@@ -1,0 +1,93 @@
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/pikhotskiy_r_lab3_BACKEND%pluginext \
+# RUN:   -run-pass=pikhotskiy-inline-backend %s -o - | FileCheck %s
+
+--- |
+  define i32 @small(i32 %x) {
+    ret i32 1
+  }
+
+  define i32 @big(i32 %x) {
+    ret i32 %x
+  }
+
+  define i32 @caller_small(i32 %x) {
+    %r = call i32 @small(i32 %x)
+    ret i32 %r
+  }
+
+  define i32 @caller_big(i32 %x) {
+    %r = call i32 @big(i32 %x)
+    ret i32 %r
+  }
+
+  define i32 @rec(i32 %x) {
+    %r = call i32 @rec(i32 %x)
+    ret i32 %r
+  }
+...
+
+---
+name: small
+body: |
+  bb.0:
+    $eax = MOV32ri 1
+    RET64 $eax
+...
+
+---
+name: big
+body: |
+  bb.0:
+    $eax = MOV32ri 0
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    $eax = INC32r $eax, implicit-def dead $eflags
+    RET64 $eax
+...
+
+---
+name: caller_small
+body: |
+  bb.0:
+    ; CHECK-LABEL: name: caller_small
+    ; CHECK-NOT: CALL64pcrel32 @small
+    ; CHECK:      $eax = MOV32ri 1
+    ; CHECK-NEXT: RET64 $eax
+    CALL64pcrel32 @small, csr_64, implicit $rsp, implicit-def $rsp, implicit-def $eax
+    RET64 $eax
+...
+
+---
+name: caller_big
+body: |
+  bb.0:
+    ; CHECK-LABEL: name: caller_big
+    ; CHECK:      CALL64pcrel32 @big
+    CALL64pcrel32 @big, csr_64, implicit $rsp, implicit-def $rsp, implicit-def $eax
+    RET64 $eax
+...
+
+---
+name: rec
+body: |
+  bb.0:
+    ; CHECK-LABEL: name: rec
+    ; CHECK-COUNT-4: MOV32ri 7
+    ; CHECK-COUNT-1: CALL64pcrel32 @rec
+    $eax = MOV32ri 7
+    CALL64pcrel32 @rec, csr_64, implicit $rsp, implicit-def $rsp, implicit-def $eax
+    RET64 $eax
+...
