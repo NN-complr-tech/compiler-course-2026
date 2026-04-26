@@ -61,12 +61,8 @@
 # CHECK-LABEL: name: main
 name: main
 tracksRegLiveness: true
-liveins:
-  - { reg: '$eflags' }
 body: |
   bb.0:
-    liveins: $eflags
-
     ; CHECK: %0:gr32 = MOV32ri 10
     ; CHECK: %1:gr32 = MOV32ri 20
     ; CHECK: %2:gr32 = ADD32rr %0, %1, implicit-def dead $eflags
@@ -78,9 +74,11 @@ body: |
 
     ; CHECK: %7:gr32 = MOV32ri 3
     ; CHECK: CALL64pcrel32 @large
+    ; CHECK: %8:gr32 = COPY $eax
 
-    ; CHECK: %8:gr32 = MOV32ri 4
+    ; CHECK: %9:gr32 = MOV32ri 4
     ; CHECK: CALL64pcrel32 @factorial
+    ; CHECK: %10:gr32 = COPY $eax
 
     %0:gr32 = MOV32ri 10
     %1:gr32 = MOV32ri 20
@@ -93,12 +91,10 @@ body: |
 
     %7:gr32 = MOV32ri 3
     CALL64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit-def $eax
-
     %8:gr32 = COPY $eax
 
     %9:gr32 = MOV32ri 4
     CALL64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit-def $eax
-
     %10:gr32 = COPY $eax
 
     %11:gr32 = ADD32rr %2, %6, implicit-def dead $eflags
