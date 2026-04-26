@@ -22,7 +22,7 @@ struct LoopDescriptor {
 };
 
 // searching for virtual reg using INC32r/64r in the loop Header
-static Register findInductionVar(MachineBasicBlock *MBB) {
+Register findInductionVar(MachineBasicBlock *MBB) {
   for (MachineInstr &MI : *MBB)
     if (MI.getOpcode() == X86::CMP32ri || MI.getOpcode() == X86::CMP32ri8)
       return MI.getOperand(0).getReg();
@@ -30,7 +30,7 @@ static Register findInductionVar(MachineBasicBlock *MBB) {
 }
 
 // get loop Imm
-static int64_t getTripCount(MachineBasicBlock *MBB) {
+int64_t getTripCount(MachineBasicBlock *MBB) {
   for (MachineInstr &MI : *MBB) {
     switch (MI.getOpcode()) {
     case X86::CMP32ri:
@@ -50,7 +50,7 @@ static int64_t getTripCount(MachineBasicBlock *MBB) {
   return -1;
 }
 
-static SmallVector<MachineBasicBlock *, 16>
+SmallVector<MachineBasicBlock *, 16>
 collectLoopBlocks(MachineBasicBlock *Header, MachineBasicBlock *Exit) {
   SmallVector<MachineBasicBlock *, 16> Blocks;
   SmallPtrSet<MachineBasicBlock *, 16> Visited;
@@ -69,7 +69,7 @@ collectLoopBlocks(MachineBasicBlock *Header, MachineBasicBlock *Exit) {
   return Blocks;
 }
 
-static bool unrollLoop(const LoopDescriptor &LD, MachineFunction &MF) {
+bool unrollLoop(const LoopDescriptor &LD, MachineFunction &MF) {
   MachineBasicBlock *Preheader = LD.Preheader;
   MachineBasicBlock *Header = LD.Header;
   MachineBasicBlock *Latch = LD.Latch;
@@ -148,8 +148,8 @@ static bool unrollLoop(const LoopDescriptor &LD, MachineFunction &MF) {
   return true;
 }
 
-static void processLoop(MachineLoop *Loop, MachineFunction &MF,
-                        SmallVector<LoopDescriptor, 8> &Loops) {
+void processLoop(MachineLoop *Loop, MachineFunction &MF,
+                 SmallVector<LoopDescriptor, 8> &Loops) {
   // recurse into subloops
   for (MachineLoop *Sub : Loop->getSubLoops())
     processLoop(Sub, MF, Loops);
