@@ -39,7 +39,7 @@ static int64_t getTripCount(MachineBasicBlock *MBB) {
     case X86::CMP64ri8:
       for (const MachineOperand &Op : MI.operands())
         if (Op.isImm() && Op.getImm() >= 0) // get constant only
-          return Op.getImm() + 1; // +1 because current MIR using JCC 15 ~ JG 
+          return Op.getImm() + 1; // +1 because current MIR using JCC 15 ~ JG
                                   // (Jump if Greater)
       break;
     default:
