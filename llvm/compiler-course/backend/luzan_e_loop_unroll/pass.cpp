@@ -22,34 +22,33 @@ struct LoopDescriptor {
 };
 
 // searching for virtual reg using INC32r/64r in the loop Header
-static Register findInductionVar(MachineBasicBlock* MBB) {
+static Register findInductionVar(MachineBasicBlock *MBB) {
   for (MachineInstr &MI : *MBB)
     if (MI.getOpcode() == X86::CMP32ri || MI.getOpcode() == X86::CMP32ri8)
-      return MI.getOperand(0).getReg(); 
+      return MI.getOperand(0).getReg();
   return Register();
 }
 
 // get loop Imm
-static int64_t getTripCount(MachineBasicBlock* MBB) {
-    for (MachineInstr &MI : *MBB) {
-      switch (MI.getOpcode()) {
-      case X86::CMP32ri:
-      case X86::CMP32ri8:
-      case X86::CMP64ri32:
-      case X86::CMP64ri8:
-        for (const MachineOperand &Op : MI.operands())
-          if (Op.isImm() && Op.getImm() >= 0) // get constant only
-            return Op.getImm() + 1; // +1 because current MIR using JCC 15 ~ JG (Jump if Greater) 
-        break;
-      default: break;
-      }
+static int64_t getTripCount(MachineBasicBlock *MBB) {
+  for (MachineInstr &MI : *MBB) {
+    switch (MI.getOpcode()) {
+    case X86::CMP32ri:
+    case X86::CMP32ri8:
+    case X86::CMP64ri32:
+    case X86::CMP64ri8:
+      for (const MachineOperand &Op : MI.operands())
+        if (Op.isImm() && Op.getImm() >= 0) // get constant only
+          return Op.getImm() + 1; // +1 because current MIR using JCC 15 ~ JG (Jump if Greater)
+      break;
+    default:
+      break;
     }
-  // }
+  }
   outs() << "[skip] no recognizable CMP in loop\n";
   return -1;
 }
 
-//? 
 static SmallVector<MachineBasicBlock *, 16>
 collectLoopBlocks(MachineBasicBlock *Header, MachineBasicBlock *Exit) {
   SmallVector<MachineBasicBlock *, 16> Blocks;
@@ -76,7 +75,8 @@ static bool unrollLoop(const LoopDescriptor &LD, MachineFunction &MF) {
   MachineBasicBlock *Exit = LD.Exit;
 
   // because after changing cfg MachineLoopInfo invalidates
-  SmallVector<MachineBasicBlock *, 16> BodyBlocks = collectLoopBlocks(Header, Exit);      
+  SmallVector<MachineBasicBlock *, 16> BodyBlocks =
+      collectLoopBlocks(Header, Exit);
   int64_t TripCount = getTripCount(Header); // for this MIR
   if (TripCount < 1 || TripCount > 8) {
     outs() << "  [skip] bad trip count: " << TripCount << "\n";
@@ -84,7 +84,7 @@ static bool unrollLoop(const LoopDescriptor &LD, MachineFunction &MF) {
   }
 
   const TargetInstrInfo *TII = MF.getSubtarget().getInstrInfo();
-  MachineRegisterInfo  &MRI  = MF.getRegInfo();
+  MachineRegisterInfo &MRI = MF.getRegInfo();
 
   Register IndVar = findInductionVar(Header);
 
@@ -95,24 +95,25 @@ static bool unrollLoop(const LoopDescriptor &LD, MachineFunction &MF) {
   for (int64_t Iter = 0; Iter < TripCount; ++Iter) {
     // insetring const
     Register IterReg = MRI.createVirtualRegister(MRI.getRegClass(IndVar));
-    BuildMI(*UnrollMBB, UnrollMBB->end(), DebugLoc(),
-            TII->get(X86::MOV32ri), IterReg).addImm(Iter);
+    BuildMI(*UnrollMBB, UnrollMBB->end(), DebugLoc(), TII->get(X86::MOV32ri),
+            IterReg)
+        .addImm(Iter);
 
     // copy all instructions
     for (MachineBasicBlock *MBB : BodyBlocks) {
       for (MachineInstr &MI : *MBB) {
         if (MI.isBranch() || MI.isTerminator() || MI.isDebugInstr())
           continue;
-          
-        if (MI.getOpcode() == X86::INC32r)  
-            // || MI.getOpcode() == X86::CMP32ri ||
-            // MI.getOpcode() == X86::CMP32ri8 ||
-            // MI.getOpcode() == X86::CMP64ri32 ||
-            // MI.getOpcode() == X86::CMP64ri8)
-            if (MI.getOperand(0).getReg() == IndVar) 
-              continue;
 
-        // replace indVar (counter in the loop) with const (Imm) 
+        if (MI.getOpcode() == X86::INC32r)
+          // || MI.getOpcode() == X86::CMP32ri ||
+          // MI.getOpcode() == X86::CMP32ri8 ||
+          // MI.getOpcode() == X86::CMP64ri32 ||
+          // MI.getOpcode() == X86::CMP64ri8)
+          if (MI.getOperand(0).getReg() == IndVar)
+            continue;
+
+        // replace indVar (counter in the loop) with const (Imm)
         MachineInstr *NewMI = MF.CloneMachineInstr(&MI);
         for (MachineOperand &MO : NewMI->operands())
           if (MO.isReg() && MO.getReg() == IndVar)
@@ -126,28 +127,29 @@ static bool unrollLoop(const LoopDescriptor &LD, MachineFunction &MF) {
   TII->removeBranch(*Preheader);
   Preheader->removeSuccessor(Header);
   Preheader->addSuccessor(UnrollMBB);
-  BuildMI(*Preheader, Preheader->end(), DebugLoc(),
-          TII->get(X86::JMP_1)).addMBB(UnrollMBB);
+  BuildMI(*Preheader, Preheader->end(), DebugLoc(), TII->get(X86::JMP_1))
+      .addMBB(UnrollMBB);
 
   UnrollMBB->addSuccessor(Exit);
   Exit->replacePhiUsesWith(Latch, UnrollMBB);
-  BuildMI(*UnrollMBB, UnrollMBB->end(), DebugLoc(),
-          TII->get(X86::JMP_1)).addMBB(Exit);
+  BuildMI(*UnrollMBB, UnrollMBB->end(), DebugLoc(), TII->get(X86::JMP_1))
+      .addMBB(Exit);
 
   // erase BodyBlocks
   for (MachineBasicBlock *MBB : BodyBlocks) {
-    while (!MBB->succ_empty()) MBB->removeSuccessor(MBB->succ_begin());
-    while (!MBB->pred_empty()) (*MBB->pred_begin())->removeSuccessor(MBB);
+    while (!MBB->succ_empty())
+      MBB->removeSuccessor(MBB->succ_begin());
+    while (!MBB->pred_empty())
+      (*MBB->pred_begin())->removeSuccessor(MBB);
     MBB->eraseFromParent();
   }
 
   return true;
 }
 
-static void processLoop(MachineLoop *Loop,
-                        MachineFunction &MF,
+static void processLoop(MachineLoop *Loop, MachineFunction &MF,
                         SmallVector<LoopDescriptor, 8> &Loops) {
-  // recurse into subloops 
+  // recurse into subloops
   for (MachineLoop *Sub : Loop->getSubLoops())
     processLoop(Sub, MF, Loops);
 
@@ -164,7 +166,6 @@ static void processLoop(MachineLoop *Loop,
   Loops.push_back({Preheader, Header, Latch, Exit});
 }
 
-
 class LuzanELoopUnroll : public MachineFunctionPass {
 public:
   static char ID;
@@ -177,23 +178,23 @@ public:
   }
 
   bool runOnMachineFunction(MachineFunction &MF) override {
-  MachineLoopInfo &MLI = getAnalysis<MachineLoopInfoWrapperPass>().getLI();
+    MachineLoopInfo &MLI = getAnalysis<MachineLoopInfoWrapperPass>().getLI();
 
-  SmallVector<LoopDescriptor, 8> Loops;
-  for (MachineLoop *Top : MLI)
-    processLoop(Top, MF, Loops);
+    SmallVector<LoopDescriptor, 8> Loops;
+    for (MachineLoop *Top : MLI)
+      processLoop(Top, MF, Loops);
 
-  bool Changed = false;
-  for (const LoopDescriptor &LD : Loops)
-    Changed |= unrollLoop(LD, MF);
+    bool Changed = false;
+    for (const LoopDescriptor &LD : Loops)
+      Changed |= unrollLoop(LD, MF);
 
-  return Changed;
-}
+    return Changed;
+  }
 };
 
 char LuzanELoopUnroll::ID = 0;
 
 } // namespace
 
-static RegisterPass<LuzanELoopUnroll> X("luzan_e_loop_unroll-x86", "X86 Full Loop Unroll",
-                                false, false);
+static RegisterPass<LuzanELoopUnroll> X("luzan_e_loop_unroll-x86",
+                                        "X86 Full Loop Unroll", false, false);
