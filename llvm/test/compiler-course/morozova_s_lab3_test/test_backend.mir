@@ -147,3 +147,4 @@ body: |
     %25:gr32 = ADD32rr %24, %20, implicit-def dead $eflags
     $eax = COPY %25
     RET 0, $eax
+
