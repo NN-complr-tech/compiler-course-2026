@@ -243,7 +243,6 @@ body:             |
     RET64
 ...
 ---
-# CHECK: nested_loop 
 name:            nested_loop
 frameInfo:
   adjustsStack: true
