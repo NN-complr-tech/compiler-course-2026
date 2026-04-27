@@ -72,3 +72,30 @@ func.func @test_fail_step(%arg0: memref<10xf32>) {
   }
   return
 }
+
+func.func @test_dynamic_success(%arg0: index, %arg1: index, %arg2: index, %arg3: memref<?xf32>) {
+  %f1 = arith.constant 1.0 : f32
+  // CHECK: scf.for %[[IDX:.*]] = %arg0 to %arg1 step %arg2
+  // CHECK-NEXT: memref.store %{{.*}}, %arg3[%[[IDX]]]
+  // CHECK-NEXT: memref.store %{{.*}}, %arg3[%[[IDX]]]
+  scf.for %i = %arg0 to %arg1 step %arg2 {
+    memref.store %f1, %arg3[%i] : memref<?xf32>
+  }
+  scf.for %j = %arg0 to %arg1 step %arg2 {
+    memref.store %f1, %arg3[%j] : memref<?xf32>
+  }
+  return
+}
+
+func.func @test_dynamic_fail(%arg0: index, %arg1: index, %arg2: index, %arg3: index, %arg4: memref<?xf32>) {
+  %f1 = arith.constant 1.0 : f32
+  // CHECK: scf.for
+  // CHECK: scf.for
+  scf.for %i = %arg0 to %arg1 step %arg2 {
+    memref.store %f1, %arg4[%i] : memref<?xf32>
+  }
+  scf.for %j = %arg0 to %arg3 step %arg2 {
+    memref.store %f1, %arg4[%j] : memref<?xf32>
+  }
+  return
+}
