@@ -15,7 +15,7 @@ constexpr unsigned MaxInlineInstructions = 15;
 constexpr unsigned MaxRecursionDepth = 3;
 constexpr unsigned MaxInliningIterations = 64;
 
-Function *getDirectCallee(const MachineInstr &MI) {
+const Function *getDirectCallee(const MachineInstr &MI) {
   for (const MachineOperand &MO : MI.operands()) {
     if (!MO.isGlobal())
       continue;
@@ -122,7 +122,7 @@ public:
           if (!MI.isCall())
             continue;
 
-          Function *CalleeF = getDirectCallee(MI);
+          const Function *CalleeF = getDirectCallee(MI);
           if (!CalleeF)
             continue;
 
@@ -130,7 +130,7 @@ public:
           if (!CalleeMF || !isInlineableCallee(*CalleeMF))
             continue;
 
-          bool IsSelfRecursive = CalleeF == MF.getFunction();
+          bool IsSelfRecursive = CalleeF == &MF.getFunction();
           if (IsSelfRecursive && SelfRecInlineDepth >= MaxRecursionDepth)
             continue;
 
