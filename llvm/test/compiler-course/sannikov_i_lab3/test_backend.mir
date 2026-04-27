@@ -125,7 +125,6 @@ body: |
     liveins: $edi
     %0:gr32 = COPY $edi
 
-    ; Нет указателей — пасс ничего не вставляет
     ; CHECK-NOT: TEST64rr
     ; CHECK-NOT: TRAP
     ; CHECK:     IMUL32rr
