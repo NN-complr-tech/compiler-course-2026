@@ -1,49 +1,6 @@
 # RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/rozenberg_a_lab3_BACKEND%shlibext \
 # RUN: -run-pass=loop-unrolling-x86  %s -o - | FileCheck %s
 
-# CHECK-LABEL: name: test_simple_loop
-# CHECK-NOT: CMP32ri
-# CHECK-NOT: JCC_1
-# CHECK-NOT: INC32r
-# CHECK-COUNT-4: MOV32ri {{[0-3]+}}
-# CHECK-NOT: MOV32ri 4
-# CHECK: $eax = COPY
-# CHECK: RET
-
-# CHECK-LABEL: name: test_boundary_loop
-# CHECK-NOT: CMP32ri
-# CHECK-NOT: JCC_1
-# CHECK-NOT: INC32r
-# CHECK-COUNT-5: MOV32ri {{[0-4]+}}
-# CHECK-NOT: MOV32ri 5
-
-# CHECK-LABEL: name: test_too_large_loop
-# CHECK: CMP32ri
-# CHECK: JCC_1
-# CHECK: INC32r
-# CHECK-NOT: MOV32ri {{[0-9]+}}
-
-# CHECK-LABEL: name: test_nested_loop
-# CHECK-NOT: CMP32ri
-# CHECK-NOT: JCC_1
-# CHECK-NOT: INC32r
-# CHECK-COUNT-12: ADD32rr
-# CHECK-NOT: ADD32rr
-
-# CHECK-LABEL: name: test_nested_partial
-# CHECK: CMP32ri
-# CHECK: JCC_1
-# CHECK-NOT: CMP32ri
-# CHECK-NOT: JCC_1
-# CHECK-COUNT-3: ADD32rr
-# CHECK-NOT: ADD32rr
-
-# CHECK-LABEL: name: test_triple_nested
-# CHECK-NOT: CMP32ri
-# CHECK-NOT: JCC_1
-# CHECK-NOT: INC32r
-# CHECK-COUNT-24: ADD32rr
-# CHECK-NOT: ADD32rr
 
 --- |
   ; ModuleID = 'tests-opt.ll'
@@ -256,6 +213,16 @@
   !15 = distinct !{!15, !7}
   !16 = distinct !{!16, !7}
 ...
+
+# CHECK-LABEL: name: test_simple_loop
+# CHECK-NOT: CMP32ri
+# CHECK-NOT: JCC_1
+# CHECK-NOT: INC32r
+# CHECK-COUNT-4: MOV32ri {{[0-3]+}}
+# CHECK-NOT: MOV32ri 4
+# CHECK: $eax = COPY
+# CHECK: RET
+
 ---
 name:            test_simple_loop
 alignment:       16
@@ -344,6 +311,14 @@ body:             |
     $eax = COPY %7
     RET 0, killed $eax
 ...
+
+# CHECK-LABEL: name: test_boundary_loop
+# CHECK-NOT: CMP32ri
+# CHECK-NOT: JCC_1
+# CHECK-NOT: INC32r
+# CHECK-COUNT-5: MOV32ri {{[0-4]+}}
+# CHECK-NOT: MOV32ri 5
+
 ---
 name:            test_boundary_loop
 alignment:       16
@@ -432,6 +407,13 @@ body:             |
     $eax = COPY %7
     RET 0, killed $eax
 ...
+
+# CHECK-LABEL: name: test_too_large_loop
+# CHECK: CMP32ri
+# CHECK: JCC_1
+# CHECK: INC32r
+# CHECK-NOT: MOV32ri {{[0-9]+}}
+
 ---
 name:            test_too_large_loop
 alignment:       16
@@ -523,6 +505,14 @@ body:             |
     $eax = COPY %8
     RET 0, killed $eax
 ...
+
+# CHECK-LABEL: name: test_nested_loop
+# CHECK-NOT: CMP32ri
+# CHECK-NOT: JCC_1
+# CHECK-NOT: INC32r
+# CHECK-COUNT-12: ADD32rr
+# CHECK-NOT: ADD32rr
+
 ---
 name:            test_nested_loop
 alignment:       16
@@ -645,6 +635,15 @@ body:             |
     $eax = COPY %18
     RET 0, killed $eax
 ...
+
+# CHECK-LABEL: name: test_nested_partial
+# CHECK: CMP32ri
+# CHECK: JCC_1
+# CHECK-NOT: CMP32ri
+# CHECK-NOT: JCC_1
+# CHECK-COUNT-3: ADD32rr
+# CHECK-NOT: ADD32rr
+
 ---
 name:            test_nested_partial
 alignment:       16
@@ -762,6 +761,14 @@ body:             |
     $eax = COPY %15
     RET 0, killed $eax
 ...
+
+# CHECK-LABEL: name: test_triple_nested
+# CHECK-NOT: CMP32ri
+# CHECK-NOT: JCC_1
+# CHECK-NOT: INC32r
+# CHECK-COUNT-24: ADD32rr
+# CHECK-NOT: ADD32rr
+
 ---
 name:            test_triple_nested
 alignment:       16
