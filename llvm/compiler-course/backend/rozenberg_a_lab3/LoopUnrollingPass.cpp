@@ -147,7 +147,8 @@ private:
     return false;
   }
 
-  bool validateLoopCFG(MachineBasicBlock *Preheader, MachineBasicBlock *Header, MachineBasicBlock *Latch, MachineBasicBlock *Exit) {
+  bool validateLoopCFG(MachineBasicBlock *Preheader, MachineBasicBlock *Header,
+                       MachineBasicBlock *Latch, MachineBasicBlock *Exit) {
     if (!Preheader) {
       outs() << " skip: invalid preheader\n";
       return false;
@@ -206,8 +207,8 @@ private:
     for (unsigned Iter = 0; Iter < TripCount; ++Iter) {
       // iteration const in separate vreg
       Register IterReg = MRI.createVirtualRegister(MRI.getRegClass(IndVar));
-      BuildMI(*UnrollBody, UnrollBody->end(), DebugLoc(), TII->get(X86::MOV32ri),
-              IterReg)
+      BuildMI(*UnrollBody, UnrollBody->end(), DebugLoc(),
+              TII->get(X86::MOV32ri), IterReg)
           .addImm(Iter);
 
       for (MachineBasicBlock *MBB : LoopBlocks) {
