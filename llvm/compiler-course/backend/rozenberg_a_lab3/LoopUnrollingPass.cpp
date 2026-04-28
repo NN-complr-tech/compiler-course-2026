@@ -29,7 +29,7 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override {
     MachineLoopInfo &MLI = getAnalysis<MachineLoopInfoWrapperPass>().getLI();
 
-    outs() << "[LoopUnrolling] " << MF.getName() << "\n";
+    outs() << "LoopUnrolling: " << MF.getName() << "\n";
 
     // collect all loops in post-order before changing CFG
     // (after eraseFromParent MLI is invalid)
@@ -37,7 +37,7 @@ public:
     for (MachineLoop *Top : MLI)
       collectPostOrder(Top, Worklist);
 
-    outs() << "  found loops: " << Worklist.size() << "\n";
+    outs() << " found loops: " << Worklist.size() << "\n";
 
     bool Changed = false;
     for (MachineLoop *L : Worklist)
@@ -47,7 +47,7 @@ public:
   }
 
 private:
-  Register findInductionVar(MachineBasicBlock *Header) {
+  Register getInductionVar(MachineBasicBlock *Header) {
     for (MachineInstr &MI : *Header) {
       unsigned Opc = MI.getOpcode();
       if (Opc == X86::CMP32ri || Opc == X86::CMP32ri8 ||
@@ -89,28 +89,47 @@ private:
     case 13:
       return Imm; // JGE
     default:
-      outs() << "  [skip] unsupported JCC code: " << JccCond << "\n";
+      outs() << " skip: unsupported JCC code: " << JccCond << "\n";
       return -1;
     }
   }
 
-  SmallVector<MachineBasicBlock *, 16>
-  collectLoopBlocks(MachineBasicBlock *Header, MachineBasicBlock *Exit) {
-    SmallVector<MachineBasicBlock *, 16> Blocks;
-    SmallPtrSet<MachineBasicBlock *, 16> Visited;
-    SmallVector<MachineBasicBlock *, 16> Worklist = {Header};
-
-    while (!Worklist.empty()) {
-      MachineBasicBlock *MBB = Worklist.pop_back_val();
-      if (!Visited.insert(MBB).second)
-        continue;
-      if (MBB == Exit)
-        continue;
-      Blocks.push_back(MBB);
-      for (MachineBasicBlock *Succ : MBB->successors())
-        Worklist.push_back(Succ);
+  bool isValidTripCount(unsigned TripCount) {
+    if (TripCount < 1) {
+      outs() << "skip: invalid tripCount\n";
+      return false;
     }
-    return Blocks;
+    if (TripCount > MaxUnrollCount) {
+      outs() << " skip: tripCount=" << TripCount
+             << " exceeds MaxUnrollCount=" << MaxUnrollCount << "\n";
+      return false;
+    }
+    return true;
+  }
+
+  // BFS-based body block collection
+  SmallVector<MachineBasicBlock *, 16>
+  collectLoopBodyBlocks(MachineBasicBlock *Entry, MachineBasicBlock *Sink) {
+    SmallVector<MachineBasicBlock *, 16> Result;
+    if (!Entry)
+      return Result;
+
+    SmallPtrSet<MachineBasicBlock *, 16> Visited;
+    SmallVector<MachineBasicBlock *, 16> Stack;
+    Stack.push_back(Entry);
+
+    while (!Stack.empty()) {
+      MachineBasicBlock *Current = Stack.pop_back_val();
+      if (Current == Sink)
+        continue;
+      if (!Visited.insert(Current).second)
+        continue;
+      Result.push_back(Current);
+      for (MachineBasicBlock *Succ : Current->successors()) {
+        Stack.push_back(Succ);
+      }
+    }
+    return Result;
   }
 
   // returns true if instruction is loop condition (CMP) or INC induction var
@@ -128,72 +147,70 @@ private:
     return false;
   }
 
+  bool validateLoopCFG(MachineBasicBlock *Preheader, MachineBasicBlock *Header, MachineBasicBlock *Latch, MachineBasicBlock *Exit) {
+    if (!Preheader) {
+      outs() << " skip: invalid preheader\n";
+      return false;
+    }
+
+    if (!Header) {
+      outs() << " skip: invalid header\n";
+      return false;
+    }
+
+    if (!Latch) {
+      outs() << " skip: invalid latch\n";
+      return false;
+    }
+
+    if (!Exit) {
+      outs() << " skip: invalid exit\n";
+      return false;
+    }
+    return true;
+  }
+
   bool unrollLoop(MachineLoop *L, MachineFunction &MF) {
     MachineBasicBlock *Preheader = L->getLoopPreheader();
     MachineBasicBlock *Header = L->getHeader();
     MachineBasicBlock *Latch = L->getLoopLatch();
     MachineBasicBlock *Exit = findLoopExitBlock(L);
 
-    if (!Preheader) {
-      outs() << "  [skip] no preheader\n";
+    if (!validateLoopCFG(Preheader, Header, Latch, Exit))
       return false;
-    }
 
-    if (!Header) {
-      outs() << "  [skip] no header\n";
+    unsigned TripCount = getTripCount(Header);
+    if (!isValidTripCount(TripCount))
       return false;
-    }
 
-    if (!Latch) {
-      outs() << "  [skip] no latch\n";
-      return false;
-    }
-
-    if (!Exit) {
-      outs() << "  [skip] no exit\n";
-      return false;
-    }
-
-    int64_t TripCount = getTripCount(Header);
-    if (TripCount < 1) {
-      outs() << "  [skip] invalid tripCount\n";
-      return false;
-    }
-    if (TripCount > MaxUnrollCount) {
-      outs() << "  [skip] tripCount=" << TripCount
-             << " > MaxUnrollCount=" << MaxUnrollCount << "\n";
-      return false;
-    }
-
-    Register IndVar = findInductionVar(Header);
+    Register IndVar = getInductionVar(Header);
     if (!IndVar.isValid()) {
-      outs() << "  [skip] induction var invalid\n";
+      outs() << " skip: induction var invalid\n";
       return false;
     }
 
-    outs() << "  [unroll] tripCount=" << TripCount << " IndVar=" << IndVar
-           << "\n";
+    outs() << " unrolling: tripCount=" << TripCount << "\n";
 
     const TargetInstrInfo *TII = MF.getSubtarget().getInstrInfo();
     MachineRegisterInfo &MRI = MF.getRegInfo();
 
     // collect body blocks before changing CFG
-    SmallVector<MachineBasicBlock *, 16> BodyBlocks =
-        collectLoopBlocks(Header, Exit);
+    SmallVector<MachineBasicBlock *, 16> LoopBlocks =
+        collectLoopBodyBlocks(Header, Exit);
 
-    // create new block for unrolled body
-    MachineBasicBlock *UnrollMBB = MF.CreateMachineBasicBlock();
-    MF.insert(std::next(Preheader->getIterator()), UnrollMBB);
+    // build new control flow graph
+    MachineBasicBlock *UnrollBody = MF.CreateMachineBasicBlock();
+    MF.insert(std::next(Preheader->getIterator()), UnrollBody);
 
     // insert TripCount body copies
-    for (int64_t Iter = 0; Iter < TripCount; ++Iter) {
+    for (unsigned Iter = 0; Iter < TripCount; ++Iter) {
       // iteration const in separate vreg
       Register IterReg = MRI.createVirtualRegister(MRI.getRegClass(IndVar));
-      BuildMI(*UnrollMBB, UnrollMBB->end(), DebugLoc(), TII->get(X86::MOV32ri),
+      BuildMI(*UnrollBody, UnrollBody->end(), DebugLoc(), TII->get(X86::MOV32ri),
               IterReg)
           .addImm(Iter);
 
-      for (MachineBasicBlock *MBB : BodyBlocks) {
+      for (MachineBasicBlock *MBB : LoopBlocks) {
         for (MachineInstr &MI : *MBB) {
           // skip terminators, debug and loop overhead-instructions
           if (MI.isTerminator() || MI.isDebugInstr())
@@ -206,33 +223,38 @@ private:
           for (MachineOperand &MO : NewMI->operands())
             if (MO.isReg() && MO.getReg() == IndVar)
               MO.setReg(IterReg);
-          UnrollMBB->push_back(NewMI);
+          UnrollBody->push_back(NewMI);
         }
       }
     }
 
-    // building CFG
-    TII->removeBranch(*Preheader);
+    // connect preheader to unrolled body
     Preheader->removeSuccessor(Header);
-    Preheader->addSuccessor(UnrollMBB);
+    Preheader->addSuccessor(UnrollBody);
     BuildMI(*Preheader, Preheader->end(), DebugLoc(), TII->get(X86::JMP_1))
-        .addMBB(UnrollMBB);
+        .addMBB(UnrollBody);
 
-    UnrollMBB->addSuccessor(Exit);
-    Exit->replacePhiUsesWith(Latch, UnrollMBB);
-    BuildMI(*UnrollMBB, UnrollMBB->end(), DebugLoc(), TII->get(X86::JMP_1))
+    // connect unrolled body to exit
+    UnrollBody->addSuccessor(Exit);
+    Exit->replacePhiUsesWith(Latch, UnrollBody);
+    BuildMI(*UnrollBody, UnrollBody->end(), DebugLoc(), TII->get(X86::JMP_1))
         .addMBB(Exit);
 
-    // delete all loop blocks
-    for (MachineBasicBlock *MBB : BodyBlocks) {
-      while (!MBB->succ_empty())
-        MBB->removeSuccessor(MBB->succ_begin());
-      while (!MBB->pred_empty())
-        (*MBB->pred_begin())->removeSuccessor(MBB);
-      MBB->eraseFromParent();
-    }
+    // remove original loop
+    detachBlocks(LoopBlocks);
 
     return true;
+  }
+
+  // remove all predecessors/successors and erase blocks
+  void detachBlocks(SmallVectorImpl<MachineBasicBlock *> &Blocks) {
+    for (MachineBasicBlock *BB : Blocks) {
+      while (!BB->succ_empty())
+        BB->removeSuccessor(BB->succ_begin());
+      while (!BB->pred_empty())
+        (*BB->pred_begin())->removeSuccessor(BB);
+      BB->eraseFromParent();
+    }
   }
 
   void collectPostOrder(MachineLoop *L,
