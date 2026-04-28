@@ -1,72 +1,80 @@
 // RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/telnov_lab4_MLIR%shlibext
 // --pass-pipeline="builtin.module(example_MLIR)" %s | FileCheck %s
 
-// CHECK-LABEL: func.func @simple_loop
-func.func @simple_loop() {
-  // CHECK: affine.for %{{.*}} = 0 to 10 {trip_count = 10 : i64}
-  affine.for %i = 0 to 10 {
+// CHECK-LABEL: func.func @basic_constant_loop
+func.func @basic_constant_loop() {
+  // CHECK: affine.for %{{.*}} = 0 to 12 {
+  // CHECK: } {trip_count = 12 : i64}
+  affine.for %i = 0 to 12 {
   }
   return
 }
 
 // CHECK-LABEL: func.func @loop_with_step
 func.func @loop_with_step() {
-  // CHECK: affine.for %{{.*}} = 0 to 10 step 2 {trip_count = 5 : i64}
-  affine.for %i = 0 to 10 step 2 {
+  // CHECK: affine.for %{{.*}} = 1 to 10 step 3 {
+  // CHECK: } {trip_count = 3 : i64}
+  affine.for %i = 1 to 10 step 3 {
   }
   return
 }
 
-// CHECK-LABEL: func.func @loop_with_non_divisible_step
-func.func @loop_with_non_divisible_step() {
-  // CHECK: affine.for %{{.*}} = 0 to 5 step 2 {trip_count = 3 : i64}
-  affine.for %i = 0 to 5 step 2 {
+// CHECK-LABEL: func.func @ceil_division_case
+func.func @ceil_division_case() {
+  // CHECK: affine.for %{{.*}} = 0 to 11 step 4 {
+  // CHECK: } {trip_count = 3 : i64}
+  affine.for %i = 0 to 11 step 4 {
   }
   return
 }
 
-// CHECK-LABEL: func.func @loop_with_non_zero_lower_bound
-func.func @loop_with_non_zero_lower_bound() {
-  // CHECK: affine.for %{{.*}} = 2 to 11 step 3 {trip_count = 3 : i64}
-  affine.for %i = 2 to 11 step 3 {
+// CHECK-LABEL: func.func @negative_start
+func.func @negative_start() {
+  // CHECK: affine.for %{{.*}} = -2 to 7 step 3 {
+  // CHECK: } {trip_count = 3 : i64}
+  affine.for %i = -2 to 7 step 3 {
   }
   return
 }
 
-// CHECK-LABEL: func.func @nested_loops
-func.func @nested_loops() {
-  // CHECK: affine.for %{{.*}} = 0 to 3 {trip_count = 3 : i64}
-  affine.for %i = 0 to 3 {
-    // CHECK: affine.for %{{.*}} = 1 to 6 step 2 {trip_count = 3 : i64}
-    affine.for %j = 1 to 6 step 2 {
+// CHECK-LABEL: func.func @empty_loop
+func.func @empty_loop() {
+  // CHECK: affine.for %{{.*}} = 5 to 5 {
+  // CHECK: } {trip_count = 0 : i64}
+  affine.for %i = 5 to 5 {
+  }
+  return
+}
+
+// CHECK-LABEL: func.func @nested_case
+func.func @nested_case() {
+  // CHECK: affine.for %{{.*}} = 0 to 2 {
+  // CHECK: affine.for %{{.*}} = 3 to 12 step 3 {
+  // CHECK: } {trip_count = 3 : i64}
+  // CHECK: } {trip_count = 2 : i64}
+  affine.for %i = 0 to 2 {
+    affine.for %j = 3 to 12 step 3 {
     }
   }
   return
 }
 
-// CHECK-LABEL: func.func @unknown_upper_bound
-func.func @unknown_upper_bound(% n : index) {
+// CHECK-LABEL: func.func @dynamic_upper_bound
+func.func @dynamic_upper_bound(% n : index) {
   // CHECK: affine.for %{{.*}} = 0 to %{{.*}} {
   // CHECK-NOT: trip_count
+  // CHECK: return
   affine.for %i = 0 to %n {
   }
   return
 }
 
-// CHECK-LABEL: func.func @unknown_lower_bound
-func.func @unknown_lower_bound(% n : index) {
-  // CHECK: affine.for %{{.*}} = %{{.*}} to 10 {
+// CHECK-LABEL: func.func @old_attribute_removed_when_unknown
+func.func @old_attribute_removed_when_unknown(% n : index) {
+  // CHECK: affine.for %{{.*}} = 0 to %{{.*}} {
   // CHECK-NOT: trip_count
-  affine.for %i = %n to 10 {
-  }
-  return
-}
-
-// CHECK-LABEL: func.func @unknown_symbolic_bound
-func.func @unknown_symbolic_bound(% n : index) {
-  // CHECK: affine.for %{{.*}} = 0 to affine_map
-  // CHECK-NOT: trip_count
-  affine.for %i = 0 to affine_map<(d0) -> (d0 + 5)>(%n) {
-  }
+  // CHECK: return
+  affine.for %i = 0 to %n {
+  } {trip_count = 99 : i64}
   return
 }

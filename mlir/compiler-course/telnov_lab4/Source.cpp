@@ -16,39 +16,40 @@ public:
   StringRef getArgument() const final { return "example_MLIR"; }
 
   StringRef getDescription() const final {
-    return "Annotate affine.for loops with trip_count attribute";
+    return "Attach trip_count attribute to affine.for loops with known bounds";
   }
 
   void runOnOperation() override {
-    ModuleOp module = getOperation();
-    Builder builder(module.getContext());
+    Builder builder(getOperation().getContext());
 
-    module.walk([&](affine::AffineForOp forOp) {
-      std::optional<int64_t> tripCount = getTripCount(forOp);
-      if (!tripCount.has_value())
+    getOperation().walk([&](affine::AffineForOp loop) {
+      loop->removeAttr("trip_count");
+
+      std::optional<int64_t> count = calculateTripCount(loop);
+      if (!count.has_value())
         return;
 
-      forOp->setAttr("trip_count", builder.getI64IntegerAttr(*tripCount));
+      loop->setAttr("trip_count", builder.getI64IntegerAttr(*count));
     });
   }
 
 private:
-  std::optional<int64_t> getTripCount(affine::AffineForOp forOp) const {
-    std::optional<int64_t> lowerBound = forOp.getConstantLowerBound();
-    std::optional<int64_t> upperBound = forOp.getConstantUpperBound();
+  std::optional<int64_t> calculateTripCount(affine::AffineForOp loop) const {
+    std::optional<int64_t> lower = loop.getConstantLowerBound();
+    std::optional<int64_t> upper = loop.getConstantUpperBound();
 
-    if (!lowerBound.has_value() || !upperBound.has_value())
+    if (!lower.has_value() || !upper.has_value())
       return std::nullopt;
 
-    int64_t step = static_cast<int64_t>(forOp.getStep());
+    int64_t step = static_cast<int64_t>(loop.getStep());
     if (step <= 0)
       return std::nullopt;
 
-    int64_t distance = *upperBound - *lowerBound;
-    if (distance <= 0)
+    int64_t range = *upper - *lower;
+    if (range <= 0)
       return 0;
 
-    return (distance + step - 1) / step;
+    return (range + step - 1) / step;
   }
 };
 
