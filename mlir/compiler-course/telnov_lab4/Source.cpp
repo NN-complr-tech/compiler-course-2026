@@ -41,7 +41,7 @@ private:
     if (!lower.has_value() || !upper.has_value())
       return std::nullopt;
 
-    int64_t step = static_cast<int64_t>(loop.getStep());
+    int64_t step = loop.getStep().getSExtValue();
     if (step <= 0)
       return std::nullopt;
 
@@ -49,7 +49,11 @@ private:
     if (range <= 0)
       return 0;
 
-    return (range + step - 1) / step;
+    int64_t result = range / step;
+    if (range % step != 0)
+      ++result;
+
+    return result;
   }
 };
 
