@@ -1,38 +1,9 @@
-# RUN: split-file %s %t
 # RUN: llc -mtriple x86_64-unknown-linux-gnu \
 # RUN:     --load=%llvmshlibdir/luzan_e_loop_unroll_BACKEND%shlibext \
 # RUN:     -run-pass=luzan_e_loop_unroll-x86 \
-# RUN:     %t/test_backend.mir -o - | FileCheck %t/expected.mir
+# RUN:     %s -o - | FileCheck %s
 
 
-#--- expected.mir
-
-# CHECK-LABEL: name: nested_loop 
-# CHECK-COUNT-8: CALL64pcrel32
-# CHECK-NOT: CALL64pcrel32
-
-# CHECK-LABEL: name: ultra_nested
-# CHECK-COUNT-12: SHL32mi
-# CHECK-NOT: SHL32mi
-
-# CHECK-LABEL: name: simp_nested
-# CHECK-COUNT-8: CMP32ri
-# CHECK-NOT: CMP32ri
-
-# CHECK-LABEL: name: simple_loop
-# CHECK-COUNT-4: CALL64pcrel32
-# CHECK-NOT: CALL64pcrel32
-
-# CHECK-LABEL: name: loop
-# CHECK-COUNT-4: CMP32ri
-# CHECK-NOT: CMP32ri
-
-# CHECK-LABEL: name: dyn_loop
-# CHECK-COUNT-1: CMP32rr
-# CHECK-NOT: CMP32rr
-
-
-#--- test_backend.mir
 --- |
   ; ModuleID = 'test_opt.ll'
   source_filename = "test.c"
@@ -243,6 +214,9 @@ body:             |
     RET64
 ...
 ---
+# CHECK-LABEL: name: nested_loop 
+# CHECK-COUNT-8: CALL64pcrel32
+# CHECK-NOT: CALL64pcrel32
 name:            nested_loop
 frameInfo:
   adjustsStack: true
@@ -293,6 +267,9 @@ body:             |
     RET 0
 ...
 ---
+# CHECK-LABEL: name: ultra_nested
+# CHECK-COUNT-12: SHL32mi
+# CHECK-NOT: SHL32mi
 name:            ultra_nested
 stack:
   - { id: 0, name: '', type: default, offset: 0, size: 4, alignment: 4, 
@@ -361,6 +338,9 @@ body:             |
     RET 0, killed $eax
 ...
 ---
+# CHECK-LABEL: name: simp_nested
+# CHECK-COUNT-8: CMP32ri
+# CHECK-NOT: CMP32ri
 name:            simp_nested
 body:             |
   bb.0 (%ir-block.1):
@@ -403,6 +383,9 @@ body:             |
     RET 0
 ...
 ---
+# CHECK-LABEL: name: simple_loop
+# CHECK-COUNT-4: CALL64pcrel32
+# CHECK-NOT: CALL64pcrel32
 name:            simple_loop
 frameInfo:
   adjustsStack: true
@@ -435,6 +418,9 @@ body:             |
     RET 0
 ...
 ---
+# CHECK-LABEL: name: loop
+# CHECK-COUNT-4: CMP32ri
+# CHECK-NOT: CMP32ri
 name:            loop
 body:             |
   bb.0 (%ir-block.1):
@@ -459,6 +445,9 @@ body:             |
     RET 0
 ...
 ---
+# CHECK-LABEL: name: dyn_loop
+# CHECK-COUNT-1: CMP32rr
+# CHECK-NOT: CMP32rr
 name:            dyn_loop
 body:             |
   bb.0 (%ir-block.1):
