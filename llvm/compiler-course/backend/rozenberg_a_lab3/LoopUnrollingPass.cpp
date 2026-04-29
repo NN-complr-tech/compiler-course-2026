@@ -107,7 +107,7 @@ private:
     return true;
   }
 
-  // BFS-based body block collection
+  // DFS-based body block collection
   SmallVector<MachineBasicBlock *, 16>
   collectLoopBodyBlocks(MachineBasicBlock *Entry, MachineBasicBlock *Sink) {
     SmallVector<MachineBasicBlock *, 16> Result;
