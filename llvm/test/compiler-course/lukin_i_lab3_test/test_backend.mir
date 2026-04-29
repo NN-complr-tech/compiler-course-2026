@@ -44,6 +44,7 @@ body: |
 # CHECK: XOR32ri
 # CHECK: XOR32ri
 # CHECK: XOR32ri
+# CHECK: XOR32ri
 # CHECK: CALL64pcrel32
 # CHECK: RET64
 ---
@@ -61,10 +62,10 @@ body: |
 
 
 #---ТЕСТ. инлайнинг маленькой функции, должна инлайниться--
-# INLINE-LABEL: name: main_entry
-# INLINE: SUB32ri
-# INLINE-NOT: CALL64pcrel32
-# INLINE: RET64
+# CHECK-LABEL: name: main_entry
+# CHECK: SUB32ri
+# CHECK-NOT: CALL64pcrel32
+# CHECK: RET64
 ---
 name: leaf_sub
 tracksRegLiveness: true
@@ -88,12 +89,12 @@ body: |
 
 
 #---ТЕСТ. Вложенные функции---
-# NESTED-LABEL: name: pipeline_start
-# NESTED: %1:gr32 = AND32ri %0, 15
-# NESTED: %3:gr32 = OR32ri %2, 31
-# NESTED: %5:gr32 = XOR32ri %4, 63
-# NESTED-NOT: CALL64pcrel32
-# NESTED: RET64
+# CHECK-LABEL: name: pipeline_start
+# CHECK: %1:gr32 = AND32ri %0, 15
+# CHECK: %3:gr32 = OR32ri %2, 31
+# CHECK: %5:gr32 = XOR32ri %4, 63
+# CHECK-NOT: CALL64pcrel32
+# CHECK: RET64
 ---
 name: stage_final
 tracksRegLiveness: true
