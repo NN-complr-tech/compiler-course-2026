@@ -25,7 +25,6 @@ char ChyokotovAReplacePass::ID = 0;
 
 bool ChyokotovAReplacePass::runOnModule(Module &M) {
   MachineModuleInfo &MMI = getAnalysis<MachineModuleInfoWrapperPass>().getMMI();
-  // const TargetInstrInfo *TII = func.getSubtarget().getInstrInfo();
   bool Changed = false;
 
   for (Function &F : M) {
