@@ -77,7 +77,7 @@ bool LukinInliningModulePass::runOnModule(Module &M) {
               continue;
 
             if (Inline(*MF, MBB, Ins, depth, MMI)) {
-              if (CalleeF != &F) {
+              if (globalProcessedSet.count(CalleeF)) {
                 localBlacklist.insert(CalleeF);
               }
               onIterChanged = true;
