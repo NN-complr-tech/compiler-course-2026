@@ -1,26 +1,59 @@
+#include "MCTargetDesc/X86BaseInfo.h"
 #include "X86.h"
 #include "X86InstrInfo.h"
 #include "X86Subtarget.h"
-#include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineFunction.h"
-#include "llvm/CodeGen/MachineFunctionPass.h"
-#include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineModuleInfo.h"
+#include "llvm/IR/Module.h"
+#include "llvm/Pass.h"
 
 using namespace llvm;
 
+#define PASS_NAME "Null Pointer Check Pass"
+
 namespace {
 
-class NullCheckPass : public MachineFunctionPass {
+class NullCheckPass : public ModulePass {
 public:
   static char ID;
-  NullCheckPass() : MachineFunctionPass(ID) {}
-  bool runOnMachineFunction(MachineFunction &MF) override;
+  NullCheckPass() : ModulePass(ID) {}
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.addRequired<MachineModuleInfoWrapperPass>();
+    ModulePass::getAnalysisUsage(AU);
+  }
+
+  StringRef getPassName() const override { return PASS_NAME; }
+
+  bool runOnModule(Module &M) override;
+
+private:
+  bool runOnMachineFunction(MachineFunction &MF, const X86InstrInfo *TII) const;
+  Register findBaseReg(const MachineInstr &MI) const;
 };
 
 char NullCheckPass::ID = 0;
 
-bool NullCheckPass::runOnMachineFunction(MachineFunction &MF) {
-  const X86InstrInfo *TII = MF.getSubtarget<X86Subtarget>().getInstrInfo();
+Register NullCheckPass::findBaseReg(const MachineInstr &MI) const {
+  const MCInstrDesc &Desc = MI.getDesc();
+  int MemOp = X86II::getMemoryOperandNo(Desc.TSFlags);
+  if (MemOp == -1)
+    return Register();
+
+  MemOp += X86II::getOperandBias(Desc);
+  const MachineOperand &Base = MI.getOperand(MemOp + X86::AddrBaseReg);
+  if (!Base.isReg() || !Base.getReg().isValid())
+    return Register();
+
+  Register rg = Base.getReg();
+  if (rg == X86::RSP || rg == X86::RBP)
+    return Register();
+
+  return rg;
+}
+
+bool NullCheckPass::runOnMachineFunction(MachineFunction &MF,
+                                         const X86InstrInfo *TII) const {
   bool chng = false;
 
   for (MachineBasicBlock &MBB : MF) {
@@ -29,24 +62,15 @@ bool NullCheckPass::runOnMachineFunction(MachineFunction &MF) {
 
       if (!MI.mayLoad() && !MI.mayStore())
         continue;
-      Register Bsreg;
-      const MCInstrDesc &Desc = MI.getDesc();
-      int MemOp = X86II::getMemoryOperandNo(Desc.TSFlags);
-      if (MemOp != -1) {
-        MemOp += X86II::getOperandBias(Desc);
-        const MachineOperand &Base = MI.getOperand(MemOp + X86::AddrBaseReg);
-        if (Base.isReg() && Base.getReg().isValid()) {
-          Register reg = Base.getReg();
-          if (reg != X86::RSP && reg != X86::RBP)
-            Bsreg = reg;
-        }
-      }
 
-      if (!Bsreg)
+      Register BaseReg = findBaseReg(MI);
+      if (!BaseReg)
         continue;
 
       DebugLoc DL = MI.getDebugLoc();
-      BuildMI(MBB, It, DL, TII->get(X86::TEST64rr)).addReg(Bsreg).addReg(Bsreg);
+      BuildMI(MBB, It, DL, TII->get(X86::TEST64rr))
+          .addReg(BaseReg)
+          .addReg(BaseReg);
       BuildMI(MBB, It, DL, TII->get(X86::JCC_1)).addImm(2).addImm(X86::COND_NE);
       BuildMI(MBB, It, DL, TII->get(X86::TRAP));
 
@@ -57,9 +81,27 @@ bool NullCheckPass::runOnMachineFunction(MachineFunction &MF) {
   return chng;
 }
 
+bool NullCheckPass::runOnModule(Module &M) {
+  MachineModuleInfo &MMI = getAnalysis<MachineModuleInfoWrapperPass>().getMMI();
+  bool chng = false;
+
+  for (Function &F : M) {
+    if (F.isDeclaration())
+      continue;
+
+    MachineFunction *MF = MMI.getMachineFunction(F);
+    if (!MF)
+      continue;
+
+    const X86InstrInfo *TII = MF->getSubtarget<X86Subtarget>().getInstrInfo();
+
+    chng |= runOnMachineFunction(*MF, TII);
+  }
+
+  return chng;
+}
+
 } // namespace
 
-static RegisterPass<NullCheckPass>
-    RegPass("null-ptr-safety",
-            "Insert inline null checks before pointer dereference", false,
-            false);
+static RegisterPass<NullCheckPass> RegPass("null-ptr-safety", PASS_NAME, false,
+                                           false);
