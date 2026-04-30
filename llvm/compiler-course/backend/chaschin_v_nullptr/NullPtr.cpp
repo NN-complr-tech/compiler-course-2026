@@ -18,9 +18,8 @@ private:
   bool requiresVerification(Register Reg) const;
   void injectNullCheck(MachineBasicBlock &Block,
                        MachineBasicBlock::iterator Pos,
-                       const DebugLoc &Location, 
-                       const TargetInstrInfo *InstrInfo,
-                       Register PtrReg) const;
+                       const DebugLoc &Location,
+                       const TargetInstrInfo *InstrInfo, Register PtrReg) const;
 };
 
 char NullPtrPass::ID = 0;
@@ -43,10 +42,11 @@ bool NullPtrPass::requiresVerification(Register Reg) const {
   return Reg.isValid() && Reg != X86::RSP && Reg != X86::RBP;
 }
 
-void NullPtrPass::injectNullCheck(
-    MachineBasicBlock &Block, MachineBasicBlock::iterator Pos,
-    const DebugLoc &Location, const TargetInstrInfo *InstrInfo,
-    Register PtrReg) const {
+void NullPtrPass::injectNullCheck(MachineBasicBlock &Block,
+                                  MachineBasicBlock::iterator Pos,
+                                  const DebugLoc &Location,
+                                  const TargetInstrInfo *InstrInfo,
+                                  Register PtrReg) const {
 
   BuildMI(Block, Pos, Location, InstrInfo->get(TargetOpcode::COPY), X86::RDI)
       .addReg(PtrReg);
@@ -77,7 +77,8 @@ bool NullPtrPass::runOnMachineFunction(MachineFunction &F) {
 
   return WasMutated;
 }
-} //namespace
+} // namespace
 
 static RegisterPass<NullPtrPass>
-    Registration("nullptrcheckpass", "Injects null pointer checks before memory ops", false, false);
+    Registration("nullptrcheckpass",
+                 "Injects null pointer checks before memory ops", false, false);
