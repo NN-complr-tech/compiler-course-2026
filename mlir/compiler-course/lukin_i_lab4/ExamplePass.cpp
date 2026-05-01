@@ -24,13 +24,13 @@ public:
 
     llvm::StringMap<unsigned> count_map;
 
-    //рекурсивный проход по вызовам
+    // рекурсивный проход по вызовам
     mod_op.walk([&](func::CallOp call_op) {
       StringRef callee_nm = call_op.getCallee();
       count_map[callee_nm]++;
     });
 
-    //рекурсивный проход по определениям + добавление аттрибута
+    // рекурсивный проход по определениям + добавление аттрибута
     mod_op.walk([&](func::FuncOp func_op) {
       StringRef func_nm = func_op.getName();
 
