@@ -9,6 +9,7 @@ jobs:
   ubuntu-gcc-build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         assertions: [ON, OFF]
     steps:
@@ -35,7 +36,6 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DLLVM_TARGETS_TO_BUILD="X86;AArch64" \
             -G Ninja
-          cmake --build build --config Release -j $(nproc)
       - name: Test
         run: |
           cmake --build build --config Release -t \
