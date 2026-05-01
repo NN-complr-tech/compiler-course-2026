@@ -30,12 +30,13 @@ struct ICmpSwapPass : PassInfoMixin<ICmpSwapPass> {
         }
 
         // Создаём новую инструкцию icmp перед старой
-        ICmpInst *NewICmp = new ICmpInst(ICmp->getIterator(), NewPred,
-                                         ICmp->getOperand(0), ICmp->getOperand(1),
-                                         ICmp->getName());
+        ICmpInst *NewICmp =
+            new ICmpInst(ICmp->getIterator(), NewPred, ICmp->getOperand(0),
+                         ICmp->getOperand(1), ICmp->getName());
 
         // Создаём инверсию (xor true = not) после новой icmp
-        BinaryOperator *Not = BinaryOperator::CreateNot(NewICmp, ICmp->getName() + ".not");
+        BinaryOperator *Not =
+            BinaryOperator::CreateNot(NewICmp, ICmp->getName() + ".not");
         Not->insertAfter(NewICmp);
 
         // Заменяем старый ICmp на Not
@@ -57,8 +58,7 @@ struct ICmpSwapPass : PassInfoMixin<ICmpSwapPass> {
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "ICmpSwapPass", "0.1",
-          [](PassBuilder &PB) {
+  return {LLVM_PLUGIN_API_VERSION, "ICmpSwapPass", "0.1", [](PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](StringRef Name, FunctionPassManager &FPM,
                    ArrayRef<PassBuilder::PipelineElement>) -> bool {
