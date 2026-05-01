@@ -8,6 +8,7 @@ concurrency:
 jobs:
   ubuntu-gcc-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -37,13 +38,29 @@ jobs:
             -DLLVM_TARGETS_TO_BUILD="X86;AArch64" \
             -G Ninja
       - name: Test
+        shell: bash
         run: |
+          set -o pipefail
           cmake --build build --config Release -t \
             check-llvm-compiler-course \
             check-clang-compiler-course \
-            check-mlir-compiler-course -j $(nproc)
+            check-mlir-compiler-course -j $(nproc) 2>&1 | tee build-test.log
+      - name: Dump last CI lines on failure
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          echo "==== tail(build-test.log) ===="
+          tail -n 300 build-test.log || true
+      - name: Upload test log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-test-log-ubuntu-gcc-${{ matrix.assertions }}
+          path: build-test.log
+          if-no-files-found: ignore
   windows-build:
     runs-on: windows-latest
+    timeout-minutes: 120
     strategy:
       matrix:
         assertions: [ON, OFF]
