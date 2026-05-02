@@ -1,16 +1,16 @@
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-
 
 using namespace mlir;
 
 namespace {
-class TripCountPass : public PassWrapper<TripCountPass, OperationPass<ModuleOp>> {
+class TripCountPass
+    : public PassWrapper<TripCountPass, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final { return "levonychev_MLIR"; }
   StringRef getDescription() const final { return "TripCountPass"; }
