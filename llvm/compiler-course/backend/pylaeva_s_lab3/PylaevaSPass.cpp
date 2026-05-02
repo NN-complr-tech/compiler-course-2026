@@ -42,7 +42,9 @@ private:
 
   bool processFunction(MachineFunction &MF);
 
-  bool tryInline(MachineFunction &Caller, MachineBasicBlock &MBB, MachineInstr &MI, unsigned Depth, DenseSet<const Function *> &Stack);
+  bool tryInline(MachineFunction &Caller, MachineBasicBlock &MBB,
+                 MachineInstr &MI, unsigned Depth,
+                 DenseSet<const Function *> &Stack);
 };
 
 char PylaevaModulePass::ID = 0;
