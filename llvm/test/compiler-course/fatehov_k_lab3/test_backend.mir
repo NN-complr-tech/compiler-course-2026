@@ -1,0 +1,228 @@
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/fatehov_k_lab3_BACKEND%shlibext \
+# RUN: -run-pass=inc-dec-to-add-sub-x86 %s -o - | FileCheck %s
+
+--- |
+  ; ModuleID = 'test.ll'
+  source_filename = "test.ll"
+  target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
+
+  define dso_local noundef i32 @_Z4add3i(i32 noundef %0) local_unnamed_addr {
+    %2 = add nsw i32 %0, 3
+    ret i32 %2
+  }
+
+  define dso_local noundef i64 @_Z4sub2l(i64 noundef %0) local_unnamed_addr {
+    %2 = add i64 %0, -2
+    ret i64 %2
+  }
+
+  define dso_local noundef signext i16 @_Z5mixeds(i16 noundef signext %0) local_unnamed_addr {
+    %2 = add i16 %0, -1
+    ret i16 %2
+  }
+
+...
+---
+# CHECK-LABEL: name: _Z4add3i
+name:            _Z4add3i
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$edi', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.1):
+    liveins: $edi
+
+    ; CHECK: $eax = ADD32ri killed $eax, 3, implicit-def $eflags
+    ; CHECK-NOT: INC32r
+    ; CHECK-NOT: DEC32r
+
+    renamable $eax = IMPLICIT_DEF
+    renamable $eax = INC32r killed renamable $eax, implicit-def dead $eflags
+    renamable $eax = INC32r killed renamable $eax, implicit-def dead $eflags
+    renamable $eax = INC32r killed renamable $eax, implicit-def dead $eflags
+    RET 0, $eax
+
+...
+---
+# CHECK-LABEL: name: _Z4sub2l
+name:            _Z4sub2l
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$rdi', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.1):
+    liveins: $rdi
+
+    ; CHECK: $rax = SUB64ri32 killed $rax, 2, implicit-def $eflags
+    ; CHECK-NOT: INC64r
+    ; CHECK-NOT: DEC64r
+
+    renamable $rax = IMPLICIT_DEF
+    renamable $rax = DEC64r killed renamable $rax, implicit-def dead $eflags
+    renamable $rax = DEC64r killed renamable $rax, implicit-def dead $eflags
+    RET 0, $rax
+
+...
+---
+# CHECK-LABEL: name: _Z5mixeds
+name:            _Z5mixeds
+alignment:       16
+exposesReturnsTwice: false
+legalized:       false
+regBankSelected: false
+selected:        false
+failedISel:      false
+tracksRegLiveness: true
+hasWinCFI:       false
+callsEHReturn:   false
+callsUnwindInit: false
+hasEHScopes:     false
+hasEHFunclets:   false
+isOutlined:      false
+debugInstrRef:   true
+failsVerification: false
+tracksDebugUserValues: true
+registers:       []
+liveins:
+  - { reg: '$di', virtual-reg: '' }
+frameInfo:
+  isFrameAddressTaken: false
+  isReturnAddressTaken: false
+  hasStackMap:     false
+  hasPatchPoint:   false
+  stackSize:       0
+  offsetAdjustment: 0
+  maxAlignment:    1
+  adjustsStack:    false
+  hasCalls:        false
+  stackProtector:  ''
+  functionContext: ''
+  maxCallFrameSize: 0
+  cvBytesOfCalleeSavedRegisters: 0
+  hasOpaqueSPAdjustment: false
+  hasVAStart:      false
+  hasMustTailInVarArgFunc: false
+  hasTailCall:     false
+  isCalleeSavedInfoValid: true
+  localFrameSize:  0
+  savePoint:       ''
+  restorePoint:    ''
+fixedStack:      []
+stack:           []
+entry_values:    []
+callSites:       []
+debugValueSubstitutions: []
+constants:       []
+machineFunctionInfo:
+  amxProgModel:    None
+body:             |
+  bb.0 (%ir-block.1):
+    liveins: $di
+
+    ; CHECK: $ax = SUB16ri killed $ax, 1, implicit-def $eflags
+    ; CHECK-NEXT: $ax = ADD16ri killed $ax, 2, implicit-def $eflags
+    ; CHECK-NEXT: $ax = SUB16ri killed $ax, 2, implicit-def $eflags
+    ; CHECK-NOT: INC16r
+    ; CHECK-NOT: DEC16r
+
+    renamable $ax = IMPLICIT_DEF
+    renamable $ax = DEC16r killed renamable $ax, implicit-def dead $eflags
+    renamable $ax = INC16r killed renamable $ax, implicit-def dead $eflags
+    renamable $ax = INC16r killed renamable $ax, implicit-def dead $eflags
+    renamable $ax = DEC16r killed renamable $ax, implicit-def dead $eflags
+    renamable $ax = DEC16r killed renamable $ax, implicit-def dead $eflags
+    RET 0, $ax
+
+...
