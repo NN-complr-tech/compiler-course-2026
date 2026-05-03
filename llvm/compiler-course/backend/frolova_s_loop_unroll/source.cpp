@@ -6,6 +6,7 @@
 #include "llvm/CodeGen/MachineLoopInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
+#include "llvm/Support/Debug.h"
 
 using namespace llvm;
 
@@ -55,13 +56,13 @@ bool FrolovaSLoopUnroll::unrollLoop(MachineLoop *L, MachineFunction &MF,
 
   MachineBasicBlock *LoopMBB = L->getHeader();
   if (L->getNumBlocks() != 1) {
-    llvm::outs() << "Skipping complex loop (multiple blocks) in "
-                 << MF.getName() << "\n";
+    LLVM_DEBUG(dbgs() << "Skipping complex loop (multiple blocks) in "
+                      << MF.getName() << "\n");
     return false;
   }
 
-  llvm::outs() << "Unrolling loop in " << MF.getName()
-               << " (Factor: " << UnrollCount << ")\n";
+  LLVM_DEBUG(dbgs() << "Unrolling loop in " << MF.getName()
+                    << " (Factor: " << UnrollCount << ")\n");
 
   SmallVector<MachineInstr *, 8> InstrsToClone;
   for (MachineInstr &MI : *LoopMBB) {
@@ -83,8 +84,8 @@ bool FrolovaSLoopUnroll::unrollLoop(MachineLoop *L, MachineFunction &MF,
 }
 
 bool FrolovaSLoopUnroll::runOnMachineFunction(MachineFunction &MF) {
-  llvm::outs() << "Running FrolovaSLoopUnroll on function: " << MF.getName()
-               << '\n';
+  LLVM_DEBUG(dbgs() << "Running FrolovaSLoopUnroll on function: "
+                    << MF.getName() << "\n");
   MachineLoopInfo &MLI = getAnalysis<MachineLoopInfoWrapperPass>().getLI();
   const TargetInstrInfo *TII = MF.getSubtarget().getInstrInfo();
 
