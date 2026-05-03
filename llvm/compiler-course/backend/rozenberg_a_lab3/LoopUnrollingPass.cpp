@@ -1,3 +1,5 @@
+#define DEBUG_TYPE "LoopUnrollingPass"
+
 #include "X86.h"
 #include "X86InstrInfo.h"
 #include "X86Subtarget.h"
@@ -7,6 +9,7 @@
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineLoopInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
@@ -29,7 +32,7 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override {
     MachineLoopInfo &MLI = getAnalysis<MachineLoopInfoWrapperPass>().getLI();
 
-    outs() << "LoopUnrolling: " << MF.getName() << "\n";
+    LLVM_DEBUG(dbgs() << "LoopUnrolling: " << MF.getName() << "\n");
 
     // collect all loops in post-order before changing CFG
     // (after eraseFromParent MLI is invalid)
@@ -37,7 +40,7 @@ public:
     for (MachineLoop *Top : MLI)
       collectPostOrder(Top, Worklist);
 
-    outs() << " found loops: " << Worklist.size() << "\n";
+    LLVM_DEBUG(dbgs() << " found loops: " << Worklist.size() << "\n");
 
     bool Changed = false;
     for (MachineLoop *L : Worklist)
@@ -89,19 +92,20 @@ private:
     case 13:
       return Imm; // JGE
     default:
-      outs() << " skip: unsupported JCC code: " << JccCond << "\n";
+      LLVM_DEBUG(dbgs() << " skip: unsupported JCC code: " << JccCond << "\n");
       return -1;
     }
   }
 
   bool isValidTripCount(unsigned TripCount) {
     if (TripCount < 1) {
-      outs() << "skip: invalid tripCount\n";
+      LLVM_DEBUG(dbgs() << "skip: invalid tripCount\n");
       return false;
     }
     if (TripCount > MaxUnrollCount) {
-      outs() << " skip: tripCount=" << TripCount
-             << " exceeds MaxUnrollCount=" << MaxUnrollCount << "\n";
+      LLVM_DEBUG(dbgs() << " skip: tripCount=" << TripCount
+                        << " exceeds MaxUnrollCount=" << MaxUnrollCount
+                        << "\n");
       return false;
     }
     return true;
@@ -150,22 +154,22 @@ private:
   bool validateLoopCFG(MachineBasicBlock *Preheader, MachineBasicBlock *Header,
                        MachineBasicBlock *Latch, MachineBasicBlock *Exit) {
     if (!Preheader) {
-      outs() << " skip: invalid preheader\n";
+      LLVM_DEBUG(dbgs() << " skip: invalid preheader\n");
       return false;
     }
 
     if (!Header) {
-      outs() << " skip: invalid header\n";
+      LLVM_DEBUG(dbgs() << " skip: invalid header\n");
       return false;
     }
 
     if (!Latch) {
-      outs() << " skip: invalid latch\n";
+      LLVM_DEBUG(dbgs() << " skip: invalid latch\n");
       return false;
     }
 
     if (!Exit) {
-      outs() << " skip: invalid exit\n";
+      LLVM_DEBUG(dbgs() << " skip: invalid exit\n");
       return false;
     }
     return true;
@@ -186,11 +190,11 @@ private:
 
     Register IndVar = getInductionVar(Header);
     if (!IndVar.isValid()) {
-      outs() << " skip: induction var invalid\n";
+      LLVM_DEBUG(dbgs() << " skip: induction var invalid\n");
       return false;
     }
 
-    outs() << " unrolling: tripCount=" << TripCount << "\n";
+    LLVM_DEBUG(dbgs() << " unrolling: tripCount=" << TripCount << "\n");
 
     const TargetInstrInfo *TII = MF.getSubtarget().getInstrInfo();
     MachineRegisterInfo &MRI = MF.getRegInfo();
