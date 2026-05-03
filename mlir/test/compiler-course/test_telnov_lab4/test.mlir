@@ -68,12 +68,11 @@ func.func @runtime_upper_bound(%n: index) {
   return
 }
 
-// CHECK-LABEL: func.func @runtime_bound_with_existing_attr
-// CHECK: affine.for %{{.*}} = 0 to %{{.*}} {
-// CHECK-NOT: trip_count
-// CHECK: return
-func.func @runtime_bound_with_existing_attr(%n: index) {
-  affine.for %i = 0 to %n {
+// CHECK-LABEL: func.func @already_has_trip_count
+// CHECK: affine.for %{{.*}} = 0 to 10 {
+// CHECK: } {trip_count = 42 : i64}
+func.func @already_has_trip_count() {
+  affine.for %i = 0 to 10 {
   } {trip_count = 42 : i64}
   return
 }

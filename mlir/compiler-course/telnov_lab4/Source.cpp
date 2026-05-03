@@ -23,7 +23,8 @@ public:
     Builder builder(getOperation().getContext());
 
     getOperation().walk([&](affine::AffineForOp loop) {
-      loop->removeAttr("trip_count");
+      if (loop->hasAttr("trip_count"))
+        return;
 
       std::optional<int64_t> count = calculateTripCount(loop);
       if (!count.has_value())
