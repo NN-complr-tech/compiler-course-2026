@@ -127,3 +127,33 @@ body: |
 # CHECK-NOT: ADD64ri32
 # CHECK-NOT: SUB64ri32
 # CHECK: RET64 $rax
+
+---
+---
+name: test_64bit_two_inc_one_dec
+body: |
+  bb.0:
+    $rax = INC64r $rax, implicit-def $eflags
+    $rax = INC64r $rax, implicit-def $eflags
+    $rax = DEC64r $rax, implicit-def $eflags
+    RET64 $rax
+...
+
+# CHECK-LABEL: name: test_64bit_two_inc_one_dec
+# CHECK: $rax = ADD64ri32 $rax, 1
+# CHECK-NEXT: RET64 $rax
+
+---
+name: test_64bit_three_dec_one_inc
+body: |
+  bb.0:
+    $rax = DEC64r $rax, implicit-def $eflags
+    $rax = DEC64r $rax, implicit-def $eflags
+    $rax = DEC64r $rax, implicit-def $eflags
+    $rax = INC64r $rax, implicit-def $eflags
+    RET64 $rax
+...
+
+# CHECK-LABEL: name: test_64bit_three_dec_one_inc
+# CHECK: $rax = SUB64ri32 $rax, 2
+# CHECK-NEXT: RET64 $rax

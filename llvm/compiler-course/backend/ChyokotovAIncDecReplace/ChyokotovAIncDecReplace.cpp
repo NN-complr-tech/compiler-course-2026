@@ -23,6 +23,11 @@ public:
 
 char ChyokotovAReplacePass::ID = 0;
 
+bool isAllowedOpcode(unsigned Opcode) {
+  return (Opcode == X86::INC32r || Opcode == X86::DEC32r ||
+          Opcode == X86::INC64r || Opcode == X86::DEC64r);
+}
+
 bool ChyokotovAReplacePass::runOnModule(Module &M) {
   MachineModuleInfo &MMI = getAnalysis<MachineModuleInfoWrapperPass>().getMMI();
   bool Changed = false;
@@ -42,9 +47,7 @@ bool ChyokotovAReplacePass::runOnModule(Module &M) {
         MachineInstr &Inst = *MI;
         unsigned Opcode = Inst.getOpcode();
 
-        if (Opcode == X86::INC32r || Opcode == X86::DEC32r ||
-            Opcode == X86::INC64r || Opcode == X86::DEC64r) {
-
+        if (isAllowedOpcode(Opcode)) {
           unsigned Reg = Inst.getOperand(0).getReg();
           bool Is32Bit = (Opcode == X86::INC32r || Opcode == X86::DEC32r);
           int Sum = (Opcode == X86::INC32r || Opcode == X86::INC64r) ? 1 : -1;
@@ -54,8 +57,7 @@ bool ChyokotovAReplacePass::runOnModule(Module &M) {
             MachineInstr &NextInst = *NextMI;
             unsigned NextOpcode = NextInst.getOpcode();
 
-            if ((NextOpcode == X86::INC32r || NextOpcode == X86::DEC32r ||
-                 NextOpcode == X86::INC64r || NextOpcode == X86::DEC64r) &&
+            if (isAllowedOpcode(NextOpcode) &&
                 NextInst.getOperand(0).getReg() == Reg) {
 
               if (NextOpcode == X86::INC32r || NextOpcode == X86::INC64r) {
