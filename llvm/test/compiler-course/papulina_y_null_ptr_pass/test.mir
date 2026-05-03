@@ -21,6 +21,14 @@
     %val = load i32, ptr %ptr
     ret i32 %val
   }
+
+  define i32 @test_checkPointer_invalidation(ptr %ptr) { ; проверяет, что checkPointer вставляется, так как регистр был изменен после первого вызова checkPointer
+  entry:
+    call void @checkPointer(ptr %ptr)
+    %ptr2 = getelementptr i8, ptr %ptr, i64 8
+    %val = load i32, ptr %ptr2
+    ret i32 %val
+  }
 ...
 ---
 name:            test_load
@@ -53,7 +61,7 @@ body:             |
 # CHECK: $rdi = MOV64rr [[REG2:%[0-9]+]]
 # CHECK-NEXT: CALL64pcrel32 &checkPointer
 # CHECK-NEXT: MOV32mr [[REG2]], 1, $noreg, 0, $noreg, {{%[0-9]+}}
-...
+
 ---
 # CHECK-LABEL: name: test_checkPointer_call
 name:            test_checkPointer_call
@@ -66,14 +74,43 @@ body:             |
     liveins: $rdi
     %0:gr64 = COPY $rdi
 
+    ; CHECK:      [[REG:%[0-9]+]]:gr64 = COPY $rdi
+    ; CHECK:      $rdi = COPY [[REG]]
+    ; CHECK:      CALL64pcrel32 &checkPointer
+
     $rdi = COPY %0
     CALL64pcrel32 &checkPointer, implicit $rsp, implicit $ssp, implicit $rdi, implicit-def $rsp
     
-    ; CHECK:      CALL64pcrel32 &checkPointer
-    ; CHECK:      $rdi = MOV64rr [[REG:%[0-9]+]]
-    ; CHECK-NEXT: CALL64pcrel32 &checkPointer
-    ; CHECK-NEXT: %1:gr32 = MOV32rm [[REG]], 1, $noreg, 0, $noreg
+    ; CHECK-NOT:  CALL64pcrel32 &checkPointer
+    ; CHECK:      %1:gr32 = MOV32rm [[REG]], 1, $noreg, 0, $noreg
 
     %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
     $eax = COPY %1
     RET 0, $eax
+
+---
+name:            test_checkPointer_invalidation
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: gr64 }
+  - { id: 1, class: gr32 }
+body:             |
+  bb.0.entry:
+    liveins: $rdi
+    %0:gr64 = COPY $rdi
+    $rdi = COPY %0
+    CALL64pcrel32 &checkPointer, implicit $rsp, implicit $ssp, implicit $rdi, implicit-def $rsp
+    %0:gr64 = ADD64ri8 %0, 8, implicit-def $eflags
+    %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
+    
+    ; CHECK-LABEL: name: test_checkPointer_invalidation
+    ; CHECK:      CALL64pcrel32 &checkPointer
+    ; CHECK:      %0:gr64 = ADD64ri8 %0, 8
+    ; CHECK-NEXT: $rdi = MOV64rr %0
+    ; CHECK-NEXT: CALL64pcrel32 &checkPointer
+    
+    ; CHECK-NEXT: %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
+
+    $eax = COPY %1
+    RET 0, $eax 
+...
