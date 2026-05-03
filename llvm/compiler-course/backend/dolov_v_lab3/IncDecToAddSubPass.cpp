@@ -3,11 +3,18 @@
 #include "X86Subtarget.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
+#include <optional>
 #include <vector>
 
 using namespace llvm;
 
 namespace {
+
+struct IncDecInfo {
+  int Delta;
+  unsigned AddOpcode;
+  unsigned SubOpcode;
+};
 
 class IncDecToAddSubPass : public MachineFunctionPass {
 public:
@@ -16,51 +23,30 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override;
 
 private:
-  bool isIncDec(unsigned Opc, int &Delta, unsigned &AddOpc,
-                unsigned &SubOpc) const {
+  std::optional<IncDecInfo> getIncDecInfo(unsigned Opc) const {
     switch (Opc) {
     case X86::INC8r:
-      Delta = 1;
-      AddOpc = X86::ADD8ri;
-      SubOpc = X86::SUB8ri;
-      return true;
+      return IncDecInfo{1, X86::ADD8ri, X86::SUB8ri};
     case X86::DEC8r:
-      Delta = -1;
-      AddOpc = X86::ADD8ri;
-      SubOpc = X86::SUB8ri;
-      return true;
+      return IncDecInfo{-1, X86::ADD8ri, X86::SUB8ri};
+
     case X86::INC16r:
-      Delta = 1;
-      AddOpc = X86::ADD16ri;
-      SubOpc = X86::SUB16ri;
-      return true;
+      return IncDecInfo{1, X86::ADD16ri, X86::SUB16ri};
     case X86::DEC16r:
-      Delta = -1;
-      AddOpc = X86::ADD16ri;
-      SubOpc = X86::SUB16ri;
-      return true;
+      return IncDecInfo{-1, X86::ADD16ri, X86::SUB16ri};
+
     case X86::INC32r:
-      Delta = 1;
-      AddOpc = X86::ADD32ri;
-      SubOpc = X86::SUB32ri;
-      return true;
+      return IncDecInfo{1, X86::ADD32ri, X86::SUB32ri};
     case X86::DEC32r:
-      Delta = -1;
-      AddOpc = X86::ADD32ri;
-      SubOpc = X86::SUB32ri;
-      return true;
+      return IncDecInfo{-1, X86::ADD32ri, X86::SUB32ri};
+
     case X86::INC64r:
-      Delta = 1;
-      AddOpc = X86::ADD64ri32;
-      SubOpc = X86::SUB64ri32;
-      return true;
+      return IncDecInfo{1, X86::ADD64ri32, X86::SUB64ri32};
     case X86::DEC64r:
-      Delta = -1;
-      AddOpc = X86::ADD64ri32;
-      SubOpc = X86::SUB64ri32;
-      return true;
+      return IncDecInfo{-1, X86::ADD64ri32, X86::SUB64ri32};
+
     default:
-      return false;
+      return std::nullopt;
     }
   }
 };
@@ -73,16 +59,17 @@ bool IncDecToAddSubPass::runOnMachineFunction(MachineFunction &MF) {
 
   for (auto &MBB : MF) {
     for (auto It = MBB.begin(); It != MBB.end();) {
-      int BaseDelta = 0;
-      unsigned TargetAdd = 0, TargetSub = 0;
+      auto Info = getIncDecInfo(It->getOpcode());
 
-      if (!isIncDec(It->getOpcode(), BaseDelta, TargetAdd, TargetSub)) {
+      if (!Info) {
         ++It;
         continue;
       }
 
       Register TargetReg = It->getOperand(0).getReg();
-      int TotalDelta = BaseDelta;
+      int TotalDelta = Info->Delta;
+      unsigned TargetAdd = Info->AddOpcode;
+      unsigned TargetSub = Info->SubOpcode;
 
       std::vector<MachineInstr *> InstsToRemove;
       InstsToRemove.push_back(&*It);
@@ -90,19 +77,16 @@ bool IncDecToAddSubPass::runOnMachineFunction(MachineFunction &MF) {
       auto NextIt = std::next(It);
 
       while (NextIt != MBB.end()) {
-        int NextDelta = 0;
-        unsigned NextAdd = 0, NextSub = 0;
+        auto NextInfo = getIncDecInfo(NextIt->getOpcode());
 
-        if (!isIncDec(NextIt->getOpcode(), NextDelta, NextAdd, NextSub))
+        if (!NextInfo)
           break;
 
-        if (NextIt->getOperand(0).getReg() != TargetReg)
+        if (NextIt->getOperand(0).getReg() != TargetReg ||
+            NextInfo->AddOpcode != TargetAdd)
           break;
 
-        if (TargetAdd != NextAdd)
-          break;
-
-        TotalDelta += NextDelta;
+        TotalDelta += NextInfo->Delta;
         InstsToRemove.push_back(&*NextIt);
         ++NextIt;
       }
