@@ -11,14 +11,10 @@ add_llvm_pass_plugin(${TARGET_NAME}
     BUILDTREE_ONLY
 )
 
-# Link against the dialects the pass inspects at runtime.
 target_link_libraries(${TARGET_NAME}
-    PRIVATE
-    MLIRFuncDialect       # func::FuncOp
-    MLIRSCFDialect        # scf::ForOp, scf::IfOp, scf::WhileOp, …
-    MLIRAffineDialect     # affine::AffineForOp, affine::AffineIfOp, …
-    MLIRPass
-    MLIRTransforms
+    MLIRFuncDialect
+    MLIRSCFDialect
+    MLIRAffineDialect
 )
 
 set(MLIR_TEST_DEPENDS ${TARGET_NAME} ${MLIR_TEST_DEPENDS} PARENT_SCOPE)
