@@ -1,10 +1,10 @@
 #include "X86.h"
 #include "X86InstrInfo.h"
 #include "X86Subtarget.h"
-#include "llvm/CodeGen/MachineFunctionPass.h"
-#include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineFunction.h"
+#include "llvm/CodeGen/MachineFunctionPass.h"
+#include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/MC/MCInstrDesc.h"
 
@@ -72,7 +72,6 @@ bool NullCheckPass::runOnMachineFunction(MachineFunction &MF) {
   if (ToInsert.empty())
     return false;
 
-
   MachineBasicBlock *TrapBB = MF.CreateMachineBasicBlock();
   MF.push_back(TrapBB);
   BuildMI(*TrapBB, TrapBB->end(), DebugLoc(), TII->get(X86::TRAP));
@@ -82,7 +81,8 @@ bool NullCheckPass::runOnMachineFunction(MachineFunction &MF) {
     DebugLoc DL = MI->getDebugLoc();
 
     MachineBasicBlock *ContBB = OrigBB->splitAt(*MI, /*UpdateLiveIns=*/true);
-    unsigned RegSize = TRI.getRegSizeInBits(*TRI.getMinimalPhysRegClass(BaseReg));
+    unsigned RegSize =
+        TRI.getRegSizeInBits(*TRI.getMinimalPhysRegClass(BaseReg));
     unsigned TestOp = (RegSize == 32) ? X86::TEST32rr : X86::TEST64rr;
 
     BuildMI(*OrigBB, OrigBB->end(), DL, TII->get(TestOp))
@@ -104,5 +104,5 @@ bool NullCheckPass::runOnMachineFunction(MachineFunction &MF) {
 } // namespace
 
 static RegisterPass<NullCheckPass>
-    X("null-check-x86", "Insert NULL pointer checks before dereferences",
-      false, false);
+    X("null-check-x86", "Insert NULL pointer checks before dereferences", false,
+      false);
