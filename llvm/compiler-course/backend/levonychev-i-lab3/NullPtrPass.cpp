@@ -35,6 +35,17 @@ public:
           if (PtrReg == X86::RSP || PtrReg == X86::RBP || PtrReg == X86::RIP)
             continue;
 
+          if (MI != MBB.begin()) {
+            auto PrevMI = std::prev(MI);
+            if (PrevMI->getOpcode() == X86::CALL64pcrel32 &&
+                PrevMI->getNumOperands() > 0 &&
+                PrevMI->getOperand(0).isSymbol() &&
+                StringRef(PrevMI->getOperand(0).getSymbolName()) ==
+                    "check_null") {
+              continue;
+            }
+          }
+
           DebugLoc DL = MI->getDebugLoc();
           BuildMI(MBB, MI, DL, TII->get(X86::MOV64rr), X86::RDI).addReg(PtrReg);
           auto MIB = BuildMI(MBB, MI, DL, TII->get(X86::CALL64pcrel32))

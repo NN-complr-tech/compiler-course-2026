@@ -24,6 +24,11 @@
     %v = load i32, ptr %p
     ret i32 %v
   }
+  define i32 @test_redundant_check(ptr %p) {
+  entry:
+    %v = load i32, ptr %p
+    ret i32 %v
+  }
 ...
 ---
 # CHECK-LABEL: name: test_nullptr_check
@@ -42,9 +47,7 @@ body:             |
     %0:gr64 = COPY $rdi
     
     ; CHECK:      $rdi = MOV64rr %0
-    
     ; CHECK-NEXT: CALL64pcrel32 &check_null
-    
     ; CHECK-NEXT: %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
     
     %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
@@ -123,5 +126,31 @@ body:             |
     ; CHECK-NEXT: %2:gr32 = MOV32rm %0, 4, %1, 0, $noreg
     %2:gr32 = MOV32rm %0, 4, %1, 0, $noreg
     $eax = COPY %2
+    RET 0, $eax
+
+---
+# Добавлена проверка на отсутствие повторной вставки check_null
+# CHECK-LABEL: name: test_redundant_check
+name:            test_redundant_check
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: gr64 }
+  - { id: 1, class: gr32 }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+body:             |
+  bb.0.entry:
+    liveins: $rdi
+    %0:gr64 = COPY $rdi
+    $rdi = MOV64rr %0
+    CALL64pcrel32 &check_null, implicit $rdi
+
+    ; CHECK:      CALL64pcrel32 &check_null
+    ; CHECK-NEXT: %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
+    ; CHECK-NOT:  CALL64pcrel32 &check_null
+    
+    %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
+    
+    $eax = COPY %1
     RET 0, $eax
 ...
