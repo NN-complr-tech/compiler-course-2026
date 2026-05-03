@@ -6,6 +6,8 @@
 #include "llvm/CodeGen/MachineLoopInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
+
+#define DEBUG_TYPE "frolova-s-loop-unroll"
 #include "llvm/Support/Debug.h"
 
 using namespace llvm;
