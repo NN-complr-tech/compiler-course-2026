@@ -35,6 +35,10 @@ public:
 
 private:
   std::optional<int64_t> calculateTripCount(affine::AffineForOp loop) const {
+    if (!loop.getLowerBoundOperands().empty() ||
+        !loop.getUpperBoundOperands().empty())
+      return std::nullopt;
+
     std::optional<int64_t> lower = loop.getConstantLowerBound();
     std::optional<int64_t> upper = loop.getConstantUpperBound();
 
@@ -45,15 +49,15 @@ private:
     if (step <= 0)
       return std::nullopt;
 
-    int64_t range = *upper - *lower;
-    if (range <= 0)
+    int64_t distance = *upper - *lower;
+    if (distance <= 0)
       return 0;
 
-    int64_t result = range / step;
-    if (range % step != 0)
-      ++result;
+    int64_t iterations = distance / step;
+    if (distance % step != 0)
+      ++iterations;
 
-    return result;
+    return iterations;
   }
 };
 
