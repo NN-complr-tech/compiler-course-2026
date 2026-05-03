@@ -1,0 +1,65 @@
+# RUN: llc -load %llvmshlibdir/lifanov_k_backend_BACKEND%pluginext \
+# RUN: -run-pass=lifanovk-incdec-fusion %s -o - | FileCheck %s
+
+---
+
+name: lifanovk_basic_folding
+body: |
+  bb.0:
+
+    ; CHECK: ADD32ri
+    %0:gr32 = INC32r %0, implicit-def $eflags
+    %0:gr32 = INC32r %0, implicit-def $eflags
+    %0:gr32 = INC32r %0, implicit-def $eflags
+
+    ; CHECK: SUB64ri32
+    %1:gr64 = DEC64r %1, implicit-def $eflags
+    %1:gr64 = DEC64r %1, implicit-def $eflags
+
+    RET 0
+
+---
+
+name: lifanovk_mixed_chain
+body: |
+  bb.0:
+
+    ; CHECK: ADD64ri32
+    %2:gr64 = INC64r %2, implicit-def $eflags
+    %2:gr64 = INC64r %2, implicit-def $eflags
+    %2:gr64 = DEC64r %2, implicit-def $eflags
+
+    RET 0
+
+---
+
+name: lifanovk_register_split
+body: |
+  bb.0:
+
+    ; CHECK-DAG: ADD32ri
+    ; CHECK-DAG: SUB32ri
+
+    %3:gr32 = INC32r %3, implicit-def $eflags
+    %3:gr32 = INC32r %3, implicit-def $eflags
+    %4:gr32 = MOV32rr %3
+    %3:gr32 = DEC32r %3, implicit-def $eflags
+
+    RET 0
+
+---
+
+name: lifanovk_independent_blocks
+body: |
+  bb.0:
+
+    ; CHECK: ADD32ri
+    ; CHECK: SUB32ri
+
+    %5:gr32 = INC32r %5, implicit-def $eflags
+    %5:gr32 = INC32r %5, implicit-def $eflags
+
+    %6:gr32 = DEC32r %6, implicit-def $eflags
+    %6:gr32 = DEC32r %6, implicit-def $eflags
+
+    RET 0
