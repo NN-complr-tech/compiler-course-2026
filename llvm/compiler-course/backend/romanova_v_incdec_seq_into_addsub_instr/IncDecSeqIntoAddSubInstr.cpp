@@ -18,10 +18,44 @@ private:
   bool processBasicBlock(MachineBasicBlock &MBB);
   bool replaceIncDecSeq(MachineBasicBlock::iterator &MI,
                         MachineBasicBlock &MBB);
+  bool isIncOpcode(unsigned opcode);
+  bool isDecOpcode(unsigned opcode);
   const X86InstrInfo *TII = nullptr;
 };
 
 char ExamplePass::ID = 0;
+
+bool ExamplePass::isIncOpcode(unsigned opcode) {
+  switch (opcode) {
+  case X86::INC64r:
+  case X86::INC32r:
+  case X86::INC16r:
+  case X86::INC8r:
+  case X86::INC64m:
+  case X86::INC32m:
+  case X86::INC16m:
+  case X86::INC8m:
+    return true;
+  default:
+    return false;
+  }
+}
+
+bool ExamplePass::isDecOpcode(unsigned opcode) {
+  switch (opcode) {
+  case X86::DEC64r:
+  case X86::DEC32r:
+  case X86::DEC16r:
+  case X86::DEC8r:
+  case X86::DEC64m:
+  case X86::DEC32m:
+  case X86::DEC16m:
+  case X86::DEC8m:
+    return true;
+  default:
+    return false;
+  }
+}
 
 bool ExamplePass::runOnMachineFunction(MachineFunction &func) {
   TII = func.getSubtarget<X86Subtarget>().getInstrInfo();
@@ -66,15 +100,8 @@ bool ExamplePass::replaceIncDecSeq(MachineBasicBlock::iterator &MI,
     MachineInstr &CurrInstr = *NextMI;
     unsigned CurrOpcode = CurrInstr.getOpcode();
 
-    IsINC = (CurrOpcode == X86::INC64r || CurrOpcode == X86::INC32r ||
-             CurrOpcode == X86::INC16r || CurrOpcode == X86::INC8r ||
-             CurrOpcode == X86::INC64m || CurrOpcode == X86::INC32m ||
-             CurrOpcode == X86::INC16m || CurrOpcode == X86::INC8m);
-
-    IsDEC = (CurrOpcode == X86::DEC64r || CurrOpcode == X86::DEC32r ||
-             CurrOpcode == X86::DEC16r || CurrOpcode == X86::DEC8r ||
-             CurrOpcode == X86::DEC64m || CurrOpcode == X86::DEC32m ||
-             CurrOpcode == X86::DEC16m || CurrOpcode == X86::DEC8m);
+    IsINC = isIncOpcode(CurrOpcode);
+    IsDEC = isDecOpcode(CurrOpcode);
 
     if (!(IsINC || IsDEC))
       break;
@@ -184,15 +211,9 @@ bool ExamplePass::processBasicBlock(MachineBasicBlock &MBB) {
 
   for (auto MI = MBB.begin(); MI != MBB.end();) {
     unsigned Opcode = MI->getOpcode();
-    bool IsINC = (Opcode == X86::INC64r || Opcode == X86::INC32r ||
-                  Opcode == X86::INC16r || Opcode == X86::INC8r ||
-                  Opcode == X86::INC64m || Opcode == X86::INC32m ||
-                  Opcode == X86::INC16m || Opcode == X86::INC8m);
+    bool IsINC = isIncOpcode(Opcode);
 
-    bool IsDEC = (Opcode == X86::DEC64r || Opcode == X86::DEC32r ||
-                  Opcode == X86::DEC16r || Opcode == X86::DEC8r ||
-                  Opcode == X86::DEC64m || Opcode == X86::DEC32m ||
-                  Opcode == X86::DEC16m || Opcode == X86::DEC8m);
+    bool IsDEC = isDecOpcode(Opcode);
 
     if (IsINC || IsDEC) {
       if (replaceIncDecSeq(MI, MBB)) {
