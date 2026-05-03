@@ -14,6 +14,13 @@
     store i32 %value, ptr %ptr
     ret void
   }
+  
+  define i32 @test_checkPointer_call(ptr %ptr) {
+  entry:
+    call void @checkPointer(ptr %ptr)
+    %val = load i32, ptr %ptr
+    ret i32 %val
+  }
 ...
 ---
 name:            test_load
@@ -46,3 +53,27 @@ body:             |
 # CHECK: $rdi = MOV64rr [[REG2:%[0-9]+]]
 # CHECK-NEXT: CALL64pcrel32 &checkPointer
 # CHECK-NEXT: MOV32mr [[REG2]], 1, $noreg, 0, $noreg, {{%[0-9]+}}
+...
+---
+# CHECK-LABEL: name: test_checkPointer_call
+name:            test_checkPointer_call
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: gr64 }
+  - { id: 1, class: gr32 }
+body:             |
+  bb.0.entry:
+    liveins: $rdi
+    %0:gr64 = COPY $rdi
+
+    $rdi = COPY %0
+    CALL64pcrel32 &checkPointer, implicit $rsp, implicit $ssp, implicit $rdi, implicit-def $rsp
+    
+    ; CHECK:      CALL64pcrel32 &checkPointer
+    ; CHECK:      $rdi = MOV64rr [[REG:%[0-9]+]]
+    ; CHECK-NEXT: CALL64pcrel32 &checkPointer
+    ; CHECK-NEXT: %1:gr32 = MOV32rm [[REG]], 1, $noreg, 0, $noreg
+
+    %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
+    $eax = COPY %1
+    RET 0, $eax
