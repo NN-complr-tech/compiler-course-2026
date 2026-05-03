@@ -8,10 +8,9 @@
 using namespace mlir;
 
 static void traverse(Operation *op, int depth, int &maxDepth) {
-  if (isa<scf::ForOp, scf::ForallOp, scf::IfOp,
-             scf::WhileOp, scf::IndexSwitchOp,
-             affine::AffineForOp, affine::AffineIfOp,
-             affine::AffineParallelOp>(op))
+  if (isa<scf::ForOp, scf::ForallOp, scf::IfOp, scf::WhileOp,
+          scf::IndexSwitchOp, affine::AffineForOp, affine::AffineIfOp,
+          affine::AffineParallelOp>(op))
     depth++;
 
   if (depth > maxDepth)
