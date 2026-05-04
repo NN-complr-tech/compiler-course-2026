@@ -11,9 +11,10 @@ using namespace mlir;
 
 namespace {
 
-class ExamplePass : public PassWrapper<ExamplePass, OperationPass<ModuleOp>> {
+class TelnovTripCountPass
+    : public PassWrapper<TelnovTripCountPass, OperationPass<ModuleOp>> {
 public:
-  StringRef getArgument() const final { return "example_MLIR"; }
+  StringRef getArgument() const final { return "telnov-trip-count"; }
 
   StringRef getDescription() const final {
     return "Attach trip_count attribute to affine.for loops with known bounds";
@@ -64,15 +65,15 @@ private:
 
 } // namespace
 
-MLIR_DECLARE_EXPLICIT_TYPE_ID(ExamplePass)
-MLIR_DEFINE_EXPLICIT_TYPE_ID(ExamplePass)
+MLIR_DECLARE_EXPLICIT_TYPE_ID(TelnovTripCountPass)
+MLIR_DEFINE_EXPLICIT_TYPE_ID(TelnovTripCountPass)
 
-mlir::PassPluginLibraryInfo getExamplePassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "ExamplePass", "1.0",
-          []() { mlir::PassRegistration<ExamplePass>(); }};
+mlir::PassPluginLibraryInfo getTelnovTripCountPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, "TelnovTripCountPass", "1.0",
+          []() { mlir::PassRegistration<TelnovTripCountPass>(); }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getExamplePassPluginInfo();
+  return getTelnovTripCountPassPluginInfo();
 }

@@ -1,4 +1,4 @@
-// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/telnov_lab4_MLIR%shlibext --pass-pipeline="builtin.module(example_MLIR)" %s | FileCheck %s
+// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/telnov_lab4_MLIR%shlibext --pass-pipeline="builtin.module(telnov-trip-count)" %s | FileCheck %s
 
 // CHECK-LABEL: func.func @plain_static_loop
 // CHECK: affine.for %{{.*}} = 1 to 9 {
