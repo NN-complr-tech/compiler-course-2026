@@ -20,11 +20,24 @@ public:
 private:
   bool getInstructionDelta(unsigned Opcode, int &OutDelta, bool &OutIs64Bit) {
     switch (Opcode) {
-    case X86::INC32r: OutDelta = 1;  OutIs64Bit = false; return true;
-    case X86::DEC32r: OutDelta = -1; OutIs64Bit = false; return true;
-    case X86::INC64r: OutDelta = 1;  OutIs64Bit = true;  return true;
-    case X86::DEC64r: OutDelta = -1; OutIs64Bit = true;  return true;
-    default:          return false;
+    case X86::INC32r:
+      OutDelta = 1;
+      OutIs64Bit = false;
+      return true;
+    case X86::DEC32r:
+      OutDelta = -1;
+      OutIs64Bit = false;
+      return true;
+    case X86::INC64r:
+      OutDelta = 1;
+      OutIs64Bit = true;
+      return true;
+    case X86::DEC64r:
+      OutDelta = -1;
+      OutIs64Bit = true;
+      return true;
+    default:
+      return false;
     }
   }
 };
@@ -37,7 +50,7 @@ bool KhruevAIncReplacePass::runOnMachineFunction(MachineFunction &MF) {
 
   for (MachineBasicBlock &MBB : MF) {
     auto Iter = MBB.begin();
-    
+
     while (Iter != MBB.end()) {
       int CurrentDelta = 0;
       bool Is64BitMode = false;
@@ -49,20 +62,21 @@ bool KhruevAIncReplacePass::runOnMachineFunction(MachineFunction &MF) {
 
       SmallVector<MachineInstr *, 8> InstrChain;
       MachineInstr &StartMI = *Iter;
-      
+
       Register OriginalSrcReg = StartMI.getOperand(1).getReg();
       Register CurrentDstReg = StartMI.getOperand(0).getReg();
-      
+
       int AccumulatedOffset = CurrentDelta;
       InstrChain.push_back(&StartMI);
 
       auto LookAheadIter = std::next(Iter);
-      
+
       while (LookAheadIter != MBB.end()) {
         int NextDelta = 0;
         bool NextIs64Bit = false;
 
-        if (!getInstructionDelta(LookAheadIter->getOpcode(), NextDelta, NextIs64Bit) ||
+        if (!getInstructionDelta(LookAheadIter->getOpcode(), NextDelta,
+                                 NextIs64Bit) ||
             NextIs64Bit != Is64BitMode) {
           break;
         }
@@ -89,10 +103,11 @@ bool KhruevAIncReplacePass::runOnMachineFunction(MachineFunction &MF) {
         unsigned SubOpcode = Is64BitMode ? X86::SUB64ri32 : X86::SUB32ri;
         BuildMI(MBB, LastMI, DLoc, TII->get(SubOpcode), CurrentDstReg)
             .addReg(OriginalSrcReg)
-            .addImm(-AccumulatedOffset); 
+            .addImm(-AccumulatedOffset);
       } else {
         if (OriginalSrcReg != CurrentDstReg) {
-          BuildMI(MBB, LastMI, DLoc, TII->get(TargetOpcode::COPY), CurrentDstReg)
+          BuildMI(MBB, LastMI, DLoc, TII->get(TargetOpcode::COPY),
+                  CurrentDstReg)
               .addReg(OriginalSrcReg);
         }
       }
@@ -111,5 +126,5 @@ bool KhruevAIncReplacePass::runOnMachineFunction(MachineFunction &MF) {
 
 } // namespace
 
-static RegisterPass<KhruevAIncReplacePass>
-    X("khruev_a_incdec_replace-x86", "replace pass", false, false);
+static RegisterPass<KhruevAIncReplacePass> X("khruev_a_incdec_replace-x86",
+                                             "replace pass", false, false);
