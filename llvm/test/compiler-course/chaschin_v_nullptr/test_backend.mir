@@ -171,3 +171,28 @@ body: |
     %4:gr32 = ADD32rr %2, %3, implicit-def dead $eflags
     $eax = COPY %4
     RET 0, $eax
+---
+
+# CHECK-LABEL: name: _Z15already_checkedPi
+name: _Z15already_checkedPi
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: gr64 }
+  - { id: 1, class: gr32 }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+body: |
+  bb.0:
+    liveins: $rdi
+    %0:gr64 = COPY $rdi
+
+    ; CHECK:      $rdi = COPY %0
+    ; CHECK-NEXT: CALL64pcrel32 {{.*}}check_null
+    ; CHECK-NOT:  CALL64pcrel32 {{.*}}check_null
+    ; CHECK:      %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
+
+    $rdi = COPY %0
+    CALL64pcrel32 @check_null, csr_64, implicit-def dead $eax, implicit $rdi
+    %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
+    $eax = COPY %1
+    RET 0, $eax
