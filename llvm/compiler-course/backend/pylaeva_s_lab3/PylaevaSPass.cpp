@@ -34,8 +34,6 @@ private:
 
   DenseMap<const Function *, MachineFunction *> MFMap;
 
-  void buildFunctionMap(Module &M, MachineModuleInfo &MMI);
-
   unsigned countInstructions(MachineFunction &MF) const;
 
   bool isInlinable(MachineFunction &MF) const;
@@ -65,18 +63,6 @@ bool PylaevaModulePass::isInlinable(MachineFunction &MF) const {
     return false;
 
   return countInstructions(MF) <= MaxInlineInstrs;
-}
-
-void PylaevaModulePass::buildFunctionMap(Module &M, MachineModuleInfo &MMI) {
-  MFMap.clear();
-
-  for (Function &F : M) {
-    if (F.isDeclaration())
-      continue;
-
-    if (MachineFunction *MF = MMI.getMachineFunction(F))
-      MFMap[&F] = MF;
-  }
 }
 
 bool PylaevaModulePass::tryInline(MachineFunction &Caller,
@@ -189,7 +175,15 @@ bool PylaevaModulePass::processFunction(MachineFunction &MF) {
 bool PylaevaModulePass::runOnModule(Module &M) {
   MachineModuleInfo &MMI = getAnalysis<MachineModuleInfoWrapperPass>().getMMI();
 
-  buildFunctionMap(M, MMI);
+  MFMap.clear();
+
+  for (Function &F : M) {
+    if (F.isDeclaration())
+      continue;
+
+    if (MachineFunction *MF = MMI.getMachineFunction(F))
+      MFMap[&F] = MF;
+  }
 
   bool Changed = false;
 
