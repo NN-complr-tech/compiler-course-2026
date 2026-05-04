@@ -196,7 +196,55 @@ body: |
     RET64
 ...
 # ********************************************************************
-# TEST CASE 6: Recursive function with depth limit (max 3 calls)
+# TEST CASE 6: Nested function inlining (three levels deep) with arithmetic
+# func1: mul
+# func2: add, call func1, sub
+# func3: call func2, call func1, mul
+# ********************************************************************
+
+# CHECK-LABEL: name: func3
+# CHECK: ADD32ri
+# CHECK: IMUL32rr
+# CHECK: SUB32rr
+# CHECK: IMUL32rr
+# CHECK: IMUL32rr
+# CHECK-NOT: CALL64pcrel32 @func2
+# CHECK-NOT: CALL64pcrel32 @func1
+
+---
+name: func1
+tracksRegLiveness: true
+body: |
+  bb.0:
+    %0:gr32 = MOV32ri 5
+    %1:gr32 = IMUL32rr %0, %0, implicit-def $eflags
+    RET64
+...
+---
+name: func2
+tracksRegLiveness: true
+body: |
+  bb.0:
+    %0:gr32 = MOV32ri 10
+    %1:gr32 = ADD32ri %0, 10, implicit-def $eflags
+    CALL64pcrel32 @func1
+    %2:gr32 = SUB32rr %0, %1, implicit-def $eflags
+    RET64
+...
+---
+name: func3
+tracksRegLiveness: true
+body: |
+  bb.0:
+    %0:gr32 = MOV32ri 7
+    CALL64pcrel32 @func2
+    %1:gr32 = MOV32ri 3
+    CALL64pcrel32 @func1
+    %2:gr32 = IMUL32rr %0, %1, implicit-def $eflags
+    RET64
+...
+# ********************************************************************
+# TEST CASE 7: Recursive function with depth limit (max 3 calls)
 # ********************************************************************
 
 # CHECK-LABEL: name: recursive_function
