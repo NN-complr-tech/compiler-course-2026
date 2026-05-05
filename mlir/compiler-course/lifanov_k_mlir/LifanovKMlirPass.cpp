@@ -16,7 +16,7 @@ public:
   StringRef getArgument() const final { return "lifanov_k_mlir_MLIR"; }
 
   StringRef getDescription() const final {
-    return "Adds trace calls to then/else regions of conditional operations";
+    return "Adds trace calls to then/els regions of condiional operations";
   }
 
   void runOnOperation() override {
