@@ -11,42 +11,29 @@ using namespace mlir;
 
 namespace {
 
-/**
- * Гарантированно создает декларацию функции func.func в таблице символов
- * модуля.
- */
 func::FuncOp getOrInsertFunc(ModuleOp module, StringRef name) {
   auto ctx = module.getContext();
 
-  // Ищем уже существующий символ
   if (auto func = module.lookupSymbol<func::FuncOp>(name))
     return func;
 
-  // Создаем тип () -> ()
   auto funcTy = FunctionType::get(ctx, {}, {});
 
-  // Вставляем декларацию в начало модуля
   OpBuilder builder(module.getBodyRegion());
   builder.setInsertionPointToStart(module.getBody());
   auto func = builder.create<func::FuncOp>(module.getLoc(), name, funcTy);
 
-  // Устанавливаем приватную видимость (только декларация)
   func.setPrivate();
   return func;
 }
 
-/**
- * Вставляет стандартный вызов func.call.
- */
 void instrumentBlock(Block &block, Location loc, func::FuncOp funcBegin,
                      func::FuncOp funcEnd) {
   OpBuilder builder(block.getParentOp()->getContext());
 
-  // Начало блока
   builder.setInsertionPointToStart(&block);
   builder.create<func::CallOp>(loc, funcBegin, ValueRange{});
 
-  // Конец блока (перед терминатором)
   if (auto *terminator = block.getTerminator()) {
     builder.setInsertionPoint(terminator);
     builder.create<func::CallOp>(loc, funcEnd, ValueRange{});
@@ -68,7 +55,6 @@ public:
   void runOnOperation() override {
     ModuleOp moduleOp = getOperation();
 
-    // Создаем декларации в текущем модуле
     auto thenBegin = getOrInsertFunc(moduleOp, "trace_condition_then_begin");
     auto thenEnd = getOrInsertFunc(moduleOp, "trace_condition_then_end");
     auto elseBegin = getOrInsertFunc(moduleOp, "trace_condition_else_begin");
