@@ -1,6 +1,6 @@
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/SCCIterator.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
@@ -118,7 +118,8 @@ private:
     return false;
   }
 
-  static bool canInline(CallBase &Call, const RecursiveGroupMap &RecursiveGroups) {
+  static bool canInline(CallBase &Call,
+                        const RecursiveGroupMap &RecursiveGroups) {
     Function *Callee = Call.getCalledFunction();
     if (Callee == nullptr || Callee->isDeclaration())
       return false;
