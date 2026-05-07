@@ -45,7 +45,7 @@ private:
 
 char LoopUnrollPass::ID = 0;
 
-}
+} // namespace
 
 static RegisterPass<LoopUnrollPass> X("loop-unroll-limited",
                                       "Loop unroll pass (max 5 iterations)",
@@ -251,4 +251,4 @@ MachineInstr *LoopUnrollPass::findInductionIncrement(MachineBasicBlock *Latch) {
 
 namespace llvm {
 FunctionPass *createLoopUnrollLimitedPass() { return new LoopUnrollPass(); }
-}
+} // namespace llvm
