@@ -34,7 +34,8 @@ public:
     RecursiveDepths.clear();
 
     const RecursiveGroupMap RecursiveGroups = collectRecursiveGroups(M);
-    MachineModuleInfo &MMI = getAnalysis<MachineModuleInfoWrapperPass>().getMMI();
+    MachineModuleInfo &MMI =
+        getAnalysis<MachineModuleInfoWrapperPass>().getMMI();
 
     bool Changed = false;
     bool LocalChange = false;
@@ -55,7 +56,7 @@ public:
         for (MachineBasicBlock &MBB : *MF) {
           for (auto It = MBB.begin(); It != MBB.end();) {
             MachineInstr &MI = *It++;
-            Function *Callee = getCalledFunction(MI);
+            const Function *Callee = getCalledFunction(MI);
             if (Callee == nullptr || Callee->isDeclaration())
               continue;
 
@@ -125,7 +126,7 @@ private:
     return false;
   }
 
-  static Function *getCalledFunction(MachineInstr &MI) {
+  static const Function *getCalledFunction(MachineInstr &MI) {
     if (!MI.isCall())
       return nullptr;
 
@@ -192,10 +193,10 @@ private:
     return LeftIt->second == RightIt->second;
   }
 
-  static void remapVirtualRegisters(
-      MachineInstr &MI, MachineRegisterInfo &CallerMRI,
-      const MachineRegisterInfo &CalleeMRI,
-      DenseMap<Register, Register> &RegisterMap) {
+  static void remapVirtualRegisters(MachineInstr &MI,
+                                    MachineRegisterInfo &CallerMRI,
+                                    const MachineRegisterInfo &CalleeMRI,
+                                    DenseMap<Register, Register> &RegisterMap) {
     for (MachineOperand &Operand : MI.operands()) {
       if (!Operand.isReg())
         continue;
@@ -235,7 +236,7 @@ private:
       remapVirtualRegisters(*Cloned, CallerMRI, CalleeMRI, RegisterMap);
       CallerMBB.insert(Call, Cloned);
 
-      Function *NestedCallee = getCalledFunction(*Cloned);
+      const Function *NestedCallee = getCalledFunction(*Cloned);
       if (sameRecursiveGroup(Callee, NestedCallee, RecursiveGroups))
         RecursiveDepths[Cloned] = CurrentDepth + 1;
     }
@@ -249,6 +250,6 @@ char FunctionInliningPass::ID = 0;
 
 } // namespace
 
-static RegisterPass<FunctionInliningPass>
-    X("function-inlining-backend", "Function inlining backend pass", false,
-      false);
+static RegisterPass<FunctionInliningPass> X("function-inlining-backend",
+                                            "Function inlining backend pass",
+                                            false, false);
