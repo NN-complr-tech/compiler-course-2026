@@ -1,8 +1,7 @@
 #include "X86.h"
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/SCCIterator.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/Analysis/CallGraph.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
@@ -32,10 +31,9 @@ public:
 
   bool runOnModule(Module &M) override {
     RecursiveDepths.clear();
-
-    const RecursiveGroupMap RecursiveGroups = collectRecursiveGroups(M);
     MachineModuleInfo &MMI =
         getAnalysis<MachineModuleInfoWrapperPass>().getMMI();
+    const RecursiveGroupMap RecursiveGroups = collectRecursiveGroups(M, MMI);
 
     bool Changed = false;
     bool LocalChange = false;
@@ -81,56 +79,112 @@ public:
 private:
   DenseMap<const MachineInstr *, unsigned> RecursiveDepths;
 
-  static RecursiveGroupMap collectRecursiveGroups(Module &M) {
+  static RecursiveGroupMap collectRecursiveGroups(Module &M,
+                                                 MachineModuleInfo &MMI) {
     RecursiveGroupMap Groups;
-    CallGraph CG(M);
+    DenseMap<const Function *, SmallVector<const Function *, 4>> Edges;
+    DenseMap<const Function *, unsigned> Indices;
+    DenseMap<const Function *, unsigned> LowLinks;
+    SmallVector<const Function *, 16> Stack;
+    SmallPtrSet<const Function *, 16> OnStack;
+    SmallVector<const Function *, 16> Nodes;
+    unsigned NextIndex = 0;
     unsigned NextGroupId = 0;
 
-    for (scc_iterator<CallGraph *> It = scc_begin(&CG); !It.isAtEnd(); ++It) {
-      const std::vector<CallGraphNode *> &SCC = *It;
-      SmallVector<const Function *, 4> Functions;
+    for (Function &F : M) {
+      if (F.isDeclaration())
+        continue;
 
-      for (CallGraphNode *Node : SCC) {
-        if (Function *F = Node->getFunction())
-          Functions.push_back(F);
+      MachineFunction *MF = MMI.getMachineFunction(F);
+      if (MF == nullptr)
+        continue;
+
+      Nodes.push_back(&F);
+      SmallPtrSet<const Function *, 4> SeenCallees;
+      SmallVector<const Function *, 4> Callees;
+
+      for (const MachineBasicBlock &MBB : *MF) {
+        for (const MachineInstr &MI : MBB) {
+          const Function *Callee = getCalledFunction(MI);
+          if (Callee == nullptr || Callee->isDeclaration())
+            continue;
+
+          if (MMI.getMachineFunction(*Callee) == nullptr)
+            continue;
+
+          if (!SeenCallees.insert(Callee).second)
+            continue;
+
+          Callees.push_back(Callee);
+        }
       }
 
-      if (Functions.empty())
-        continue;
+      Edges[&F] = std::move(Callees);
+    }
 
-      bool IsRecursive = Functions.size() > 1;
-      if (!IsRecursive)
-        IsRecursive = hasSelfCall(*Functions.front());
+    auto Visit = [&](const Function *Start, auto &&Visit) -> void {
+      Indices[Start] = NextIndex;
+      LowLinks[Start] = NextIndex;
+      ++NextIndex;
 
-      if (!IsRecursive)
-        continue;
+      Stack.push_back(Start);
+      OnStack.insert(Start);
 
-      for (const Function *F : Functions)
+      for (const Function *Callee : Edges[Start]) {
+        if (!Indices.contains(Callee)) {
+          Visit(Callee, Visit);
+          if (LowLinks[Start] > LowLinks[Callee])
+            LowLinks[Start] = LowLinks[Callee];
+          continue;
+        }
+
+        if (OnStack.contains(Callee) && LowLinks[Start] > Indices[Callee])
+          LowLinks[Start] = Indices[Callee];
+      }
+
+      if (LowLinks[Start] != Indices[Start])
+        return;
+
+      SmallVector<const Function *, 4> Component;
+      bool HasSelfCall = false;
+      while (!Stack.empty()) {
+        const Function *Current = Stack.pop_back_val();
+        OnStack.erase(Current);
+        Component.push_back(Current);
+
+        for (const Function *Callee : Edges[Current]) {
+          if (Callee == Current) {
+            HasSelfCall = true;
+            break;
+          }
+        }
+
+        if (Current == Start)
+          break;
+      }
+
+      if (Component.size() == 1 && !HasSelfCall)
+        return;
+
+      for (const Function *F : Component)
         Groups[F] = NextGroupId;
 
       ++NextGroupId;
+    };
+
+    for (const Function *F : Nodes) {
+      if (!Indices.contains(F))
+        Visit(F, Visit);
     }
 
     return Groups;
   }
 
-  static bool hasSelfCall(const Function &F) {
-    for (const BasicBlock &BB : F) {
-      for (const Instruction &I : BB) {
-        const auto *Call = dyn_cast<CallBase>(&I);
-        if (Call != nullptr && Call->getCalledFunction() == &F)
-          return true;
-      }
-    }
-
-    return false;
-  }
-
-  static const Function *getCalledFunction(MachineInstr &MI) {
+  static const Function *getCalledFunction(const MachineInstr &MI) {
     if (!MI.isCall())
       return nullptr;
 
-    for (MachineOperand &Operand : MI.operands()) {
+    for (const MachineOperand &Operand : MI.operands()) {
       if (!Operand.isGlobal())
         continue;
 
