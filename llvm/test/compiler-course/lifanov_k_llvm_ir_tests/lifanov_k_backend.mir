@@ -24,7 +24,7 @@ name: lifanovk_mixed_chain
 body: |
   bb.0:
 
-    ; CHECK: %2:gr64 = ADD64ri32 %2, 1
+    ; CHECK: [[REG:%[0-9]+]]:gr64 = ADD64ri32 [[REG]], 1
     %2:gr64 = INC64r %2, implicit-def $eflags
     %2:gr64 = INC64r %2, implicit-def $eflags
     %2:gr64 = DEC64r %2, implicit-def $eflags
