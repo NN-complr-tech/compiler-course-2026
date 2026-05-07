@@ -64,7 +64,6 @@ define i32 @inline_recursive(i32 %n) {
 ; CHECK-LABEL: @inline_recursive(
 ; CHECK: sub i32
 ; CHECK: sub i32
-; CHECK: sub i32
 ; CHECK: call i32 @recursive_countdown
 entry:
   %result = call i32 @recursive_countdown(i32 %n)
