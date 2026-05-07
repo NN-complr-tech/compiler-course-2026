@@ -1,4 +1,4 @@
-# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/ваш_pass_BACKEND%shlibext -run-pass=loop-unroll-limited %s -o - | FileCheck %s
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/rychkova_d_lab3_BACKEND%shlibext -run-pass=loop-unroll-limited %s -o - | FileCheck %s
 
 --- |
   define void @test_tc4() {
@@ -15,10 +15,10 @@
 ...
 
 # CHECK-LABEL: name: test_tc4
-# CHECK-NOT: JCC_1 %bb.1
+# CHECK-NOT: JCC_1
 # CHECK: RET64
 
-# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/ваш_pass_BACKEND%shlibext -run-pass=loop-unroll-limited %s -o - | FileCheck %s
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/rychkova_d_lab3_BACKEND%shlibext -run-pass=loop-unroll-limited %s -o - | FileCheck %s
 
 --- |
   define void @test_tc7() {
@@ -35,11 +35,11 @@
 ...
 
 # CHECK-LABEL: name: test_tc7
-# CHECK: JCC_1 %bb.1
-# CHECK-NOT: JCC_1 %bb.1
+# CHECK: JCC_1
+# CHECK-NOT: JCC_1
 # CHECK: RET64
 
-# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/ваш_pass_BACKEND%shlibext -run-pass=loop-unroll-limited %s -o - | FileCheck %s
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/rychkova_d_lab3_BACKEND%shlibext -run-pass=loop-unroll-limited %s -o - | FileCheck %s
 
 --- |
   define void @nested() {
@@ -63,5 +63,5 @@
 ...
 
 # CHECK-LABEL: name: nested
-# Внутренний цикл (TC=3) развернут полностью
-# Внешний цикл (TC=4) развернут полностью (т.к. 4 <= 5)
+# Inner loop (TC=3) fully unrolled
+# Outer loop (TC=4) fully unrolled (since 4 <= 5)
