@@ -41,6 +41,9 @@ private:
   void adjustInductionVariable(MachineLoop *L, int Factor);
   MachineInstr *findInductionIncrement(MachineBasicBlock *Latch);
   void collectLoops(MachineLoop *L, SmallVectorImpl<MachineLoop *> &Loops);
+  void replaceSuccessor(MachineBasicBlock *MBB, MachineBasicBlock *Old,
+                        MachineBasicBlock *New);
+  void copySuccessors(MachineBasicBlock *Dest, MachineBasicBlock *Src);
 };
 
 char LoopUnrollPass::ID = 0;
@@ -169,6 +172,24 @@ int LoopUnrollPass::computeUnrollFactor(int TripCount) {
   return 1;
 }
 
+void LoopUnrollPass::replaceSuccessor(MachineBasicBlock *MBB,
+                                      MachineBasicBlock *Old,
+                                      MachineBasicBlock *New) {
+  for (auto &Succ : MBB->successors()) {
+    if (Succ == Old) {
+      MBB->ReplaceUsesOfBlockWith(Old, New);
+      return;
+    }
+  }
+}
+
+void LoopUnrollPass::copySuccessors(MachineBasicBlock *Dest,
+                                    MachineBasicBlock *Src) {
+  for (auto *Succ : Src->successors()) {
+    Dest->addSuccessor(Succ);
+  }
+}
+
 bool LoopUnrollPass::performUnrolling(MachineLoop *L, MachineFunction &MF,
                                       int UnrollFactor, MachineLoopInfo &MLI) {
   MachineBasicBlock *Preheader = L->getLoopPreheader();
@@ -189,8 +210,10 @@ bool LoopUnrollPass::performUnrolling(MachineLoop *L, MachineFunction &MF,
 
   adjustInductionVariable(L, UnrollFactor);
 
-  if (Preheader->getSuccessors().size() > 0) {
-    Preheader->ReplaceSuccessorWith(Latch, Exit);
+  auto it = std::find_if(Preheader->succ_begin(), Preheader->succ_end(),
+                         [Latch](MachineBasicBlock *Succ) { return Succ == Latch; });
+  if (it != Preheader->succ_end()) {
+    Preheader->ReplaceUsesOfBlockWith(Latch, Exit);
   }
 
   return true;
@@ -215,7 +238,7 @@ void LoopUnrollPass::cloneLoopBody(MachineLoop *L, MachineFunction &MF,
       }
 
       MF.insert(InsertBefore->getIterator(), CloneBB);
-      CloneBB->cloneSuccessors(BB);
+      copySuccessors(CloneBB, BB);
     }
   }
 }
