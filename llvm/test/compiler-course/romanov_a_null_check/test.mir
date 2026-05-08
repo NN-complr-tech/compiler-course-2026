@@ -72,6 +72,14 @@
     ret i32 %1
   }
 
+  declare void @check_null(ptr)
+
+  define i32 @load_prechecked(ptr %p) {
+    call void @check_null(ptr %p)
+    %1 = load i32, ptr %p
+    ret i32 %1
+  }
+
 ---
 # CHECK-LABEL: name: load_val4
 name: load_val4
@@ -284,5 +292,30 @@ body: |
     ; CHECK-NEXT: MOV32rm %0, 1, $noreg, 4
 
     %1:gr32 = MOV32rm %0, 1, $noreg, 4, $noreg
+    $eax = COPY %1
+    RET 0, $eax
+
+---
+# CHECK-LABEL: name: load_prechecked
+name: load_prechecked
+tracksRegLiveness: true
+registers:
+  - { id: 0, class: gr64 }
+  - { id: 1, class: gr32 }
+liveins:
+  - { reg: '$rdi', virtual-reg: '%0' }
+body: |
+  bb.0:
+    liveins: $rdi
+    %0:gr64 = COPY $rdi
+
+    ; CHECK:      $rdi = COPY %0
+    ; CHECK-NEXT: CALL64pcrel32 {{.*}}check_null
+    ; CHECK-NEXT: MOV32rm %0
+    ; CHECK-NOT:  CALL64pcrel32 {{.*}}check_null
+
+    $rdi = COPY %0
+    CALL64pcrel32 &check_null, implicit $rdi
+    %1:gr32 = MOV32rm %0, 1, $noreg, 0, $noreg
     $eax = COPY %1
     RET 0, $eax
