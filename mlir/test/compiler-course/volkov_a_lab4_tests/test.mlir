@@ -1,5 +1,4 @@
-// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/volkov_a_lab_4_MLIR%shlibext --pass-pipeline="builtin.module(volkov-call-counter)" %s | FileCheck %s
-
+// RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/volkov_a_lab4_MLIR%shlibext --pass-pipeline="builtin.module(volkov-call-counter)" %s | FileCheck %s
 module {
   // CHECK: func.func @check_odd(%arg0: i32) -> i1 attributes {call_count = 0 : i32}
   // функция без вызвов
