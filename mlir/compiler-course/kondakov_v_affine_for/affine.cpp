@@ -30,7 +30,7 @@ class TripCountPass
 public:
   StringRef getArgument() const final { return "trip_count"; }
 
-  StringRef getDescription() const final {  
+  StringRef getDescription() const final {
     return "Add trip_count attribute to affine.for";
   }
 
