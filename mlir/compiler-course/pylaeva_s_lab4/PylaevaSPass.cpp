@@ -11,8 +11,7 @@ using namespace mlir;
 
 namespace {
 
-class PylaevaSPass
-    : public PassWrapper<PylaevaSPass, OperationPass<ModuleOp>> {
+class PylaevaSPass : public PassWrapper<PylaevaSPass, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final { return "pylaeva_s_lab4_MLIR"; }
   StringRef getDescription() const final {
@@ -34,7 +33,9 @@ private:
       if (!module.lookupSymbol<func::FuncOp>(functionName)) {
         builder.setInsertionPointToStart(module.getBody());
         auto functionType = builder.getFunctionType({}, {});
-        builder.create<func::FuncOp>(builder.getUnknownLoc(), functionName, functionType)
+        builder
+            .create<func::FuncOp>(builder.getUnknownLoc(), functionName,
+                                  functionType)
             .setPrivate();
       }
     };
@@ -58,7 +59,7 @@ private:
   void processScfIfOp(scf::IfOp ifOperation, OpBuilder &builder) {
     insertCallsInBlock(*ifOperation.thenBlock(), "trace_condition_then_begin",
                        "trace_condition_then_end", builder);
-    
+
     if (ifOperation.elseBlock()) {
       insertCallsInBlock(*ifOperation.elseBlock(), "trace_condition_else_begin",
                          "trace_condition_else_end", builder);
@@ -66,11 +67,13 @@ private:
   }
 
   void processAffineIfOp(affine::AffineIfOp ifOperation, OpBuilder &builder) {
-    insertCallsInBlock(*ifOperation.getThenBlock(), "trace_condition_then_begin",
-                       "trace_condition_then_end", builder);
-    
+    insertCallsInBlock(*ifOperation.getThenBlock(),
+                       "trace_condition_then_begin", "trace_condition_then_end",
+                       builder);
+
     if (ifOperation.hasElse()) {
-      insertCallsInBlock(*ifOperation.getElseBlock(), "trace_condition_else_begin",
+      insertCallsInBlock(*ifOperation.getElseBlock(),
+                         "trace_condition_else_begin",
                          "trace_condition_else_end", builder);
     }
   }
@@ -84,15 +87,15 @@ private:
     insertCallBeforeTerminator(targetBlock, endFunction, builder);
   }
 
-  void insertCallAtBlockBegin(Block &targetBlock, StringRef functionName, 
-                               OpBuilder &builder) {
+  void insertCallAtBlockBegin(Block &targetBlock, StringRef functionName,
+                              OpBuilder &builder) {
     builder.setInsertionPointToStart(&targetBlock);
     builder.create<func::CallOp>(builder.getUnknownLoc(), functionName,
                                  TypeRange{});
   }
 
   void insertCallBeforeTerminator(Block &targetBlock, StringRef functionName,
-                                   OpBuilder &builder) {
+                                  OpBuilder &builder) {
     Operation &terminatorOperation = targetBlock.back();
     builder.setInsertionPoint(&terminatorOperation);
     builder.create<func::CallOp>(builder.getUnknownLoc(), functionName,
