@@ -80,7 +80,7 @@ private:
   DenseMap<const MachineInstr *, unsigned> RecursiveDepths;
 
   static RecursiveGroupMap collectRecursiveGroups(Module &M,
-                                                 MachineModuleInfo &MMI) {
+                                                  MachineModuleInfo &MMI) {
     RecursiveGroupMap Groups;
     DenseMap<const Function *, SmallVector<const Function *, 4>> Edges;
     DenseMap<const Function *, unsigned> Indices;
