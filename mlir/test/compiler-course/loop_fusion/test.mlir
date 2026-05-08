@@ -5,7 +5,8 @@ func.func @fuse_independent_loops(%src: memref<10xf32>, %tmp: memref<10xf32>, %d
   %c10 = arith.constant 10 : index
   %c1 = arith.constant 1 : index
 
-  // CHECK-LABEL: func.func @fuse_independent_loops(%[[SRC:.*]]: memref<10xf32>, %[[TMP:.*]]: memref<10xf32>, %[[DST:.*]]: memref<10xf32>, %[[OUT:.*]]: memref<10xf32>)
+  // CHECK-LABEL: func.func @fuse_independent_loops
+  // CHECK-SAME: (%[[SRC:.*]]: memref<10xf32>, %[[TMP:.*]]: memref<10xf32>, %[[DST:.*]]: memref<10xf32>, %[[OUT:.*]]: memref<10xf32>)
   // CHECK: scf.for %[[IV:.*]] = %c0 to %c10 step %c1 {
   // CHECK-NEXT: %[[V1:.*]] = memref.load %[[SRC]][%[[IV]]] : memref<10xf32>
   // CHECK-NEXT: memref.store %[[V1]], %[[TMP]][%[[IV]]] : memref<10xf32>
