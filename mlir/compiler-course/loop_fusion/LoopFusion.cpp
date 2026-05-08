@@ -1,9 +1,9 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/IR/IRMapping.h"
 #include "mlir/IR/PatternMatch.h"
+#include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
@@ -28,9 +28,9 @@ static bool isSameBound(Value lhs, Value rhs) {
   return lhsConst && rhsConst && lhsConst.value() == rhsConst.value();
 }
 
-static bool isDefinedInsideFirstLoop(Value value,
-                                     scf::ForOp firstLoop,
-                                     const llvm::SmallPtrSetImpl<Operation *> &firstLoopOps) {
+static bool isDefinedInsideFirstLoop(
+    Value value, scf::ForOp firstLoop,
+    const llvm::SmallPtrSetImpl<Operation *> &firstLoopOps) {
   Operation *defOp = value.getDefiningOp();
   if (!defOp)
     return false;
@@ -38,8 +38,9 @@ static bool isDefinedInsideFirstLoop(Value value,
   return defOp == firstLoop.getOperation() || firstLoopOps.contains(defOp);
 }
 
-static LogicalResult collectAccessesAndCheckEffects(
-    scf::ForOp loop, llvm::DenseMap<Value, AccessInfo> &accesses) {
+static LogicalResult
+collectAccessesAndCheckEffects(scf::ForOp loop,
+                               llvm::DenseMap<Value, AccessInfo> &accesses) {
   WalkResult result = loop.getBody()->walk([&](Operation *op) {
     if (op == loop.getBody()->getTerminator())
       return WalkResult::advance();
@@ -66,10 +67,12 @@ static LogicalResult collectAccessesAndCheckEffects(
   return failure(result.wasInterrupted());
 }
 
-static bool hasInterLoopDependencies(scf::ForOp firstLoop, scf::ForOp secondLoop) {
+static bool hasInterLoopDependencies(scf::ForOp firstLoop,
+                                     scf::ForOp secondLoop) {
   if (firstLoop.getNumResults() != 0 || secondLoop.getNumResults() != 0)
     return true;
-  if (firstLoop.getInitArgs().size() != 0 || secondLoop.getInitArgs().size() != 0)
+  if (firstLoop.getInitArgs().size() != 0 ||
+      secondLoop.getInitArgs().size() != 0)
     return true;
 
   llvm::SmallPtrSet<Operation *, 32> firstLoopOps;
@@ -80,17 +83,18 @@ static bool hasInterLoopDependencies(scf::ForOp firstLoop, scf::ForOp secondLoop
       return true;
   }
 
-  WalkResult ssaDependencyCheck = secondLoop.getBody()->walk([&](Operation *op) {
-    if (op == secondLoop.getBody()->getTerminator())
-      return WalkResult::advance();
+  WalkResult ssaDependencyCheck =
+      secondLoop.getBody()->walk([&](Operation *op) {
+        if (op == secondLoop.getBody()->getTerminator())
+          return WalkResult::advance();
 
-    for (Value operand : op->getOperands()) {
-      if (isDefinedInsideFirstLoop(operand, firstLoop, firstLoopOps))
-        return WalkResult::interrupt();
-    }
+        for (Value operand : op->getOperands()) {
+          if (isDefinedInsideFirstLoop(operand, firstLoop, firstLoopOps))
+            return WalkResult::interrupt();
+        }
 
-    return WalkResult::advance();
-  });
+        return WalkResult::advance();
+      });
   if (ssaDependencyCheck.wasInterrupted())
     return true;
 
@@ -151,7 +155,8 @@ public:
   StringRef getArgument() const final { return "adjacent-scf-loop-fusion"; }
 
   StringRef getDescription() const final {
-    return "Fuses adjacent scf.for loops with identical bounds and no inter-loop dependencies";
+    return "Fuses adjacent scf.for loops with identical bounds and no "
+           "inter-loop dependencies";
   }
 
   void runOnOperation() override {

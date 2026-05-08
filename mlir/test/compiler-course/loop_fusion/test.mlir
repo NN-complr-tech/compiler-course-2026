@@ -5,12 +5,12 @@ func.func @fuse_independent_loops(%src: memref<10xf32>, %tmp: memref<10xf32>, %d
   %c10 = arith.constant 10 : index
   %c1 = arith.constant 1 : index
 
-  // CHECK-LABEL: func.func @fuse_independent_loops
+  // CHECK-LABEL: func.func @fuse_independent_loops(%[[SRC:.*]]: memref<10xf32>, %[[TMP:.*]]: memref<10xf32>, %[[DST:.*]]: memref<10xf32>, %[[OUT:.*]]: memref<10xf32>)
   // CHECK: scf.for %[[IV:.*]] = %c0 to %c10 step %c1 {
-  // CHECK-NEXT: %[[V1:.*]] = memref.load %src[%[[IV]]] : memref<10xf32>
-  // CHECK-NEXT: memref.store %[[V1]], %tmp[%[[IV]]] : memref<10xf32>
-  // CHECK-NEXT: %[[V2:.*]] = memref.load %dst[%[[IV]]] : memref<10xf32>
-  // CHECK-NEXT: memref.store %[[V2]], %out[%[[IV]]] : memref<10xf32>
+  // CHECK-NEXT: %[[V1:.*]] = memref.load %[[SRC]][%[[IV]]] : memref<10xf32>
+  // CHECK-NEXT: memref.store %[[V1]], %[[TMP]][%[[IV]]] : memref<10xf32>
+  // CHECK-NEXT: %[[V2:.*]] = memref.load %[[DST]][%[[IV]]] : memref<10xf32>
+  // CHECK-NEXT: memref.store %[[V2]], %[[OUT]][%[[IV]]] : memref<10xf32>
   // CHECK-NEXT: }
   // CHECK-NOT: scf.for
   scf.for %i = %c0 to %c10 step %c1 {
