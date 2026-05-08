@@ -6,6 +6,8 @@
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/Support/Debug.h"
+#include "X86.h"
+#include "X86InstrInfo.h"
 
 using namespace llvm;
 
@@ -136,22 +138,13 @@ int LoopUnrollPass::getTripCount(MachineLoop *L) {
   if (!Latch)
     return -1;
 
-  for (auto &MI : reverse(*Latch)) {
-    if (MI.isBranch() && MI.getNumOperands() >= 2) {
-      for (const MachineOperand &Op : MI.operands()) {
+  for (auto &MI : *Latch) {
+    for (const MachineOperand &Op : MI.operands()) {
         if (Op.isImm() && Op.getImm() > 0) {
-          return (int)Op.getImm();
+            return (int)Op.getImm();
         }
       }
     }
-
-    if (MI.getOpcode() == 151) {
-      for (const MachineOperand &Op : MI.operands()) {
-        if (Op.isImm() && Op.getImm() > 0)
-          return (int)Op.getImm();
-      }
-    }
-  }
 
   return -1;
 }
@@ -255,7 +248,7 @@ void LoopUnrollPass::adjustInductionVariable(MachineLoop *L, int Factor) {
 
 MachineInstr *LoopUnrollPass::findInductionIncrement(MachineBasicBlock *Latch) {
   for (MachineInstr &MI : *Latch) {
-    if (MI.getOpcode() == 0x04 || MI.getOpcode() == 0x81) {
+    if (MI.getOpcode() == X86::ADD32ri8 || MI.getOpcode() == X86::ADD32ri) {
       for (const MachineOperand &Op : MI.operands()) {
         if (Op.isImm() && Op.getImm() == 1)
           return &MI;
