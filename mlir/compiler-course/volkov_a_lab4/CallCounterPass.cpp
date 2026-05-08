@@ -50,8 +50,8 @@ mlir::PassPluginLibraryInfo getVolkovCallCounterPluginInfo() {
   return {
     MLIR_PLUGIN_API_VERSION, 
     "VolkovCallCounterPass", 
-    "v1.0",[](PassRegistry *registry) {
-      registry->insertPass([]() { return std::make_unique<VolkovCallCounterPass>(); });
+    "v1.0",[]() {
+      mlir::PassRegistration<VolkovCallCounterPass>();
     }
   };
 }
