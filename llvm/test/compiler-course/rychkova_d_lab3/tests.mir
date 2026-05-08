@@ -13,7 +13,6 @@
     ret void
   }
 ...
-
 # CHECK-LABEL: name: test_tc4
 # CHECK-NOT: JCC_1
 # CHECK: RET64
@@ -33,7 +32,6 @@
     ret void
   }
 ...
-
 # CHECK-LABEL: name: test_tc7
 # CHECK: JCC_1
 # CHECK-NOT: JCC_1
@@ -46,14 +44,14 @@
   entry:
     br label %outer
   outer:
-    %j = phi i32 [ 0, %entry ], [ %j.next, %outer ]
+    %j = phi i32 [ 0, %entry ], [ %j.next, %outer.latch ]
     br label %inner
   inner:
     %i = phi i32 [ 0, %outer ], [ %i.next, %inner ]
     %i.next = add i32 %i, 1
     %icond = icmp slt i32 %i.next, 3
-    br i1 %icond, label %inner, label %outer
-  outer:
+    br i1 %icond, label %inner, label %outer.latch
+  outer.latch:
     %j.next = add i32 %j, 1
     %jcond = icmp slt i32 %j.next, 4
     br i1 %jcond, label %outer, label %exit
@@ -61,7 +59,5 @@
     ret void
   }
 ...
-
 # CHECK-LABEL: name: nested
-# Inner loop (TC=3) fully unrolled
-# Outer loop (TC=4) fully unrolled (since 4 <= 5)
+# CHECK: RET64

@@ -197,8 +197,15 @@ bool LoopUnrollPass::performUnrolling(MachineLoop *L, MachineFunction &MF,
 
   adjustInductionVariable(L, UnrollFactor);
 
-  if (llvm::any_of(Preheader->successors(),
-                   [Latch](MachineBasicBlock *Succ) { return Succ == Latch; })) {
+  // Check if Preheader has Latch as a successor and replace it with Exit
+  bool HasLatch = false;
+  for (auto *Succ : Preheader->successors()) {
+    if (Succ == Latch) {
+      HasLatch = true;
+      break;
+    }
+  }
+  if (HasLatch) {
     Preheader->ReplaceUsesOfBlockWith(Latch, Exit);
   }
 
