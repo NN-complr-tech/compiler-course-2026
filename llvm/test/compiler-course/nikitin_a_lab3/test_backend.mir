@@ -17,12 +17,13 @@ body: |
     RET 0, $eax
 
 # CHECK-LABEL: name: test_load
-# CHECK: TEST64rr
-# CHECK: JCC_1
-# CHECK: JMP_1
+# CHECK: TEST64rr %0, %0
+# CHECK: JCC_1 %bb.2, 4
+# CHECK: JMP_1 %bb.3
 # CHECK: TRAP
-# CHECK: MOV32rm
+# CHECK: MOV32rm %0, 1, $noreg, 0, $noreg
 
+# Тест 2: Запись в память
 ---
 name: test_store
 tracksRegLiveness: true
@@ -38,12 +39,13 @@ body: |
     RET 0
 
 # CHECK-LABEL: name: test_store
-# CHECK: TEST64rr
-# CHECK: JCC_1
-# CHECK: JMP_1
+# CHECK: TEST64rr %0, %0
+# CHECK: JCC_1 %bb.2, 4
+# CHECK: JMP_1 %bb.3
 # CHECK: TRAP
-# CHECK: MOV32mr
+# CHECK: MOV32mr %0, 1, $noreg, 0, $noreg, %1
 
+# Тест 3: 64-битная загрузка
 ---
 name: test_load64
 tracksRegLiveness: true
@@ -58,12 +60,13 @@ body: |
     RET 0, $rax
 
 # CHECK-LABEL: name: test_load64
-# CHECK: TEST64rr
-# CHECK: JCC_1
-# CHECK: JMP_1
+# CHECK: TEST64rr %0, %0
+# CHECK: JCC_1 %bb.2, 4
+# CHECK: JMP_1 %bb.3
 # CHECK: TRAP
-# CHECK: MOV64rm
+# CHECK: MOV64rm %0, 1, $noreg, 0, $noreg
 
+# Тест 4: Без разыменования
 ---
 name: test_no_deref
 tracksRegLiveness: true
@@ -84,6 +87,7 @@ body: |
 # CHECK-NOT: JCC_1
 # CHECK-NOT: TRAP
 
+# Тест 5: Доступ со смещением
 ---
 name: test_offset
 tracksRegLiveness: true
@@ -98,6 +102,8 @@ body: |
     RET 0, $eax
 
 # CHECK-LABEL: name: test_offset
-# CHECK: TEST64rr
+# CHECK: TEST64rr %0, %0
+# CHECK: JCC_1 %bb.2, 4
+# CHECK: JMP_1 %bb.3
 # CHECK: TRAP
-# CHECK: MOV32rm {{.*}} 8
+# CHECK: MOV32rm %0, 1, $noreg, 8, $noreg
