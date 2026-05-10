@@ -1,5 +1,5 @@
 // RUN: mlir-opt -load-pass-plugin=%mlir_lib_dir/sannikov_i_lab4_MLIR%shlibext \
-// RUN:   --pass-pipeline="builtin.module(nesting-depth)" %s | FileCheck %s
+// RUN:   --pass-pipeline="builtin.module(sannikov-nesting-depth)" %s | FileCheck %s
 
 
 // CHECK-LABEL: func.func @just_arithmetic
