@@ -1,9 +1,9 @@
-#include "mlir/Pass/Pass.h"      // Для PassWrapper
-#include "mlir/IR/Builders.h"    // Для OpBuilder
-#include "mlir/IR/BuiltinOps.h"  // Для ModuleOp
-#include "mlir/IR/SymbolTable.h" // Содержит SymbolTable и SymbolOpInterface
-#include "mlir/Interfaces/CallInterfaces.h" // Для CallOpInterface
-#include "mlir/Tools/Plugins/PassPlugin.h"  // Для плагина
+#include "mlir/Pass/Pass.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/SymbolTable.h"
+#include "mlir/Interfaces/CallInterfaces.h"
+#include "mlir/Tools/Plugins/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace mlir;
