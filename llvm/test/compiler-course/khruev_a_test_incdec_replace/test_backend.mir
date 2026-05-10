@@ -1,4 +1,4 @@
-# RUN: llc -mtriple=x86_64-unknown-linux-gnu -load %p/../../../../build/lib/khruev_a_incdec_BACKEND.so -run-pass=khruev_a_incdec_replace-x86 %s -o - | FileCheck %s
+# RUN: llc -mtriple=x86_64-unknown-linux-gnu --load=%llvmshlibdir/khruev_a_incdec_BACKEND%shlibext -run-pass=khruev_a_incdec_replace-x86 %s -o - | FileCheck %s
 
 ---
 name:            fusion_tests_32_and_64
