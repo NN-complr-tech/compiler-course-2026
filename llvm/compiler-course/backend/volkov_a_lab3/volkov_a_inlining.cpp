@@ -10,9 +10,7 @@ using namespace llvm;
 
 namespace {
 constexpr unsigned MaxInsts = 15;
-[[maybe_unused]] constexpr unsigned MaxDepth = 3;
 
-// Подсчет инструкций
 unsigned getIRSize(const Function *F) {
   unsigned Cnt = 0;
   for (const auto &BB : *F) {
