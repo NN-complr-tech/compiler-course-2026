@@ -90,4 +90,4 @@ char VolkovInliner::ID = 0;
 
 } // namespace
 
-RegisterPass<VolkovInliner> X("volkov-inline", "Volkov Inliner Pass");
+RegisterPass<VolkovInliner> X("volkov-a-inline", "Volkov Inliner Pass");
