@@ -23,9 +23,8 @@ struct VolkovCallCounterPass
     ModuleOp module = getOperation();
 
     llvm::StringMap<int32_t> callFrequency;
-    module.walk([&](func::CallOp callOp) {
-      callFrequency[callOp.getCallee()]++;
-    });
+    module.walk(
+        [&](func::CallOp callOp) { callFrequency[callOp.getCallee()]++; });
 
     module.walk([&](func::FuncOp funcOp) {
       int32_t count = callFrequency.lookup(funcOp.getName());
