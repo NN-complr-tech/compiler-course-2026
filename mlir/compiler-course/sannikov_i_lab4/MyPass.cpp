@@ -14,12 +14,12 @@ using namespace mlir;
 
 namespace {
 
-struct NestingDepthPass
-    : public PassWrapper<NestingDepthPass, OperationPass<ModuleOp>> {
+struct SannikovNestingDepthPass
+    : public PassWrapper<SannikovNestingDepthPass, OperationPass<ModuleOp>> {
 
-  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(NestingDepthPass)
+  MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(SannikovNestingDepthPass)
 
-  StringRef getArgument() const final { return "nesting-depth"; }
+  StringRef getArgument() const final { return "sannikov-nesting-depth"; }
 
   StringRef getDescription() const final {
     return "Computes max nesting depth of scf/affine block ops "
@@ -76,5 +76,5 @@ struct NestingDepthPass
 
 extern "C" LLVM_ATTRIBUTE_WEAK PassPluginLibraryInfo mlirGetPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "SannikovNestingDepthPass", "v0.1",
-          []() { PassRegistration<NestingDepthPass>(); }};
+          []() { PassRegistration<SannikovNestingDepthPass>(); }};
 }
