@@ -40,16 +40,9 @@ struct MaxBlockDepthPass
     Builder builder(funcOp.getContext());
 
     int maxDepth = 0;
-
-    for (Region &region : funcOp->getRegions())
-      for (Block &block : region)
-        for (Operation &op : block)
-          traverse(&op, 0, maxDepth);
+    traverse(funcOp.getOperation(), 0, maxDepth);
 
     funcOp->setAttr("max_block_depth", builder.getI64IntegerAttr(maxDepth));
-
-    llvm::outs() << "Function '" << funcOp.getName()
-                 << "' max block depth: " << maxDepth << "\n";
   }
 };
 
