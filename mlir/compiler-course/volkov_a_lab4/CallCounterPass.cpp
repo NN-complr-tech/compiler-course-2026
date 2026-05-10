@@ -8,54 +8,48 @@
 using namespace mlir;
 
 namespace {
-struct VolkovCallCounterPass : public PassWrapper<VolkovCallCounterPass, OperationPass<ModuleOp>> {
+
+struct VolkovCallCounterPass
+    : public PassWrapper<VolkovCallCounterPass, OperationPass<ModuleOp>> {
+
   StringRef getArgument() const final { return "volkov-call-counter"; }
-  StringRef getDescription() const final { 
-    return "Calculates the number of calls for each function and attaches it as an attribute."; 
+
+  StringRef getDescription() const final {
+    return "Counts how many times each function is called by other functions "
+           "in the module and attaches the result as a 'call_count' attribute.";
   }
 
   void runOnOperation() override {
     ModuleOp module = getOperation();
-    
+
     llvm::StringMap<int32_t> callFrequency;
-
-    module.walk([&](func::CallOp callInst) {
-      StringRef targetName = callInst.getCallee();
-      callFrequency[targetName]++;
+    module.walk([&](func::CallOp callOp) {
+      callFrequency[callOp.getCallee()]++;
     });
 
-    module.walk([&](func::FuncOp function) {
-      int32_t callsCount = callFrequency.lookup(function.getName());
-      
-      auto attrType = IntegerType::get(function.getContext(), 32);
-      auto countAttr = IntegerAttr::get(attrType, callsCount);
-      
-      function->setAttr("call_count", countAttr);
+    module.walk([&](func::FuncOp funcOp) {
+      int32_t count = callFrequency.lookup(funcOp.getName());
+      auto i32 = IntegerType::get(funcOp.getContext(), 32);
+      funcOp->setAttr("call_count", IntegerAttr::get(i32, count));
     });
 
-    size_t totalOperations = 0;
-    module.walk([&](Operation *op) {
-      totalOperations++;
-    });
-    
-    llvm::outs() << "Total amount of operations: " << totalOperations << '\n';
+    size_t totalOps = 0;
+    module.walk([&](Operation *) { ++totalOps; });
+    llvm::outs() << "Total operations in module: " << totalOps << '\n';
   }
 };
+
 } // namespace
 
 MLIR_DECLARE_EXPLICIT_TYPE_ID(VolkovCallCounterPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(VolkovCallCounterPass)
 
 mlir::PassPluginLibraryInfo getVolkovCallCounterPluginInfo() {
-  return {
-    MLIR_PLUGIN_API_VERSION, 
-    "VolkovCallCounterPass", 
-    "v1.0",[]() {
-      mlir::PassRegistration<VolkovCallCounterPass>();
-    }
-  };
+  return {MLIR_PLUGIN_API_VERSION, "VolkovCallCounterPass", "v1.0",
+          []() { mlir::PassRegistration<VolkovCallCounterPass>(); }};
 }
 
-extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo mlirGetPassPluginInfo() {
+extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
+mlirGetPassPluginInfo() {
   return getVolkovCallCounterPluginInfo();
 }
