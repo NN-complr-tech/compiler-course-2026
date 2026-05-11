@@ -23,6 +23,21 @@ func.func @test_2d(%arg0: memref<4x8xf32>, %arg1: memref<4x8xf32>) {
   return
 }
 
+// CHECK-LABEL: func.func @test_several_copies
+func.func @test_several_copies(%arg0: memref<10xf32>, %arg1: memref<10xf32>, %arg2: memref<10xf32>) {
+  // CHECK:      scf.for %[[I1:.*]] = {{.*}}
+  // CHECK-NEXT:   %[[V1:.*]] = memref.load %arg0[%[[I1]]]
+  // CHECK-NEXT:   memref.store %[[V1]], %arg1[%[[I1]]]
+  
+  // CHECK:      scf.for %[[I2:.*]] = {{.*}}
+  // CHECK-NEXT:   %[[V2:.*]] = memref.load %arg1[%[[I2]]]
+  // CHECK-NEXT:   memref.store %[[V2]], %arg2[%[[I2]]]
+  
+  memref.copy %arg0, %arg1 : memref<10xf32> to memref<10xf32>
+  memref.copy %arg1, %arg2 : memref<10xf32> to memref<10xf32>
+  return
+}
+
 // CHECK-LABEL: func.func @test_3d_copy
 func.func @test_3d_copy(%arg0: memref<2x3x4xi32>, %arg1: memref<2x3x4xi32>) {
   // CHECK:      scf.for %[[I:.*]] = {{.*}} to %c2
