@@ -25,11 +25,10 @@ struct CopyExpansionPass
   void runOnOperation() override {
     auto module = getOperation();
     IRRewriter rewriter(module.getContext());
-    module.walk([&](memref::CopyOp op) {
-      if (succeeded(expandCopyOp(op, rewriter))) {
-        return WalkResult::advance();
+     module.walk([&](memref::CopyOp op) {
+      if (failed(expandCopyOp(op, rewriter))) {
+        signalPassFailure();
       }
-      return WalkResult::interrupt();
     });
   }
 
