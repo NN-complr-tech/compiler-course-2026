@@ -163,3 +163,26 @@ func.func @affine_nested(%n: index) {
   }
   func.return
 }
+
+// CHECK: func.func @transparent_region{{.*}}max_depth = 2{{.*}}
+func.func @transparent_region(%cond: i1) -> i32 {
+  %result = scf.if %cond -> i32 {
+    %inner = scf.execute_region -> i32 {
+      %lb = arith.constant 0 : index
+      %ub = arith.constant 10 : index
+      %step = arith.constant 1 : index
+      %c0 = arith.constant 0 : i32
+      %sum = scf.for %i = %lb to %ub step %step iter_args(%acc = %c0) -> i32 {
+        %i_i32 = arith.index_cast %i : index to i32
+        %new_acc = arith.addi %acc, %i_i32 : i32
+        scf.yield %new_acc : i32
+      }
+      scf.yield %sum : i32
+    }
+    scf.yield %inner : i32
+  } else {
+    %zero = arith.constant 0 : i32
+    scf.yield %zero : i32
+  }
+  func.return %result : i32
+}
