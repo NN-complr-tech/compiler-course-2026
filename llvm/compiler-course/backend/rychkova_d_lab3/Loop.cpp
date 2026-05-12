@@ -41,7 +41,6 @@ private:
   void adjustInductionVariable(MachineLoop *L, int Factor);
   MachineInstr *findInductionIncrement(MachineBasicBlock *Latch);
   void collectLoops(MachineLoop *L, SmallVectorImpl<MachineLoop *> &Loops);
-  void copySuccessors(MachineBasicBlock *Dest, MachineBasicBlock *Src);
 };
 
 char LoopUnrollPass::ID = 0;
@@ -163,13 +162,6 @@ int LoopUnrollPass::computeUnrollFactor(int TripCount) {
   return 1;
 }
 
-void LoopUnrollPass::copySuccessors(MachineBasicBlock *Dest,
-                                    MachineBasicBlock *Src) {
-  for (auto *Succ : Src->successors()) {
-    Dest->addSuccessor(Succ);
-  }
-}
-
 bool LoopUnrollPass::performUnrolling(MachineLoop *L, MachineFunction &MF,
                                       int UnrollFactor, MachineLoopInfo &MLI) {
   MachineBasicBlock *Preheader = L->getLoopPreheader();
@@ -179,46 +171,42 @@ bool LoopUnrollPass::performUnrolling(MachineLoop *L, MachineFunction &MF,
   if (!Preheader || !Latch || !Exit)
     return false;
 
-  SmallVector<MachineBasicBlock *, 8> LoopBlocks(L->block_begin(),
-                                                 L->block_end());
-
   int Copies = UnrollFactor - 1;
 
   if (Copies > 0) {
-    cloneLoopBody(L, MF, Copies, Latch, MLI);
+    SmallVector<MachineBasicBlock *, 8> LoopBlocks(L->block_begin(),
+                                                   L->block_end());
+    for (int i = 0; i < Copies; ++i) {
+      for (MachineBasicBlock *BB : LoopBlocks) {
+        if (BB == Preheader || BB == Exit)
+          continue;
+
+        MachineBasicBlock *CloneBB = MF.CreateMachineBasicBlock();
+
+        for (MachineInstr &MI : *BB) {
+          MachineInstr *CloneMI = MF.CloneMachineInstr(&MI);
+          CloneBB->insert(CloneBB->end(), CloneMI);
+        }
+
+        MF.insert(Latch->getIterator(), CloneBB);
+
+        for (auto *Succ : BB->successors()) {
+          CloneBB->addSuccessor(Succ);
+        }
+      }
+    }
   }
 
   adjustInductionVariable(L, UnrollFactor);
 
-  if (Preheader->getSuccessors().size() > 0) {
-    Preheader->ReplaceSuccessorWith(Latch, Exit);
+  for (auto *Succ : Preheader->successors()) {
+    if (Succ == Latch) {
+      Preheader->ReplaceUsesOfBlockWith(Latch, Exit);
+      break;
+    }
   }
 
   return true;
-}
-
-void LoopUnrollPass::cloneLoopBody(MachineLoop *L, MachineFunction &MF,
-                                   int Copies, MachineBasicBlock *InsertBefore,
-                                   MachineLoopInfo &MLI) {
-  SmallVector<MachineBasicBlock *, 8> LoopBlocks(L->block_begin(),
-                                                 L->block_end());
-
-  for (int i = 0; i < Copies; ++i) {
-    for (MachineBasicBlock *BB : LoopBlocks) {
-      if (BB == L->getLoopPreheader() || BB == L->getExitBlock())
-        continue;
-
-      MachineBasicBlock *CloneBB = MF.CreateMachineBasicBlock();
-
-      for (MachineInstr &MI : *BB) {
-        MachineInstr *CloneMI = MF.CloneMachineInstr(&MI);
-        CloneBB->insert(CloneBB->end(), CloneMI);
-      }
-
-      MF.insert(InsertBefore->getIterator(), CloneBB);
-      CloneBB->cloneSuccessors(BB);
-    }
-  }
 }
 
 void LoopUnrollPass::adjustInductionVariable(MachineLoop *L, int Factor) {
@@ -240,7 +228,7 @@ void LoopUnrollPass::adjustInductionVariable(MachineLoop *L, int Factor) {
 
 MachineInstr *LoopUnrollPass::findInductionIncrement(MachineBasicBlock *Latch) {
   for (MachineInstr &MI : *Latch) {
-    if (MI.getOpcode() == 0x04 || MI.getOpcode() == 0x81) {
+    if (MI.getOpcode() == 148) {
       for (const MachineOperand &Op : MI.operands()) {
         if (Op.isImm() && Op.getImm() == 1)
           return &MI;
@@ -252,4 +240,4 @@ MachineInstr *LoopUnrollPass::findInductionIncrement(MachineBasicBlock *Latch) {
 
 namespace llvm {
 FunctionPass *createLoopUnrollLimitedPass() { return new LoopUnrollPass(); }
-}
+} // namespace llvm
