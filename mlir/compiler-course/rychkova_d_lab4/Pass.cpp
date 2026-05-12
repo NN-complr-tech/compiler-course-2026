@@ -13,10 +13,10 @@ using namespace mlir;
 
 namespace {
 
-class SavvaDariyaCopyToLoopPass 
-    : public PassWrapper<SavvaDariyaCopyToLoopPass, OperationPass<ModuleOp>> {
+class RychkovaDLab4CopyToLoopPass 
+    : public PassWrapper<RychkovaDLab4CopyToLoopPass, OperationPass<ModuleOp>> {
 public:
-  StringRef getArgument() const final { return "savva-copy-to-loop"; }
+  StringRef getArgument() const final { return "rychkova-copy-to-loop"; }
   StringRef getDescription() const final { 
     return "Replace memref.copy with explicit loop-based element copy"; 
   }
@@ -91,12 +91,12 @@ private:
 
 } // namespace
 
-MLIR_DECLARE_EXPLICIT_TYPE_ID(SavvaDariyaCopyToLoopPass)
-MLIR_DEFINE_EXPLICIT_TYPE_ID(SavvaDariyaCopyToLoopPass)
+MLIR_DECLARE_EXPLICIT_TYPE_ID(RychkovaDLab4CopyToLoopPass)
+MLIR_DEFINE_EXPLICIT_TYPE_ID(RychkovaDLab4CopyToLoopPass)
 
 mlir::PassPluginLibraryInfo getSavvaCopyPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "SavvaDariyaCopyToLoopPass", "1.0",
-          []() { mlir::PassRegistration<SavvaDariyaCopyToLoopPass>(); }};
+  return {MLIR_PLUGIN_API_VERSION, "RychkovaDLab4CopyToLoopPass", "1.0",
+          []() { mlir::PassRegistration<RychkovaDLab4CopyToLoopPass>(); }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
