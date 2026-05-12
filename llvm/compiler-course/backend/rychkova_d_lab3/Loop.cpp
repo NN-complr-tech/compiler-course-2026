@@ -190,15 +190,8 @@ bool LoopUnrollPass::performUnrolling(MachineLoop *L, MachineFunction &MF,
 
   adjustInductionVariable(L, UnrollFactor);
 
-  bool HasLatch = false;
-  for (auto *Succ : Preheader->successors()) {
-    if (Succ == Latch) {
-      HasLatch = true;
-      break;
-    }
-  }
-  if (HasLatch) {
-    Preheader->ReplaceUsesOfBlockWith(Latch, Exit);
+  if (Preheader->getSuccessors().size() > 0) {
+    Preheader->ReplaceSuccessorWith(Latch, Exit);
   }
 
   return true;
@@ -223,7 +216,7 @@ void LoopUnrollPass::cloneLoopBody(MachineLoop *L, MachineFunction &MF,
       }
 
       MF.insert(InsertBefore->getIterator(), CloneBB);
-      copySuccessors(CloneBB, BB);
+      CloneBB->cloneSuccessors(BB);
     }
   }
 }
@@ -247,7 +240,7 @@ void LoopUnrollPass::adjustInductionVariable(MachineLoop *L, int Factor) {
 
 MachineInstr *LoopUnrollPass::findInductionIncrement(MachineBasicBlock *Latch) {
   for (MachineInstr &MI : *Latch) {
-    if (MI.getOpcode() == 148) {
+    if (MI.getOpcode() == 0x04 || MI.getOpcode() == 0x81) {
       for (const MachineOperand &Op : MI.operands()) {
         if (Op.isImm() && Op.getImm() == 1)
           return &MI;
@@ -259,4 +252,4 @@ MachineInstr *LoopUnrollPass::findInductionIncrement(MachineBasicBlock *Latch) {
 
 namespace llvm {
 FunctionPass *createLoopUnrollLimitedPass() { return new LoopUnrollPass(); }
-} // namespace llvm
+}
