@@ -95,10 +95,10 @@ body: |
     %5:gr32 = ADD32ri %4, 2, implicit-def dead $eflags
     %6:gr32 = ADD32ri %5, 3, implicit-def dead $eflags
     %7:gr32 = MOV32ri 3
-    CALL64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit-def $eax
+    CALL64pcrel32 @large, csr_64, implicit $sp, implicit $ssp, implicit $edi, implicit-def $eax
     %8:gr32 = COPY $eax
     %9:gr32 = MOV32ri 4
-    CALL64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit-def $eax
+    CALL64pcrel32 @factorial, csr_64, implicit $sp, implicit $ssp, implicit $edi, implicit-def $eax
     %10:gr32 = COPY $eax
     %11:gr32 = ADD32rr %2, %6, implicit-def dead $eflags
     %12:gr32 = ADD32rr %11, %8, implicit-def dead $eflags
@@ -109,6 +109,11 @@ body: |
 ---
 name: foo1
 tracksRegLiveness: true
+registers:
+  - { id: 0, class: gr32 }
+  - { id: 1, class: gr32 }
+liveins:
+  - { reg: '$edi', virtual-reg: '%0' }
 body: |
   bb.0:
     liveins: $edi
@@ -120,13 +125,20 @@ body: |
 ---
 name: foo2
 tracksRegLiveness: true
+registers:
+  - { id: 0, class: gr32 }
+  - { id: 1, class: gr32 }
+  - { id: 2, class: gr32 }
+  - { id: 3, class: gr32 }
+liveins:
+  - { reg: '$edi', virtual-reg: '%0' }
 body: |
   bb.0:
     liveins: $edi
     %0:gr32 = COPY $edi
     %1:gr32 = ADD32ri %0, 10, implicit-def dead $eflags
     $edi = COPY %0
-    CALL64pcrel32 @foo1, csr_64, implicit $sp, implicit $ssp, implicit-def $eax
+    CALL64pcrel32 @foo1, csr_64, implicit $sp, implicit $ssp, implicit $edi, implicit-def $eax
     %2:gr32 = COPY $eax
     %3:gr32 = SUB32rr %1, %2, implicit-def dead $eflags
     $eax = COPY %3
@@ -150,17 +162,24 @@ body: |
 ---
 name: foo3
 tracksRegLiveness: true
+registers:
+  - { id: 0, class: gr32 }
+  - { id: 1, class: gr32 }
+  - { id: 2, class: gr32 }
+  - { id: 3, class: gr32 }
+liveins:
+  - { reg: '$edi', virtual-reg: '%0' }
 body: |
   bb.0:
     liveins: $edi
     %0:gr32 = COPY $edi
     
     $edi = COPY %0
-    CALL64pcrel32 @foo2, csr_64, implicit $sp, implicit $ssp, implicit-def $eax
+    CALL64pcrel32 @foo2, csr_64, implicit $sp, implicit $ssp, implicit $edi, implicit-def $eax
     %1:gr32 = COPY $eax
     
     $edi = COPY %1
-    CALL64pcrel32 @foo1, csr_64, implicit $sp, implicit $ssp, implicit-def $eax
+    CALL64pcrel32 @foo1, csr_64, implicit $sp, implicit $ssp, implicit $edi, implicit-def $eax
     %2:gr32 = COPY $eax
     
     %3:gr32 = IMUL32rr %1, %2, implicit-def dead $eflags
