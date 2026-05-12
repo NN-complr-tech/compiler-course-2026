@@ -1,24 +1,5 @@
 # RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/volkov_a_lab3_BACKEND%shlibext -run-pass=volkov-a-inline %s -o - | FileCheck %s
 --- |
-  define i32 @foo1(i32 %value) {
-    %1 = mul i32 %value, %value
-    ret i32 %1
-  }
-
-  define i32 @foo2(i32 %value) {
-    %1 = add i32 %value, 10
-    %2 = call i32 @foo1(i32 %value)
-    %3 = sub i32 %1, %2
-    ret i32 %3
-  }
-
-  define i32 @foo3(i32 %value) {
-    %1 = call i32 @foo2(i32 %value)
-    %2 = call i32 @foo1(i32 %1)
-    %3 = mul i32 %1, %2
-    ret i32 %3
-  }
-
   define i32 @add(i32 %a, i32 %b) {
     %sum = add i32 %a, %b
     ret i32 %sum
@@ -69,8 +50,26 @@
     %final = add i32 %res2, %r4
     ret i32 %final
   }
+
+  define i32 @foo1(i32 %value) {
+    %1 = mul i32 %value, %value
+    ret i32 %1
+  }
+  define i32 @foo2(i32 %value) {
+    %1 = add i32 %value, 10
+    %2 = call i32 @foo1(i32 %value)
+    %3 = sub i32 %1, %2
+    ret i32 %3
+  }
+  define i32 @foo3(i32 %value) {
+    %1 = call i32 @foo2(i32 %value)
+    %2 = call i32 @foo1(i32 %1)
+    %3 = mul i32 %1, %2
+    ret i32 %3
+  }
 ...
 # CHECK-LABEL: name: main
+---
 name: main
 tracksRegLiveness: true
 body: |
@@ -106,4 +105,64 @@ body: |
     %12:gr32 = ADD32rr %11, %8, implicit-def dead $eflags
     %13:gr32 = ADD32rr %12, %10, implicit-def dead $eflags
     $eax = COPY %13
+    RET 0, $eax
+...
+---
+name: foo1
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $edi
+    %0:gr32 = COPY $edi
+    %1:gr32 = IMUL32rr %0, %0, implicit-def dead $eflags
+    $eax = COPY %1
+    RET 0, $eax
+...
+---
+name: foo2
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $edi
+    %0:gr32 = COPY $edi
+    %1:gr32 = ADD32ri %0, 10, implicit-def dead $eflags
+    $edi = COPY %0
+    CALL64pcrel32 @foo1, csr_64, implicit $sp, implicit $ssp, implicit-def $eax
+    %2:gr32 = COPY $eax
+    %3:gr32 = SUB32rr %1, %2, implicit-def dead $eflags
+    $eax = COPY %3
+    RET 0, $eax
+...
+# CHECK-LABEL: name: foo3
+# убеждаемся, что вызовы foo2 и foo1 исчезли, а их инструкции вставились
+# CHECK: bb.0:
+# CHECK: [[VAL:%[0-9]+]]:gr32 = COPY $edi
+# CHECK-NOT: CALL64pcrel32 @foo2
+# CHECK: [[ADD:%[0-9]+]]:gr32 = ADD32ri [[VAL]], 10
+# CHECK-NOT: CALL64pcrel32 @foo1
+# CHECK: [[MUL1:%[0-9]+]]:gr32 = IMUL32rr [[VAL]], [[VAL]]
+# CHECK: [[SUB:%[0-9]+]]:gr32 = SUB32rr [[ADD]], [[MUL1]]
+# CHECK-NOT: CALL64pcrel32 @foo1
+# CHECK: [[MUL2:%[0-9]+]]:gr32 = IMUL32rr [[SUB]], [[SUB]]
+# CHECK: [[RES:%[0-9]+]]:gr32 = IMUL32rr [[SUB]], [[MUL2]]
+# CHECK: $eax = COPY [[RES]]
+# CHECK: RET 0, $eax
+---
+name: foo3
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $edi
+    %0:gr32 = COPY $edi
+    
+    $edi = COPY %0
+    CALL64pcrel32 @foo2, csr_64, implicit $sp, implicit $ssp, implicit-def $eax
+    %1:gr32 = COPY $eax
+    
+    $edi = COPY %1
+    CALL64pcrel32 @foo1, csr_64, implicit $sp, implicit $ssp, implicit-def $eax
+    %2:gr32 = COPY $eax
+    
+    %3:gr32 = IMUL32rr %1, %2, implicit-def dead $eflags
+    $eax = COPY %3
     RET 0, $eax
