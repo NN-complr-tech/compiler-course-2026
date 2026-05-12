@@ -104,7 +104,7 @@ body: |
     %12:gr32 = ADD32rr %11, %8, implicit-def dead $eflags
     %13:gr32 = ADD32rr %12, %10, implicit-def dead $eflags
     $eax = COPY %13
-    RET 0, $eax
+    RET64 implicit $eax
 ...
 ---
 name: foo1
@@ -115,7 +115,7 @@ body: |
     %0:gr32 = COPY $edi
     %1:gr32 = IMUL32rr %0, %0, implicit-def dead $eflags
     $eax = COPY %1
-    RET 0, $eax
+    RET64 implicit $eax
 ...
 ---
 name: foo2
@@ -130,7 +130,7 @@ body: |
     %2:gr32 = COPY $eax
     %3:gr32 = SUB32rr %1, %2, implicit-def dead $eflags
     $eax = COPY %3
-    RET 0, $eax
+    RET64 implicit $eax
 ...
 # CHECK-LABEL: name: foo3
 # убеждаемся, что вызовов не осталось, а инструкции заинлайнились в нужном порядке
@@ -146,7 +146,7 @@ body: |
 # CHECK-NOT: CALL64pcrel32
 # CHECK: IMUL32rr
 # CHECK-NOT: CALL64pcrel32
-# CHECK: RET 0, $eax
+# CHECK: RET64
 ---
 name: foo3
 tracksRegLiveness: true
@@ -165,4 +165,4 @@ body: |
     
     %3:gr32 = IMUL32rr %1, %2, implicit-def dead $eflags
     $eax = COPY %3
-    RET 0, $eax
+    RET64 implicit $eax
