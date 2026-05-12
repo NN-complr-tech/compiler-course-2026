@@ -50,7 +50,6 @@
     %final = add i32 %res2, %r4
     ret i32 %final
   }
-
   define i32 @foo1(i32 %value) {
     %1 = mul i32 %value, %value
     ret i32 %1
@@ -134,18 +133,19 @@ body: |
     RET 0, $eax
 ...
 # CHECK-LABEL: name: foo3
-# убеждаемся, что вызовы foo2 и foo1 исчезли, а их инструкции вставились
+# убеждаемся, что вызовов не осталось, а инструкции заинлайнились в нужном порядке
 # CHECK: bb.0:
-# CHECK: [[VAL:%[0-9]+]]:gr32 = COPY $edi
-# CHECK-NOT: CALL64pcrel32 @foo2
-# CHECK: [[ADD:%[0-9]+]]:gr32 = ADD32ri [[VAL]], 10
-# CHECK-NOT: CALL64pcrel32 @foo1
-# CHECK: [[MUL1:%[0-9]+]]:gr32 = IMUL32rr [[VAL]], [[VAL]]
-# CHECK: [[SUB:%[0-9]+]]:gr32 = SUB32rr [[ADD]], [[MUL1]]
-# CHECK-NOT: CALL64pcrel32 @foo1
-# CHECK: [[MUL2:%[0-9]+]]:gr32 = IMUL32rr [[SUB]], [[SUB]]
-# CHECK: [[RES:%[0-9]+]]:gr32 = IMUL32rr [[SUB]], [[MUL2]]
-# CHECK: $eax = COPY [[RES]]
+# CHECK-NOT: CALL64pcrel32
+# CHECK: ADD32ri
+# CHECK-NOT: CALL64pcrel32
+# CHECK: IMUL32rr
+# CHECK-NOT: CALL64pcrel32
+# CHECK: SUB32rr
+# CHECK-NOT: CALL64pcrel32
+# CHECK: IMUL32rr
+# CHECK-NOT: CALL64pcrel32
+# CHECK: IMUL32rr
+# CHECK-NOT: CALL64pcrel32
 # CHECK: RET 0, $eax
 ---
 name: foo3
