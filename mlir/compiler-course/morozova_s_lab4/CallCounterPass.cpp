@@ -7,6 +7,7 @@
 using namespace mlir;
 
 namespace {
+
 class CallCounterPass
     : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
 public:
@@ -39,15 +40,18 @@ public:
     });
   }
 };
+
 } // namespace
 
 namespace mlir {
 namespace compiler_course {
+
 std::unique_ptr<Pass> createCallCounterPass() {
   return std::make_unique<CallCounterPass>();
 }
+
 } // namespace compiler_course
 } // namespace mlir
 
-MLIR_PLUGIN_REGISTER_PASS(call - counter,
-                          compiler_course::createCallCounterPass)
+MLIR_PLUGIN_REGISTER_PASS(call_counter,
+                          mlir::compiler_course::createCallCounterPass)
