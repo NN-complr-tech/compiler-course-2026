@@ -13,12 +13,12 @@ using namespace mlir;
 
 namespace {
 
-class RychkovaDLab4CopyToLoopPass 
+class RychkovaDLab4CopyToLoopPass
     : public PassWrapper<RychkovaDLab4CopyToLoopPass, OperationPass<ModuleOp>> {
 public:
   StringRef getArgument() const final { return "rychkova-copy-to-loop"; }
-  StringRef getDescription() const final { 
-    return "Replace memref.copy with explicit loop-based element copy"; 
+  StringRef getDescription() const final {
+    return "Replace memref.copy with explicit loop-based element copy";
   }
 
   void getDependentDialects(DialectRegistry &registry) const override {
@@ -32,13 +32,12 @@ public:
     SmallVector<memref::CopyOp> copies;
 
     // Собираем все memref.copy операции
-    module.walk([&](memref::CopyOp op) { 
-      copies.push_back(op); 
+    module.walk([&](memref::CopyOp op) {
+      copies.push_back(op);
     });
 
     llvm::outs() << "Found " << copies.size() << " memref.copy operations\n";
 
-    // Заменяем каждую
     for (auto copyOp : copies) {
       lowerCopy(copyOp, rewriter);
     }
@@ -55,7 +54,6 @@ private:
 
     rewriter.setInsertionPoint(op);
 
-    // Константы 0 и 1
     Value zero = rewriter.create<arith::ConstantIndexOp>(loc, 0);
     Value one = rewriter.create<arith::ConstantIndexOp>(loc, 1);
 
@@ -63,7 +61,6 @@ private:
     SmallVector<Value> steps(rank, one);
     SmallVector<Value> uppers;
 
-    // Формируем верхние границы
     for (int i = 0; i < rank; ++i) {
       int64_t dim = memType.getDimSize(i);
       if (dim == ShapedType::kDynamic) {
@@ -74,7 +71,6 @@ private:
       }
     }
 
-    // Строим вложенные циклы
     scf::buildLoopNest(
         rewriter, loc, lowers, uppers, steps,
         [&](OpBuilder &nestedBuilder, Location nestedLoc, ValueRange ivs) {
@@ -82,9 +78,8 @@ private:
           nestedBuilder.create<memref::StoreOp>(nestedLoc, val, dst, ivs);
         });
 
-    // Удаляем исходный memref.copy
     rewriter.eraseOp(op);
-    
+
     llvm::outs() << "  Replaced memref.copy with loop nest (rank " << rank << ")\n";
   }
 };
