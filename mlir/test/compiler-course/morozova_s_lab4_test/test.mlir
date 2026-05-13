@@ -20,18 +20,18 @@ func.func @function_never_called() {
 
 // CHECK-LABEL: func.func @recursive_function
 // CHECK-SAME: {call_count = 1 : i64}
-func.func @recursive_function(%arg: i32) -> i32 {
-  %c0 = arith.constant 0 : i32
-  %c1 = arith.constant 1 : i32
-  %cmp = arith.cmpi eq, %arg, %c0 : i32
+func.func @recursive_function(%arg: index) -> index {
+  %c0 = arith.constant 0 : index
+  %c1 = arith.constant 1 : index
+  %cmp = arith.cmpi eq, %arg, %c0 : index
   scf.if %cmp {
-    func.return %c0 : i32
+    func.return %c0 : index
   } else {
-    %dec = arith.subi %arg, %c1 : i32
-    %res = func.call @recursive_function(%dec) : (i32) -> i32
-    func.return %res : i32
+    %dec = arith.subi %arg, %c1 : index
+    %res = func.call @recursive_function(%dec) : (index) -> index
+    func.return %res : index
   }
-  func.return %c0 : i32
+  func.return %c0 : index
 }
 
 // CHECK-LABEL: func.func @called_in_loop
@@ -61,7 +61,7 @@ module @nested_module {
   func.func @inner_function() {
     return
   }
-  
+
   func.func @outer_function() {
     func.call @inner_function() : () -> ()
     func.call @inner_function() : () -> ()
@@ -71,50 +71,51 @@ module @nested_module {
 
 // CHECK-LABEL: func.func @with_arguments
 // CHECK-SAME: {call_count = 2 : i64}
-func.func @with_arguments(%a: i32, %b: f32) -> i32 {
-  %c0 = arith.constant 0 : i32
-  return %c0 : i32
+func.func @with_arguments(%a: index, %b: f32) -> index {
+  %c0 = arith.constant 0 : index
+  return %c0 : index
 }
 
 // CHECK-LABEL: func.func @main
 // CHECK-SAME: {call_count = 0 : i64}
 func.func @main() {
-  %c0 = arith.constant 0 : i32
-  %c1 = arith.constant 1 : i32
-  %c5 = arith.constant 5 : i32
-  %c10 = arith.constant 10 : i32
+  %c0 = arith.constant 0 : index
+  %c1 = arith.constant 1 : index
+  %c2 = arith.constant 2 : index
+  %c5 = arith.constant 5 : index
+  %c10 = arith.constant 10 : index
   %cf1 = arith.constant 1.0 : f32
-  
+
   func.call @simple_function() : () -> ()
   func.call @simple_function() : () -> ()
   func.call @simple_function() : () -> ()
-  
+
   func.call @function_called_once() : () -> ()
-  
+
   scf.for %i = %c0 to %c10 step %c1 {
     func.call @called_in_loop() : () -> ()
   }
-  
+
   scf.for %i = %c0 to %c5 step %c1 {
-    %cond = arith.cmpi eq, %i, %c1 : i32
+    %cond = arith.cmpi eq, %i, %c1 : index
     scf.if %cond {
       func.call @called_in_conditional() : () -> ()
     } else {
       func.call @called_in_conditional() : () -> ()
     }
   }
-  
+
   scf.for %i = %c0 to %c5 step %c1 {
     scf.for %j = %c0 to %c2 step %c1 {
       func.call @called_from_nested_scopes() : () -> ()
     }
     func.call @called_from_nested_scopes() : () -> ()
   }
-  
-  %res = func.call @recursive_function(%c5) : (i32) -> i32
-  
-  func.call @with_arguments(%c1, %cf1) : (i32, f32) -> i32
-  func.call @with_arguments(%c5, %cf1) : (i32, f32) -> i32
-  
+
+  %res = func.call @recursive_function(%c5) : (index) -> index
+
+  func.call @with_arguments(%c1, %cf1) : (index, f32) -> index
+  func.call @with_arguments(%c5, %cf1) : (index, f32) -> index
+
   return
 }
