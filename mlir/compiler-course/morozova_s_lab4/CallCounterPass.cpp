@@ -2,7 +2,9 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Pass/Pass.h"
+#include "mlir/Pass/PassManager.h"
 #include "llvm/ADT/StringMap.h"
+#include "llvm/Support/Compiler.h"
 
 using namespace mlir;
 
@@ -20,7 +22,6 @@ public:
 
   void runOnOperation() override {
     ModuleOp module = getOperation();
-
     llvm::StringMap<int64_t> callCounts;
 
     module.walk([&](CallOpInterface callOp) {
@@ -53,13 +54,16 @@ std::unique_ptr<Pass> createCallCounterPass() {
 } // namespace compiler_course
 } // namespace mlir
 
-#ifndef MLIR_PLUGIN_API_VERSION
 #define MLIR_PLUGIN_API_VERSION 1
-#endif
 
-extern "C" mlir::PassPluginLibraryInfo mlirGetPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "morozova_s_lab4", "0.1",
-          [](mlir::PassRegistry &registry) {
-            registry.addPass(mlir::compiler_course::createCallCounterPass());
-          }};
+extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
+mlirGetPassPluginInfo() {
+  struct PassPluginLibraryInfo info;
+  info.apiVersion = MLIR_PLUGIN_API_VERSION;
+  info.pluginName = "call_counter";
+  info.pluginVersion = "0.1";
+  info.registerPassRegistryCallback = [](mlir::PassRegistry &registry) {
+    registry.addPass(mlir::compiler_course::createCallCounterPass());
+  };
+  return info;
 }
