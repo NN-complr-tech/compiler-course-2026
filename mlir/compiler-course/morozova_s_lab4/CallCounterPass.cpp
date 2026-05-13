@@ -50,9 +50,7 @@ std::unique_ptr<Pass> createCallCounterPass() {
 } // namespace compiler_course
 } // namespace mlir
 
-extern "C" MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(morozova_s_lab4)
-
-    extern "C" void mlirRegisterPass(const mlir::PassRegistry &registry) {
+extern "C" void mlirRegisterPass(mlir::PassRegistry &registry) {
   registry.addPass(compiler_course::createCallCounterPass());
 }
 
