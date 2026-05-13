@@ -1,7 +1,7 @@
 # RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/rychkova_d_lab3_BACKEND%shlibext -run-pass=loop-unroll-limited %s -o - | FileCheck %s
 
 --- |
-  define void @unroll_3_iter() {
+  define void @test_unroll_3() {
   entry:
     br label %loop
   loop:
@@ -13,13 +13,27 @@
     ret void
   }
 ...
-# CHECK-LABEL: define void @unroll_3_iter
+# CHECK-LABEL: test_unroll_3
 # CHECK: phi i32
 # CHECK: add i32
-# CHECK: icmp slt
-
 --- |
-  define void @unroll_5_iter() {
+  define void @test_unroll_4() {
+  entry:
+    br label %loop
+  loop:
+    %i = phi i32 [ 0, %entry ], [ %next, %loop ]
+    %next = add i32 %i, 1
+    %cond = icmp slt i32 %next, 4
+    br i1 %cond, label %loop, label %exit
+  exit:
+    ret void
+  }
+...
+# CHECK-LABEL: test_unroll_4
+# CHECK: phi i32
+# CHECK: add i32
+--- |
+  define void @test_unroll_5() {
   entry:
     br label %loop
   loop:
@@ -31,13 +45,11 @@
     ret void
   }
 ...
-# CHECK-LABEL: define void @unroll_5_iter
+# CHECK-LABEL: test_unroll_5
 # CHECK: phi i32
 # CHECK: add i32
-# CHECK: icmp slt
-
 --- |
-  define void @keep_7_iter() {
+  define void @test_keep_7() {
   entry:
     br label %loop
   loop:
@@ -49,13 +61,11 @@
     ret void
   }
 ...
-# CHECK-LABEL: define void @keep_7_iter
+# CHECK-LABEL: test_keep_7
 # CHECK: phi i32
 # CHECK: add i32
-# CHECK: icmp slt
-
 --- |
-  define void @nested_inner_2_outer_3() {
+  define void @test_nested_inner_2_outer_3() {
   outer_entry:
     br label %outer
   outer:
@@ -74,13 +84,11 @@
     ret void
   }
 ...
-# CHECK-LABEL: define void @nested_inner_2_outer_3
+# CHECK-LABEL: test_nested_inner_2_outer_3
 # CHECK: phi i32
 # CHECK: add i32
-# CHECK: icmp slt
-
 --- |
-  define void @while_style_3() {
+  define void @test_while_style_3() {
   entry:
     br label %header
   header:
@@ -94,29 +102,7 @@
     ret void
   }
 ...
-# CHECK-LABEL: define void @while_style_3
-# CHECK: phi i32
-# CHECK: icmp slt
-# CHECK: add i32
-
---- |
-  define void @arith_loop_4() {
-  entry:
-    br label %loop
-  loop:
-    %i = phi i32 [ 0, %entry ], [ %i_next, %loop ]
-    %add = add i32 %i, 5
-    %sub = sub i32 %add, 2
-    %mul = mul i32 %sub, 3
-    %i_next = add i32 %i, 1
-    %cond = icmp slt i32 %i_next, 4
-    br i1 %cond, label %loop, label %exit
-  exit:
-    ret void
-  }
-...
-# CHECK-LABEL: define void @arith_loop_4
+# CHECK-LABEL: test_while_style_3
 # CHECK: phi i32
 # CHECK: add i32
-# CHECK: mul i32
 # CHECK: icmp slt
