@@ -80,7 +80,7 @@ private:
     rewriter.eraseOp(op);
 
     llvm::outs() << "  Replaced memref.copy with loop nest (rank " << rank
-        << ")\n";
+                 << ")\n";
   }
 };
 
