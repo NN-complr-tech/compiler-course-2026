@@ -1,6 +1,5 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/OpDefinition.h"
 #include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Pass/Pass.h"
 #include "llvm/ADT/StringMap.h"
@@ -50,3 +49,14 @@ std::unique_ptr<Pass> createCallCounterPass() {
 }
 } // namespace compiler_course
 } // namespace mlir
+
+extern "C" MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(morozova_s_lab4)
+
+    extern "C" void mlirRegisterPass(const mlir::PassRegistry &registry) {
+  registry.addPass(compiler_course::createCallCounterPass());
+}
+
+extern "C" mlir::PassPluginLibraryInfo getPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, "morozova_s_lab4", "0.1",
+          [](mlir::PassRegistry &registry) { mlirRegisterPass(registry); }};
+}
