@@ -136,9 +136,11 @@ int LoopUnrollPass::getTripCount(MachineLoop *L) {
     return -1;
 
   for (auto &MI : *Latch) {
-    if (MI.isBranch()) {
-      for (const MachineOperand &Op : MI.operands()) {
-        if (Op.isImm() && Op.getImm() > 0 && Op.getImm() <= 10) {
+    if (MI.getOpcode() == 132) {
+      for (unsigned i = 0; i < MI.getNumOperands(); ++i) {
+        const MachineOperand &Op = MI.getOperand(i);
+        if (Op.isImm() && Op.getImm() > 0) {
+          LLVM_DEBUG(dbgs() << "Found CMP with immediate: " << Op.getImm() << "\n");
           return (int)Op.getImm();
         }
       }
