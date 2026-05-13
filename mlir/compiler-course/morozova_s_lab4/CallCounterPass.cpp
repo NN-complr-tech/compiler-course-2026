@@ -23,8 +23,7 @@ public:
     llvm::StringMap<int64_t> callCounts;
 
     module.walk([&](CallOpInterface callOp) {
-      SymbolRefAttr callee =
-          callOp.getCallableForCallee().dyn_cast<SymbolRefAttr>();
+      auto callee = callOp.getCallableForCallee().dyn_cast<SymbolRefAttr>();
       if (callee) {
         StringRef funcName = callee.getRootReference().getValue();
         callCounts[funcName]++;
@@ -34,7 +33,7 @@ public:
     module.walk([&](func::FuncOp func) {
       StringRef funcName = func.getName();
       int64_t count = callCounts[funcName];
-      IntegerAttr callCountAttr =
+      auto callCountAttr =
           IntegerAttr::get(IntegerType::get(func.getContext(), 64), count);
       func->setAttr("call_count", callCountAttr);
     });
@@ -50,11 +49,5 @@ std::unique_ptr<Pass> createCallCounterPass() {
 } // namespace compiler_course
 } // namespace mlir
 
-extern "C" void mlirRegisterPass(mlir::PassRegistry &registry) {
-  registry.addPass(compiler_course::createCallCounterPass());
-}
-
-extern "C" mlir::PassPluginLibraryInfo getPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "morozova_s_lab4", "0.1",
-          [](mlir::PassRegistry &registry) { mlirRegisterPass(registry); }};
-}
+MLIR_PLUGIN_REGISTER_PASS(call - counter,
+                          compiler_course::createCallCounterPass)
