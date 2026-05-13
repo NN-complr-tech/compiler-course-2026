@@ -2,6 +2,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Pass/Pass.h"
+#include "mlir/Tools/PassPlugin.h"
 #include "llvm/ADT/StringMap.h"
 
 using namespace mlir;
@@ -54,4 +55,4 @@ std::unique_ptr<Pass> createCallCounterPass() {
 } // namespace mlir
 
 MLIR_PLUGIN_REGISTER_PASS(call_counter,
-                          mlir::compiler_course::createCallCounterPass)
+                          mlir::compiler_course::createCallCounterPass);
