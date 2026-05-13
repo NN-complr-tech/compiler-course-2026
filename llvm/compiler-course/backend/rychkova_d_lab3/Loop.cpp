@@ -140,7 +140,8 @@ int LoopUnrollPass::getTripCount(MachineLoop *L) {
       for (unsigned i = 0; i < MI.getNumOperands(); ++i) {
         const MachineOperand &Op = MI.getOperand(i);
         if (Op.isImm() && Op.getImm() > 0) {
-          LLVM_DEBUG(dbgs() << "Found CMP with immediate: " << Op.getImm() << "\n");
+          LLVM_DEBUG(dbgs() << "Found CMP with immediate: " << Op.getImm()
+                            << "\n");
           return (int)Op.getImm();
         }
       }
