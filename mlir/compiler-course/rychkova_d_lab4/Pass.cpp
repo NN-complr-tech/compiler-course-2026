@@ -22,7 +22,8 @@ public:
   }
 
   void getDependentDialects(DialectRegistry &registry) const override {
-    registry.insert<scf::SCFDialect, memref::MemRefDialect, arith::ArithDialect>();
+    registry
+        .insert<scf::SCFDialect, memref::MemRefDialect, arith::ArithDialect>();
   }
 
   void runOnOperation() override {
@@ -32,9 +33,7 @@ public:
     SmallVector<memref::CopyOp> copies;
 
     // Собираем все memref.copy операции
-    module.walk([&](memref::CopyOp op) {
-      copies.push_back(op);
-    });
+    module.walk([&](memref::CopyOp op) { copies.push_back(op); });
 
     llvm::outs() << "Found " << copies.size() << " memref.copy operations\n";
 
@@ -80,7 +79,8 @@ private:
 
     rewriter.eraseOp(op);
 
-    llvm::outs() << "  Replaced memref.copy with loop nest (rank " << rank << ")\n";
+    llvm::outs() << "  Replaced memref.copy with loop nest (rank " << rank
+        << ")\n";
   }
 };
 
