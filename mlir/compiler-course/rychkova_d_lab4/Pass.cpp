@@ -89,12 +89,12 @@ private:
 MLIR_DECLARE_EXPLICIT_TYPE_ID(RychkovaDLab4CopyToLoopPass)
 MLIR_DEFINE_EXPLICIT_TYPE_ID(RychkovaDLab4CopyToLoopPass)
 
-mlir::PassPluginLibraryInfo getSavvaCopyPassPluginInfo() {
+mlir::PassPluginLibraryInfo getRychkovaCopyPassPluginInfo() {
   return {MLIR_PLUGIN_API_VERSION, "RychkovaDLab4CopyToLoopPass", "1.0",
           []() { mlir::PassRegistration<RychkovaDLab4CopyToLoopPass>(); }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
 mlirGetPassPluginInfo() {
-  return getSavvaCopyPassPluginInfo();
+  return getRychkovaCopyPassPluginInfo();
 }
