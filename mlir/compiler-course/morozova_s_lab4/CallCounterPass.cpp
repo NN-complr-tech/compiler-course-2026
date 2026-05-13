@@ -7,6 +7,7 @@
 using namespace mlir;
 
 namespace {
+
 class CallCounterPass
     : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
 public:
@@ -38,6 +39,7 @@ public:
     });
   }
 };
+
 } // namespace
 
 static mlir::PassRegistration<CallCounterPass> registerCallCounterPass;
