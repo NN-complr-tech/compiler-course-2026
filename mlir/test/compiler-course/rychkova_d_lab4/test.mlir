@@ -1,4 +1,4 @@
-// RUN: %mlir-opt -load-pass-plugin=%mlir_lib_dir//rychkova_d_lab4_MLIR.so --pass-pipeline="builtin.module(rychkova-copy-to-loop)" %s | FileCheck %s
+// RUN: /home/runner/work/compiler-course-2026/compiler-course-2026/build/bin/mlir-opt -load-pass-plugin=%mlir_lib_dir//rychkova_d_lab4_MLIR.so --pass-pipeline="builtin.module(rychkova-copy-to-loop)" %s | FileCheck %s
 
 func.func @test_1d_static(%A: memref<5xf32>, %B: memref<5xf32>) {
   memref.copy %A, %B : memref<5xf32> to memref<5xf32>
