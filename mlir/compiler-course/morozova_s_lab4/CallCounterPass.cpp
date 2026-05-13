@@ -1,3 +1,4 @@
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/Interfaces/CallInterfaces.h"
@@ -11,23 +12,26 @@ class CallCounterPass
     : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(CallCounterPass)
+
   StringRef getArgument() const final { return "call-counter"; }
   StringRef getDescription() const final {
     return "Counts how many times each function is called";
   }
+
   void runOnOperation() override {
     ModuleOp module = getOperation();
+
     llvm::StringMap<int64_t> callCounts;
-    module.walk([&](Operation *op) {
-      if (auto callOp = dyn_cast<CallOpInterface>(op)) {
-        SymbolRefAttr callee =
-            callOp.getCallableForCallee().dyn_cast<SymbolRefAttr>();
-        if (callee) {
-          StringRef funcName = callee.getRootReference().getValue();
-          callCounts[funcName]++;
-        }
+
+    module.walk([&](CallOpInterface callOp) {
+      SymbolRefAttr callee =
+          callOp.getCallableForCallee().dyn_cast<SymbolRefAttr>();
+      if (callee) {
+        StringRef funcName = callee.getRootReference().getValue();
+        callCounts[funcName]++;
       }
     });
+
     module.walk([&](func::FuncOp func) {
       StringRef funcName = func.getName();
       int64_t count = callCounts[funcName];
