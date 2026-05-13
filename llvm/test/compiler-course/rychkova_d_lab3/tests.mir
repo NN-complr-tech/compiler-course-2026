@@ -4,55 +4,107 @@
 # RUN:     %s -o - | FileCheck %s
 
 --- |
-  define void @test_unroll_3_iter() local_unnamed_addr {
-  entry:   br label %start
-  start:
-    %counter = phi i32 [ 0, %entry ], [ %counter_next, %start ]
-    %counter_next = add i32 %counter, 1
-    %check = icmp slt i32 %counter_next, 3
-    br i1 %check, label %start, label %finish
-  finish:    ret void
+  define void @unroll_3_iter() {
+  entry:
+    br label %loop
+  loop:
+    %i = phi i32 [ 0, %entry ], [ %next, %loop ]
+    %next = add i32 %i, 1
+    %cond = icmp slt i32 %next, 3
+    br i1 %cond, label %loop, label %exit
+  exit:
+    ret void
   }
 
-  define void @test_unroll_5_iter() local_unnamed_addr {
-  entry:   br label %start
-  start:
-    %counter = phi i32 [ 0, %entry ], [ %counter_next, %start ]
-    %counter_next = add i32 %counter, 1
-    %check = icmp slt i32 %counter_next, 5
-    br i1 %check, label %start, label %finish
-  finish:    ret void
+  define void @unroll_4_iter() {
+  entry:
+    br label %loop
+  loop:
+    %i = phi i32 [ 0, %entry ], [ %next, %loop ]
+    %next = add i32 %i, 1
+    %cond = icmp slt i32 %next, 4
+    br i1 %cond, label %loop, label %exit
+  exit:
+    ret void
   }
 
-  define void @test_skip_7_iter() local_unnamed_addr {
-  entry:   br label %start
-  start:
-    %counter = phi i32 [ 0, %entry ], [ %counter_next, %start ]
-    %counter_next = add i32 %counter, 1
-    %check = icmp slt i32 %counter_next, 7
-    br i1 %check, label %start, label %finish
-  finish:    ret void
+  define void @unroll_5_iter() {
+  entry:
+    br label %loop
+  loop:
+    %i = phi i32 [ 0, %entry ], [ %next, %loop ]
+    %next = add i32 %i, 1
+    %cond = icmp slt i32 %next, 5
+    br i1 %cond, label %loop, label %exit
+  exit:
+    ret void
   }
 
-  define void @test_nested_inner_2_outer_3() local_unnamed_addr {
-  outer_entry: br label %outer_begin
-  outer_begin:
-    %j = phi i32 [ 0, %outer_entry ], [ %j_step, %outer_finish ]
-    br label %inner_begin
-  inner_begin:
-    %i = phi i32 [ 0, %outer_begin ], [ %i_step, %inner_begin ]
-    %i_step = add i32 %i, 1
-    %i_check = icmp slt i32 %i_step, 2
-    br i1 %i_check, label %inner_begin, label %outer_finish
-  outer_finish:
-    %j_step = add i32 %j, 1
-    %j_check = icmp slt i32 %j_step, 3
-    br i1 %j_check, label %outer_begin, label %outer_exit
-  outer_exit: ret void
+  define void @keep_6_iter() {
+  entry:
+    br label %loop
+  loop:
+    %i = phi i32 [ 0, %entry ], [ %next, %loop ]
+    %next = add i32 %i, 1
+    %cond = icmp slt i32 %next, 6
+    br i1 %cond, label %loop, label %exit
+  exit:
+    ret void
   }
 
-  define void @test_while_style_3() local_unnamed_addr {
-  entry:   br label %header
+  define void @keep_7_iter() {
+  entry:
+    br label %loop
+  loop:
+    %i = phi i32 [ 0, %entry ], [ %next, %loop ]
+    %next = add i32 %i, 1
+    %cond = icmp slt i32 %next, 7
+    br i1 %cond, label %loop, label %exit
+  exit:
+    ret void
+  }
+
+  define void @nested_inner_2_outer_3() {
+  outer_entry:
+    br label %outer
+  outer:
+    %j = phi i32 [ 0, %outer_entry ], [ %j_next, %outer_latch ]
+    br label %inner
+  inner:
+    %i = phi i32 [ 0, %outer ], [ %i_next, %inner ]
+    %i_next = add i32 %i, 1
+    %icond = icmp slt i32 %i_next, 2
+    br i1 %icond, label %inner, label %outer_latch
+  outer_latch:
+    %j_next = add i32 %j, 1
+    %jcond = icmp slt i32 %j_next, 3
+    br i1 %jcond, label %outer, label %exit
+  exit:
+    ret void
+  }
+
+  define void @nested_inner_3_outer_2() {
+  outer_entry:
+    br label %outer
+  outer:
+    %j = phi i32 [ 0, %outer_entry ], [ %j_next, %outer_latch ]
+    br label %inner
+  inner:
+    %i = phi i32 [ 0, %outer ], [ %i_next, %inner ]
+    %i_next = add i32 %i, 1
+    %icond = icmp slt i32 %i_next, 3
+    br i1 %icond, label %inner, label %outer_latch
+  outer_latch:
+    %j_next = add i32 %j, 1
+    %jcond = icmp slt i32 %j_next, 2
+    br i1 %jcond, label %outer, label %exit
+  exit:
+    ret void
+  }
+
+  define void @while_style_3() {
+  entry:
+    br label %header
   header:
     %val = phi i32 [ 0, %entry ], [ %val_next, %body ]
     %cond = icmp slt i32 %val, 3
@@ -60,150 +112,60 @@
   body:
     %val_next = add i32 %val, 1
     br label %header
-  exit:    ret void
+  exit:
+    ret void
   }
 
----
-name: test_unroll_3_iter
-tracksRegLiveness: false
-body: |
-  bb.0.entry:
-    successors: %bb.1(0x80000000)
-    $ebx = MOV32ri 0
-    JMP_1 %bb.1
-
-  bb.1.start:
-    successors: %bb.2(0x04000000), %bb.1(0x7c000000)
-    $ecx = MOV32rr $ebx
-    $ebx = ADD32ri8 $ebx, 1, implicit-def dead $eflags
-    CMP32ri8 $ebx, 3, implicit-def $eflags
-    JCC_1 %bb.2, 13, implicit killed $eflags
-    JMP_1 %bb.1
-
-  bb.2.finish:
-    RET64
-
-# CHECK-LABEL: name: test_unroll_3_iter
-# CHECK-COUNT-1: MOV32rr
+  define void @arith_loop_4() {
+  entry:
+    br label %loop
+  loop:
+    %i = phi i32 [ 0, %entry ], [ %i_next, %loop ]
+    %add = add i32 %i, 5
+    %sub = sub i32 %add, 2
+    %mul = mul i32 %sub, 3
+    %i_next = add i32 %i, 1
+    %cond = icmp slt i32 %i_next, 4
+    br i1 %cond, label %loop, label %exit
+  exit:
+    ret void
+  }
+...
+# CHECK-LABEL: unroll_3_iter
 # CHECK: ADD32ri8
-# CHECK-NOT: JCC_1 %bb.1
-# CHECK-NOT: JMP_1 %bb.1
+# CHECK: CMP32ri8 $ebx, 3
 
----
-name: test_unroll_5_iter
-tracksRegLiveness: false
-body: |
-  bb.0.entry:
-    successors: %bb.1(0x80000000)
-    $ebx = MOV32ri 0
-    JMP_1 %bb.1
-
-  bb.1.start:
-    successors: %bb.2(0x04000000), %bb.1(0x7c000000)
-    $ecx = MOV32rr $ebx
-    $ebx = ADD32ri8 $ebx, 1, implicit-def dead $eflags
-    CMP32ri8 $ebx, 5, implicit-def $eflags
-    JCC_1 %bb.2, 13, implicit killed $eflags
-    JMP_1 %bb.1
-
-  bb.2.finish:
-    RET64
-
-# CHECK-LABEL: name: test_unroll_5_iter
-# CHECK-COUNT-1: MOV32rr
+# CHECK-LABEL: unroll_4_iter
 # CHECK: ADD32ri8
-# CHECK-NOT: JCC_1 %bb.1
-# CHECK-NOT: JMP_1 %bb.1
+# CHECK: CMP32ri8 $ebx, 4
 
----
-name: test_skip_7_iter
-tracksRegLiveness: false
-body: |
-  bb.0.entry:
-    successors: %bb.1(0x80000000)
-    $ebx = MOV32ri 0
-    JMP_1 %bb.1
+# CHECK-LABEL: unroll_5_iter
+# CHECK: ADD32ri8
+# CHECK: CMP32ri8 $ebx, 5
 
-  bb.1.start:
-    successors: %bb.2(0x04000000), %bb.1(0x7c000000)
-    $ecx = MOV32rr $ebx
-    $ebx = ADD32ri8 $ebx, 1, implicit-def dead $eflags
-    CMP32ri8 $ebx, 7, implicit-def $eflags
-    JCC_1 %bb.2, 13, implicit killed $eflags
-    JMP_1 %bb.1
+# CHECK-LABEL: keep_6_iter
+# CHECK: ADD32ri8
+# CHECK: CMP32ri8 $ebx, 6
 
-  bb.2.finish:
-    RET64
-
-# CHECK-LABEL: name: test_skip_7_iter
-# CHECK: MOV32rr
+# CHECK-LABEL: keep_7_iter
 # CHECK: ADD32ri8
 # CHECK: CMP32ri8 $ebx, 7
-# CHECK: JCC_1 %bb.1
 
----
-name: test_nested_inner_2_outer_3
-tracksRegLiveness: false
-body: |
-  bb.0.outer_entry:
-    successors: %bb.1(0x80000000)
-    $esi = MOV32ri 0
-    JMP_1 %bb.1
+# CHECK-LABEL: nested_inner_2_outer_3
+# CHECK: ADD32ri8
+# CHECK: CMP32ri8 $edx, 2
+# CHECK: CMP32ri8 $esi, 3
 
-  bb.1.outer_begin:
-    successors: %bb.2(0x80000000)
-    $edi = MOV32rr $esi
-    $edx = MOV32ri 0
-    JMP_1 %bb.2
+# CHECK-LABEL: nested_inner_3_outer_2
+# CHECK: ADD32ri8
+# CHECK: CMP32ri8 $edx, 3
+# CHECK: CMP32ri8 $esi, 2
 
-  bb.2.inner_begin:
-    successors: %bb.3(0x04000000), %bb.2(0x7c000000)
-    $ecx = MOV32rr $edx
-    $edx = ADD32ri8 $edx, 1, implicit-def dead $eflags
-    CMP32ri8 $edx, 2, implicit-def $eflags
-    JCC_1 %bb.3, 13, implicit killed $eflags
-    JMP_1 %bb.2
-
-  bb.3.outer_finish:
-    successors: %bb.4(0x04000000), %bb.1(0x7c000000)
-    $esi = ADD32ri8 $esi, 1, implicit-def dead $eflags
-    CMP32ri8 $esi, 3, implicit-def $eflags
-    JCC_1 %bb.4, 13, implicit killed $eflags
-    JMP_1 %bb.1
-
-  bb.4.outer_exit:
-    RET64
-
-# CHECK-LABEL: name: test_nested_inner_2_outer_3
-# CHECK: $edx = ADD32ri8 $edx, 1
-# CHECK: $esi = ADD32ri8 $esi, 1
-# CHECK: JMP_1 %bb.1
-
----
-name: test_while_style_3
-tracksRegLiveness: false
-body: |
-  bb.0.entry:
-    successors: %bb.1(0x80000000)
-    $eax = MOV32ri 0
-    JMP_1 %bb.1
-
-  bb.1.header:
-    successors: %bb.2(0x04000000), %bb.3(0x7c000000)
-    CMP32ri8 $eax, 3, implicit-def $eflags
-    JCC_1 %bb.2, 12, implicit killed $eflags
-    JMP_1 %bb.3
-
-  bb.2.body:
-    successors: %bb.1(0x80000000)
-    $eax = ADD32ri8 $eax, 1, implicit-def dead $eflags
-    JMP_1 %bb.1
-
-  bb.3.exit:
-    RET64
-
-# CHECK-LABEL: name: test_while_style_3
+# CHECK-LABEL: while_style_3
 # CHECK: CMP32ri8 $eax, 3
-# CHECK: JCC_1 %bb.2, 12
-# CHECK: $eax = ADD32ri8 $eax, 1
-# CHECK: JMP_1 %bb.1
+# CHECK: ADD32ri8 $eax, 1
+
+# CHECK-LABEL: arith_loop_4
+# CHECK: ADD32ri8
+# CHECK: SUB32ri8
+# CHECK: IMUL32rri8
