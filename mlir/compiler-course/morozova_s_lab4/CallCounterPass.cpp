@@ -53,4 +53,13 @@ std::unique_ptr<Pass> createCallCounterPass() {
 } // namespace compiler_course
 } // namespace mlir
 
-static mlir::PassRegistration<CallCounterPass> registerCallCounterPass;
+#ifndef MLIR_PLUGIN_API_VERSION
+#define MLIR_PLUGIN_API_VERSION 1
+#endif
+
+extern "C" mlir::PassPluginLibraryInfo mlirGetPassPluginInfo() {
+  return {MLIR_PLUGIN_API_VERSION, "morozova_s_lab4", "0.1",
+          [](mlir::PassRegistry &registry) {
+            registry.addPass(mlir::compiler_course::createCallCounterPass());
+          }};
+}
