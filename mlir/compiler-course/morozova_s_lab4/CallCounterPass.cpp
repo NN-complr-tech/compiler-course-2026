@@ -3,12 +3,10 @@
 #include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Pass/Pass.h"
 #include "llvm/ADT/StringMap.h"
-#include "llvm/Support/Compiler.h"
 
 using namespace mlir;
 
 namespace {
-
 class CallCounterPass
     : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
 public:
@@ -40,34 +38,6 @@ public:
     });
   }
 };
-
 } // namespace
 
-namespace mlir {
-namespace compiler_course {
-std::unique_ptr<Pass> createCallCounterPass() {
-  return std::make_unique<CallCounterPass>();
-}
-} // namespace compiler_course
-} // namespace mlir
-
-#ifndef MLIR_PLUGIN_API_VERSION
-#define MLIR_PLUGIN_API_VERSION 1
-#endif
-
-namespace mlir {
-struct PassPluginLibraryInfo {
-  int apiVersion;
-  const char *pluginName;
-  const char *pluginVersion;
-  void (*registerPassRegistryCallbacks)(PassRegistry &);
-};
-} // namespace mlir
-
-extern "C" LLVM_ATTRIBUTE_WEAK mlir::PassPluginLibraryInfo
-mlirGetPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "call_counter", "0.1",
-          [](mlir::PassRegistry &registry) {
-            registry.addPass(mlir::compiler_course::createCallCounterPass());
-          }};
-}
+static mlir::PassRegistration<CallCounterPass> registerCallCounterPass;
