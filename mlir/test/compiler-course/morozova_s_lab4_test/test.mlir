@@ -24,14 +24,14 @@ func.func @recursive_function(%arg: index) -> index {
   %c0 = arith.constant 0 : index
   %c1 = arith.constant 1 : index
   %cmp = arith.cmpi eq, %arg, %c0 : index
-  scf.if %cmp {
-    func.return %c0 : index
+  %result = scf.if %cmp -> index {
+    scf.yield %c0 : index
   } else {
     %dec = arith.subi %arg, %c1 : index
     %res = func.call @recursive_function(%dec) : (index) -> index
-    func.return %res : index
+    scf.yield %res : index
   }
-  func.return %c0 : index
+  func.return %result : index
 }
 
 // CHECK-LABEL: func.func @called_in_loop
