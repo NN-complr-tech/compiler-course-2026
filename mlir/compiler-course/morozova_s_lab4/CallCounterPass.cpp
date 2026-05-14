@@ -2,11 +2,13 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Pass/Pass.h"
+#include "mlir/Pass/PassRegistry.h"
 #include "llvm/ADT/StringMap.h"
 
 using namespace mlir;
 
 namespace {
+
 class CallCounterPass
     : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
 public:
@@ -36,12 +38,11 @@ public:
           IntegerAttr::get(IntegerType::get(func.getContext(), 64), count);
       func->setAttr("call_count", callCountAttr);
     });
-  };
+  }
 };
+
 } // namespace
 
-extern "C" LLVM_ATTRIBUTE_WEAK ::mlir::PassPluginLibraryInfo
-mlirGetPassPluginInfo() {
-  return {MLIR_PLUGIN_API_VERSION, "call-counter", "v0.1",
-          [](PassRegistry &registry) { registry.addPass<CallCounterPass>(); }};
+extern "C" LLVM_ATTRIBUTE_WEAK void mlirRegisterPassPlugin() {
+  mlir::PassRegistration<CallCounterPass>();
 }
