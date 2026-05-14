@@ -43,3 +43,5 @@ public:
 } // namespace
 
 static mlir::PassRegistration<CallCounterPass> registerCallCounterPass;
+
+extern "C" LLVM_ATTRIBUTE_WEAK void mlirRegisterPassPlugin() {}
