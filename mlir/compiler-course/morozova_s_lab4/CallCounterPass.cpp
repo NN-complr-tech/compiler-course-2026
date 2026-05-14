@@ -7,8 +7,6 @@
 
 using namespace mlir;
 
-namespace {
-
 class CallCounterPass
     : public PassWrapper<CallCounterPass, OperationPass<ModuleOp>> {
 public:
@@ -40,8 +38,6 @@ public:
     });
   }
 };
-
-} // namespace
 
 extern "C" LLVM_ATTRIBUTE_WEAK void mlirRegisterPassPlugin() {
   mlir::PassRegistration<CallCounterPass>();
