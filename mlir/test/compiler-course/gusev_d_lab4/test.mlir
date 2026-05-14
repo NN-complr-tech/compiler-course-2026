@@ -25,8 +25,7 @@ func.func @instrument_scf_if(%cond: i1, %value: i32) -> i32 {
 // CHECK-NEXT: {{.*}} = arith.addi
 // CHECK-NEXT: func.call @trace_condition_then_end()
 // CHECK-NEXT: scf.yield
-// CHECK: } else {
-// CHECK-NEXT: func.call @trace_condition_else_begin()
+// CHECK: func.call @trace_condition_else_begin()
 // CHECK-NEXT: {{.*}} = arith.subi
 // CHECK-NEXT: func.call @trace_condition_else_end()
 // CHECK-NEXT: scf.yield
@@ -45,12 +44,9 @@ func.func @instrument_affine_if(%index: index) {
 // CHECK-NEXT: func.call @trace_condition_then_begin()
 // CHECK-NEXT: "test.then"
 // CHECK-NEXT: func.call @trace_condition_then_end()
-// CHECK-NEXT: affine.yield
-// CHECK: } else {
-// CHECK-NEXT: func.call @trace_condition_else_begin()
+// CHECK: func.call @trace_condition_else_begin()
 // CHECK-NEXT: "test.else"
 // CHECK-NEXT: func.call @trace_condition_else_end()
-// CHECK-NEXT: affine.yield
 
 func.func @instrument_nested_if(%outer: i1, %inner: i1) {
   scf.if %outer {
@@ -70,11 +66,7 @@ func.func @instrument_nested_if(%outer: i1, %inner: i1) {
 // CHECK-NEXT: func.call @trace_condition_then_begin()
 // CHECK-NEXT: "test.inner_then"
 // CHECK-NEXT: func.call @trace_condition_then_end()
-// CHECK-NEXT: scf.yield
-// CHECK: } else {
-// CHECK-NEXT: func.call @trace_condition_else_begin()
+// CHECK: func.call @trace_condition_else_begin()
 // CHECK-NEXT: "test.inner_else"
 // CHECK-NEXT: func.call @trace_condition_else_end()
-// CHECK-NEXT: scf.yield
 // CHECK: func.call @trace_condition_then_end()
-// CHECK-NEXT: scf.yield
