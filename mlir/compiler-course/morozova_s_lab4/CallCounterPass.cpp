@@ -23,11 +23,18 @@ public:
     ModuleOp module = getOperation();
     llvm::StringMap<int64_t> callCounts;
 
-    module.walk([&](CallOpInterface callOp) {
-      auto callee = callOp.getCallableForCallee().dyn_cast<SymbolRefAttr>();
-      if (callee) {
-        StringRef funcName = callee.getRootReference().getValue();
-        callCounts[funcName]++;
+    module.walk([&](Operation *op) {
+      if (auto callOp = dyn_cast<CallOpInterface>(op)) {
+        CallInterfaceCallable callable = callOp.getCallableForCallee();
+        if (auto symRef = callable.dyn_cast<SymbolRefAttr>()) {
+          StringRef funcName = symRef.getRootReference().getValue();
+          callCounts[funcName]++;
+        } else if (auto value = callable.dyn_cast<Value>()) {
+          if (auto funcOp = value.getDefiningOp<func::ConstantOp>()) {
+            StringRef funcName = funcOp.getValue();
+            callCounts[funcName]++;
+          }
+        }
       }
     });
 
