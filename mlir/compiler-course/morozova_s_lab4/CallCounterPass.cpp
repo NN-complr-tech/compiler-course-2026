@@ -1,6 +1,5 @@
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassRegistry.h"
 #include "llvm/ADT/StringMap.h"
@@ -23,19 +22,9 @@ public:
     ModuleOp module = getOperation();
     llvm::StringMap<int64_t> callCounts;
 
-    module.walk([&](Operation *op) {
-      if (auto callOp = dyn_cast<CallOpInterface>(op)) {
-        CallInterfaceCallable callable = callOp.getCallableForCallee();
-        if (auto symRef = callable.dyn_cast<SymbolRefAttr>()) {
-          StringRef funcName = symRef.getRootReference().getValue();
-          callCounts[funcName]++;
-        } else if (auto value = callable.dyn_cast<Value>()) {
-          if (auto funcOp = value.getDefiningOp<func::ConstantOp>()) {
-            StringRef funcName = funcOp.getValue();
-            callCounts[funcName]++;
-          }
-        }
-      }
+    module.walk([&](func::CallOp callOp) {
+      StringRef funcName = callOp.getCallee();
+      callCounts[funcName]++;
     });
 
     module.walk([&](func::FuncOp func) {

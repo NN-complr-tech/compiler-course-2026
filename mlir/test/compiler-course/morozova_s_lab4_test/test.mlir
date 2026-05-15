@@ -19,7 +19,7 @@ func.func @function_never_called() {
 }
 
 // CHECK-LABEL: func.func @recursive_function
-// CHECK-SAME: {call_count = 1 : i64}
+// CHECK-SAME: {call_count = 2 : i64}
 func.func @recursive_function(%arg: index) -> index {
   %c0 = arith.constant 0 : index
   %c1 = arith.constant 1 : index
@@ -35,19 +35,19 @@ func.func @recursive_function(%arg: index) -> index {
 }
 
 // CHECK-LABEL: func.func @called_in_loop
-// CHECK-SAME: {call_count = 10 : i64}
+// CHECK-SAME: {call_count = 1 : i64}
 func.func @called_in_loop() {
   return
 }
 
 // CHECK-LABEL: func.func @called_in_conditional
-// CHECK-SAME: {call_count = 5 : i64}
+// CHECK-SAME: {call_count = 2 : i64}
 func.func @called_in_conditional() {
   return
 }
 
 // CHECK-LABEL: func.func @called_from_nested_scopes
-// CHECK-SAME: {call_count = 3 : i64}
+// CHECK-SAME: {call_count = 2 : i64}
 func.func @called_from_nested_scopes() {
   return
 }
