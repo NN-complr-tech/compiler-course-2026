@@ -5,6 +5,8 @@ set(TARGET_NAME "noexcept")
 file(GLOB_RECURSE SOURCES *.cpp *.h *.hpp)
 add_llvm_library(${TARGET_NAME} MODULE ${SOURCES} PLUGIN_TOOL clang)
 
+set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
+
 if(WIN32 OR CYGWIN)
     set(LLVM_LINK_COMPONENTS Support)
     clang_target_link_libraries(${TARGET_NAME} PRIVATE
