@@ -174,6 +174,7 @@ class NoexceptPluginAction : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
+    llvm::errs() << "Plugin loaded successfully!\n";
     return std::make_unique<NoexceptAdder>(ci.getASTContext());
   }
 
