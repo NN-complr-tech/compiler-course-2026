@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -fcxx-exceptions -fexceptions -load %llvmshlibdir/smyshlaev_a_lab1_ClangAST.so -add-plugin smyshlaev_a_lab1_plugin -ast-dump %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -fcxx-exceptions -fexceptions -load %llvmshlibdir/smyshlaev_a_lab1_ClangAST%pluginext -add-plugin smyshlaev_a_lab1_plugin -ast-dump %s 2>&1 | FileCheck %s
 
 // Тест 1: Не должна стать noexcept
 // CHECK: FunctionDecl {{.*}} f 'int (int, int)'

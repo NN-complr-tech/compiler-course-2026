@@ -23,6 +23,7 @@ jobs:
           key: ccache-${{ github.job }}
       - name: Build
         run: |
+          JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
           cmake -S llvm -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_ENABLE_PROJECTS="clang;mlir" \
@@ -31,13 +32,14 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DLLVM_TARGETS_TO_BUILD="X86;AArch64" \
             -G Ninja
-          cmake --build build --config Release -j $(nproc)
+          cmake --build build --config Release -j "$JOBS"
       - name: Test
         run: |
+          JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
           cmake --build build --config Release -t \
             check-llvm-compiler-course \
             check-clang-compiler-course \
-            check-mlir-compiler-course -j $(nproc)
+            check-mlir-compiler-course -j "$JOBS"
   macos-build:
     runs-on: macOS-latest
     strategy:
@@ -58,6 +60,7 @@ jobs:
           key: ccache-${{ github.job }}
       - name: Build
         run: |
+          JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
           cmake -S llvm -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_ENABLE_PROJECTS="clang;mlir" \
@@ -66,13 +69,14 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DLLVM_TARGETS_TO_BUILD="X86;AArch64" \
             -G Ninja
-          cmake --build build --config Release -j $(nproc)
+          cmake --build build --config Release -j "$JOBS"
       - name: Test
         run: |
+          JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
           cmake --build build --config Release -t \
             check-llvm-compiler-course \
             check-clang-compiler-course \
-            check-mlir-compiler-course -j $(nproc)
+            check-mlir-compiler-course -j "$JOBS"
   windows-build:
     runs-on: windows-latest
     strategy:

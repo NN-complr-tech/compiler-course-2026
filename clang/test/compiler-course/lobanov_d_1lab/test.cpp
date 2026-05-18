@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -fcxx-exceptions -fexceptions -load %llvmshlibdir/lobanov_d_1lab_ClangAST.so -add-plugin add-noexcept -ast-dump %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -fcxx-exceptions -fexceptions -load %llvmshlibdir/lobanov_d_1lab_ClangAST%pluginext -add-plugin add-noexcept -ast-dump %s 2>&1 | FileCheck %s
 
 // CHECK: FunctionDecl {{.*}} normalFunction 'void () noexcept'
 void normalFunction() {

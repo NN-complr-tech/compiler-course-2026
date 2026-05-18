@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/VarScopeAnalysis_Kutergin_Anton_FIIT1_ClangAST.so -plugin var-scope-stats %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/VarScopeAnalysis_Kutergin_Anton_FIIT1_ClangAST%pluginext -plugin var-scope-stats %s 2>&1 | FileCheck %s
 
 extern unsigned externValue;
 void foo(int a, double b);

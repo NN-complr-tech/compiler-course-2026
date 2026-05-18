@@ -1,9 +1,9 @@
 // RUN: split-file %s %t
-// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin.so -plugin var-stat -fsyntax-only %t/basic_test.cpp 2>&1 | FileCheck %t/basic_test.cpp --check-prefix=BASIC
-// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin.so -plugin var-stat -fsyntax-only %t/class_test.cpp 2>&1 | FileCheck %t/class_test.cpp --check-prefix=CLASS
-// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin.so -plugin var-stat -fsyntax-only %t/multiple_test.cpp 2>&1 | FileCheck %t/multiple_test.cpp --check-prefix=MULTIPLE
-// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin.so -plugin var-stat -fsyntax-only %t/namespace_test.cpp 2>&1 | FileCheck %t/namespace_test.cpp --check-prefix=NAMESPACE
-// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin.so -plugin var-stat -fsyntax-only %t/test1.cpp 2>&1 | FileCheck %t/test1.cpp --check-prefix=MAIN
+// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin%pluginext -plugin var-stat -fsyntax-only %t/basic_test.cpp 2>&1 | FileCheck %t/basic_test.cpp --check-prefix=BASIC
+// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin%pluginext -plugin var-stat -fsyntax-only %t/class_test.cpp 2>&1 | FileCheck %t/class_test.cpp --check-prefix=CLASS
+// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin%pluginext -plugin var-stat -fsyntax-only %t/multiple_test.cpp 2>&1 | FileCheck %t/multiple_test.cpp --check-prefix=MULTIPLE
+// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin%pluginext -plugin var-stat -fsyntax-only %t/namespace_test.cpp 2>&1 | FileCheck %t/namespace_test.cpp --check-prefix=NAMESPACE
+// RUN: %clang_cc1 -load %llvmshlibdir/VarStatPlugin%pluginext -plugin var-stat -fsyntax-only %t/test1.cpp 2>&1 | FileCheck %t/test1.cpp --check-prefix=MAIN
 
 //--- basic_test.cpp
 // BASIC: ========== СТАТИСТИКА ПЕРЕМЕННЫХ ==========

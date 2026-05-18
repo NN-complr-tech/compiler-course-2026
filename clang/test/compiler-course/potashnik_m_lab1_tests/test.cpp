@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/potashnik_m_lab1_ClangAST.so -plugin potashnik_m_lab1_plugin -fsyntax-only %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/potashnik_m_lab1_ClangAST%pluginext -plugin potashnik_m_lab1_plugin -fsyntax-only %s 2>&1 | FileCheck %s
 
 // CHECK-NOT: int{{\*}} p1 = &var1;
 // CHECK: const int{{\*}} const p1 = &var1;
