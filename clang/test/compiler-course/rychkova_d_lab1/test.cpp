@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/libnoexcept%pluginext -plugin noexcept_analyzer -fsyntax-only -fcxx-exceptions %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/noexcept%pluginext -plugin noexcept_analyzer -fsyntax-only -fcxx-exceptions %s 2>&1 | FileCheck %s
 
 // CHECK: FunctionDecl {{.*}} safeSimpleFunction 'int () noexcept'
 int safeSimpleFunction() {
