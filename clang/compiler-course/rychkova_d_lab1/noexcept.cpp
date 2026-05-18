@@ -136,7 +136,7 @@ public:
       }
     }
 
-    ctx.getTranslationUnitDecl()->dump(llvm::outs());
+    ctx.getTranslationUnitDecl()->dump(llvm::errs());
   }
 
 private:
