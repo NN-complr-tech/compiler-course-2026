@@ -199,7 +199,7 @@ public:
 
   ActionType getActionType() override { 
     llvm::errs() << "=== PluginAction: getActionType ===\n";
-    return AddBeforeMainAction;
+    return ReplaceAction;
   }
 };
 
