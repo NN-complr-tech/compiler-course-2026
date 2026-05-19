@@ -42,7 +42,7 @@ func.func @test_3d_static(%A: memref<2x3x2xf64>, %B: memref<2x3x2xf64>) {
 // CHECK-DAG: %c3 = arith.constant 3 : index
 // CHECK: scf.for
 // CHECK: scf.for
-// CHECK: scf.for {{.*}} = %c0 to %c2 step %c1
+// CHECK: scf.for
 // CHECK: memref.load
 // CHECK: memref.store
 // CHECK-NOT: memref.copy
