@@ -103,31 +103,22 @@ private:
 class NoexceptAdder : public clang::ASTConsumer {
 public:
   explicit NoexceptAdder(clang::ASTContext &ctx)
-      : m_context(ctx), m_analyzer(ctx), m_collector(m_functions) {
-    llvm::errs() << "NoexceptAdder constructor called\n";
-  }
+      : m_context(ctx), m_analyzer(ctx), m_collector(m_functions) {}
 
   void HandleTranslationUnit(clang::ASTContext &ctx) override {
-    llvm::errs() << "=== HandleTranslationUnit START ===\n";
-    
     m_collector.TraverseDecl(ctx.getTranslationUnitDecl());
-    llvm::errs() << "Collected " << m_functions.size() << " functions\n";
 
     FunctionSet noexceptFunctions;
     for (const auto *func : m_functions) {
       if (hasNoexceptSpec(func)) {
         noexceptFunctions.insert(func);
-        llvm::errs() << "Already noexcept: " << func->getNameAsString() << "\n";
       }
     }
 
     bool changed = true;
-    int iteration = 0;
     while (changed) {
       changed = false;
-      iteration++;
-      llvm::errs() << "Iteration " << iteration << "\n";
-      
+
       for (auto *func : m_functions) {
         if (noexceptFunctions.count(func)) {
           continue;
@@ -141,15 +132,11 @@ public:
           addNoexceptSpecifier(func);
           noexceptFunctions.insert(func);
           changed = true;
-          llvm::errs() << "Added noexcept to: " << func->getNameAsString() << "\n";
         }
       }
     }
 
-    llvm::errs() << "=== Dumping AST ===\n";
     ctx.getTranslationUnitDecl()->dump(llvm::errs());
-    llvm::errs() << "=== HandleTranslationUnit END ===\n";
-    llvm::errs().flush();
   }
 
 private:
@@ -174,6 +161,7 @@ private:
     func->setType(newType);
 
     if (func->getDescribedFunctionTemplate()) {
+      // Handle template functions if needed
     }
   }
 
@@ -187,20 +175,15 @@ class NoexceptPluginAction : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
-    llvm::errs() << "=== PluginAction: CreateASTConsumer ===\n";
     return std::make_unique<NoexceptAdder>(ci.getASTContext());
   }
 
   bool ParseArgs(const clang::CompilerInstance &,
                  const std::vector<std::string> &) override {
-    llvm::errs() << "=== PluginAction: ParseArgs ===\n";
     return true;
   }
 
-  ActionType getActionType() override { 
-    llvm::errs() << "=== PluginAction: getActionType ===\n";
-    return ReplaceAction;
-  }
+  ActionType getActionType() override { return ReplaceAction; }
 };
 
 } // namespace
