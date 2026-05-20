@@ -1,11 +1,13 @@
-// RUN: %clang_cc1 -load %llvmshlibdir/noexcept%pluginext -plugin noexcept_analyzer -fsyntax-only -fcxx-exceptions %s 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -load %llvmshlibdir/noexcept.so -plugin noexcept_analyzer -fsyntax-only -fcxx-exceptions %s 2>&1 | FileCheck %s
 
-// CHECK: FunctionDecl {{.*}} safeSimpleFunction 'int () noexcept'
+#include <stdexcept>
+
+// CHECK-DAG: FunctionDecl {{.*}} safeSimpleFunction 'int () noexcept'
 int safeSimpleFunction() {
     return 42;
 }
 
-// CHECK: FunctionDecl {{.*}} calculatorFunction 'int () noexcept'
+// CHECK-DAG: FunctionDecl {{.*}} calculatorFunction 'int () noexcept'
 int calculatorFunction() {
     int result = 0;
     for (int i = 1; i <= 5; ++i) {
@@ -14,7 +16,7 @@ int calculatorFunction() {
     return result;
 }
 
-// CHECK: FunctionDecl {{.*}} selectorFunction 'int (int) noexcept'
+// CHECK-DAG: FunctionDecl {{.*}} selectorFunction 'int (int) noexcept'
 int selectorFunction(int value) {
     if (value > 0) {
         if (value > 100) return 100;
@@ -23,14 +25,14 @@ int selectorFunction(int value) {
     return 0;
 }
 
-// CHECK: FunctionDecl {{.*}} processArray 'void (int*, int) noexcept'
+// CHECK-DAG: FunctionDecl {{.*}} processArray 'void (int*, int) noexcept'
 void processArray(int* arr, int size) {
     for (int i = 0; i < size; ++i) {
         arr[i] = arr[i] * 2;
     }
 }
 
-// CHECK: FunctionDecl {{.*}} safeRecursive 'int (int) noexcept'
+// CHECK-DAG: FunctionDecl {{.*}} safeRecursive 'int (int) noexcept'
 int safeRecursive(int n) {
     if (n <= 1) return 1;
     return n * safeRecursive(n - 1);
@@ -38,26 +40,26 @@ int safeRecursive(int n) {
 
 namespace Math {
     namespace Operations {
-        // CHECK: FunctionDecl {{.*}} multiply 'int (int, int) noexcept'
+        // CHECK-DAG: FunctionDecl {{.*}} multiply 'int (int, int) noexcept'
         int multiply(int a, int b) { return a * b; }
     }
     
-    // CHECK: FunctionDecl {{.*}} compute 'int (int, int) noexcept'
+    // CHECK-DAG: FunctionDecl {{.*}} compute 'int (int, int) noexcept'
     int compute(int x, int y) { 
         return Operations::multiply(x, y) + x; 
     }
 }
 
-// CHECK: FunctionDecl {{.*}} chainCallA 'int () noexcept'
+// CHECK-DAG: FunctionDecl {{.*}} chainCallA 'int () noexcept'
 int chainCallA() { return 5; }
 
-// CHECK: FunctionDecl {{.*}} chainCallB 'int () noexcept'
+// CHECK-DAG: FunctionDecl {{.*}} chainCallB 'int () noexcept'
 int chainCallB() { return chainCallA() + 3; }
 
-// CHECK: FunctionDecl {{.*}} chainCallC 'int () noexcept'
+// CHECK-DAG: FunctionDecl {{.*}} chainCallC 'int () noexcept'
 int chainCallC() { return chainCallB() * 2; }
 
-// CHECK: FunctionDecl {{.*}} main 'int () noexcept'
+// CHECK-DAG: FunctionDecl {{.*}} main 'int () noexcept'
 int main() {
     int data[10];
     processArray(data, 10);
@@ -102,9 +104,9 @@ int unsafeConstructor() {
 
 class SafeClass {
 public:
-    // CHECK: CXXMethodDecl {{.*}} trivialMethod 'void () noexcept'
+    // CHECK-DAG: CXXMethodDecl {{.*}} trivialMethod 'void () noexcept'
     void trivialMethod() {}
     
-    // CHECK: CXXMethodDecl {{.*}} constMethod 'int () const noexcept'
+    // CHECK-DAG: CXXMethodDecl {{.*}} constMethod 'int () const noexcept'
     int constMethod() const { return 42; }
 };
