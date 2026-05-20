@@ -28,34 +28,29 @@ public:
       const auto *current = worklist.front();
       worklist.pop();
 
-      if (llvm::isa<clang::CXXThrowExpr>(current)) {
+      if (llvm::isa<clang::CXXThrowExpr>(current))
         return true;
-      }
 
-      if (llvm::isa<clang::CXXTryStmt>(current)) {
+      if (llvm::isa<clang::CXXTryStmt>(current))
         return true;
-      }
 
       if (const auto *call = llvm::dyn_cast<clang::CallExpr>(current)) {
         if (const auto *callee = call->getDirectCallee()) {
-          if (!isCalleeSafe(callee, noexceptFns)) {
+          if (!isCalleeSafe(callee, noexceptFns))
             return true;
-          }
         }
       }
 
       if (const auto *construct =
               llvm::dyn_cast<clang::CXXConstructExpr>(current)) {
         if (const auto *ctor = construct->getConstructor()) {
-          if (!isCalleeSafe(ctor, noexceptFns)) {
+          if (!isCalleeSafe(ctor, noexceptFns))
             return true;
-          }
         }
       }
 
-      if (llvm::isa<clang::CXXNewExpr>(current)) {
+      if (llvm::isa<clang::CXXNewExpr>(current))
         return true;
-      }
 
       for (const auto *child : current->children()) {
         if (child)
@@ -73,9 +68,8 @@ private:
       return true;
 
     if (const auto *fpt = fn->getType()->getAs<clang::FunctionProtoType>()) {
-      if (fpt->isNothrow()) {
+      if (fpt->isNothrow())
         return true;
-      }
     }
 
     return noexceptFns.find(fn) != noexceptFns.end();
@@ -90,9 +84,8 @@ public:
       : m_functions(functions) {}
 
   bool VisitFunctionDecl(clang::FunctionDecl *func) {
-    if (func && func->hasBody() && !func->isImplicit() && !func->isDeleted()) {
+    if (func && func->hasBody() && !func->isImplicit() && !func->isDeleted())
       m_functions.push_back(func);
-    }
     return true;
   }
 
@@ -110,9 +103,8 @@ public:
 
     FunctionSet noexceptFunctions;
     for (const auto *func : m_functions) {
-      if (hasNoexceptSpec(func)) {
+      if (hasNoexceptSpec(func))
         noexceptFunctions.insert(func);
-      }
     }
 
     bool changed = true;
@@ -120,13 +112,11 @@ public:
       changed = false;
 
       for (auto *func : m_functions) {
-        if (noexceptFunctions.count(func)) {
+        if (noexceptFunctions.count(func))
           continue;
-        }
 
-        if (!func->getBody()) {
+        if (!func->getBody())
           continue;
-        }
 
         if (!m_analyzer.canThrow(func->getBody(), noexceptFunctions)) {
           addNoexceptSpecifier(func);
@@ -141,9 +131,8 @@ public:
 
 private:
   bool hasNoexceptSpec(const clang::FunctionDecl *func) const {
-    if (const auto *fpt = func->getType()->getAs<clang::FunctionProtoType>()) {
+    if (const auto *fpt = func->getType()->getAs<clang::FunctionProtoType>())
       return fpt->isNothrow();
-    }
     return false;
   }
 
@@ -159,10 +148,6 @@ private:
         fpt->getReturnType(), fpt->getParamTypes(), epi);
 
     func->setType(newType);
-
-    if (func->getDescribedFunctionTemplate()) {
-      // Handle template functions if needed
-    }
   }
 
   clang::ASTContext &m_context;
@@ -183,11 +168,10 @@ public:
     return true;
   }
 
-  ActionType getActionType() override { return ReplaceAction; }
+  ActionType getActionType() override { return AddBeforeMainAction; }
 };
 
 } // namespace
 
 static clang::FrontendPluginRegistry::Add<NoexceptPluginAction>
-    X("noexcept_analyzer",
-      "Add noexcept specifier to functions that don't throw");
+    X("noexcept_analyzer", "Add noexcept specifier");
