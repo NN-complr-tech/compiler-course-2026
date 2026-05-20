@@ -61,12 +61,12 @@ int chainCallC() { return chainCallB() * 2; }
 int main() {
     int data[10];
     processArray(data, 10);
-    return compute(5, 3) + safeRecursive(5);
+    return Math::compute(5, 3) + safeRecursive(5);  // Исправлено: добавил Math::
 }
 
 // CHECK-NOT: FunctionDecl {{.*}} throwException 'int () noexcept'
 int throwException() {
-    throw 1;  // Используем простой int вместо std::runtime_error
+    throw 1;
     return 0;
 }
 
