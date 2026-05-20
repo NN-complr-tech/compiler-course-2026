@@ -1,7 +1,5 @@
 // RUN: %clang_cc1 -load %llvmshlibdir/noexcept.so -plugin noexcept_analyzer -fsyntax-only -fcxx-exceptions %s 2>&1 | FileCheck %s
 
-#include <stdexcept>
-
 // CHECK-DAG: FunctionDecl {{.*}} safeSimpleFunction 'int () noexcept'
 int safeSimpleFunction() {
     return 42;
@@ -68,7 +66,7 @@ int main() {
 
 // CHECK-NOT: FunctionDecl {{.*}} throwException 'int () noexcept'
 int throwException() {
-    throw std::runtime_error("Error");
+    throw 1;  // Используем простой int вместо std::runtime_error
     return 0;
 }
 
