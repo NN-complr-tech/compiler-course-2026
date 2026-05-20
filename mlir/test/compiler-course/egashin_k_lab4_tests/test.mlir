@@ -17,8 +17,10 @@ func.func @zero_trip() {
 }
 
 // CHECK-LABEL: func.func @nested_known()
-// CHECK: trip_count = 2 : i64
-// CHECK: trip_count = 3 : i64
+// CHECK: affine.for
+// CHECK: affine.for
+// CHECK: } {trip_count = 3 : i64}
+// CHECK: } {trip_count = 2 : i64}
 func.func @nested_known() {
   affine.for %i = 0 to 2 {
     affine.for %j = 0 to 6 step 2 {
