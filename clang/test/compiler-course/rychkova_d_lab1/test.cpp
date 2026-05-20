@@ -61,7 +61,7 @@ int chainCallC() { return chainCallB() * 2; }
 int main() {
     int data[10];
     processArray(data, 10);
-    return Math::compute(5, 3) + safeRecursive(5);  // Исправлено: добавил Math::
+    return Math::compute(5, 3) + safeRecursive(5);
 }
 
 // CHECK-NOT: FunctionDecl {{.*}} throwException 'int () noexcept'
