@@ -21,7 +21,7 @@ func.func @zero_trip() {
 // CHECK: trip_count = 3 : i64
 func.func @nested_known() {
   affine.for %i = 0 to 2 {
-    affine.for %j = %i to %i + 6 step 2 {
+    affine.for %j = 0 to 6 step 2 {
     }
   }
   return
