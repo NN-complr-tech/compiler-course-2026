@@ -20,8 +20,7 @@ static void emitLoopNest(OpBuilder &builder, Location loc, Value src, Value dst,
     return;
   }
 
-  auto forOp =
-      builder.create<scf::ForOp>(loc, lbs[dim], ubs[dim], steps[dim]);
+  auto forOp = builder.create<scf::ForOp>(loc, lbs[dim], ubs[dim], steps[dim]);
 
   {
     OpBuilder::InsertionGuard guard(builder);
@@ -66,9 +65,7 @@ class MemrefCopyExpansionPass
 public:
   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(MemrefCopyExpansionPass)
 
-  StringRef getArgument() const final {
-    return "expand-memref-copy-to-scf";
-  }
+  StringRef getArgument() const final { return "expand-memref-copy-to-scf"; }
 
   StringRef getDescription() const final {
     return "Replace memref.copy operations with element-wise scf.for loops "
@@ -76,8 +73,8 @@ public:
   }
 
   void getDependentDialects(DialectRegistry &registry) const override {
-    registry.insert<scf::SCFDialect, memref::MemRefDialect,
-                    arith::ArithDialect>();
+    registry
+        .insert<scf::SCFDialect, memref::MemRefDialect, arith::ArithDialect>();
   }
 
   void runOnOperation() override {
