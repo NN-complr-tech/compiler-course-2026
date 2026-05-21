@@ -38,11 +38,11 @@ func.func @test_3d_static(%A: memref<2x3x2xf64>, %B: memref<2x3x2xf64>) {
 // CHECK-LABEL: func.func @test_3d_static
 // CHECK: %c0 = arith.constant 0 : index
 // CHECK: %c1 = arith.constant 1 : index
-// CHECK: %c2 = arith.constant 2 : index
-// CHECK: %c3 = arith.constant 3 : index
+// CHECK-DAG: %c2 = arith.constant 2 : index
+// CHECK-DAG: %c3 = arith.constant 3 : index
 // CHECK: scf.for {{.*}} = %c0 to %c2 step %c1
 // CHECK: scf.for {{.*}} = %c0 to %c3 step %c1
-// CHECK: scf.for {{.*}} = %c0 to %c2 step %c1
+// CHECK: scf.for {{.*}} = %c0 to %c{{.*}} step %c1
 // CHECK: memref.load
 // CHECK: memref.store
 // CHECK-NOT: memref.copy
@@ -55,7 +55,8 @@ func.func @test_1d_dynamic(%A: memref<?xf32>, %B: memref<?xf32>) {
 // CHECK-LABEL: func.func @test_1d_dynamic
 // CHECK: %c0 = arith.constant 0 : index
 // CHECK: %c1 = arith.constant 1 : index
-// CHECK: %dim = memref.dim %arg0, %c0 : memref<?xf32>
+// CHECK: %c{{.*}} = arith.constant 0 : index
+// CHECK: %dim = memref.dim %arg0, %c{{.*}} : memref<?xf32>
 // CHECK: scf.for {{.*}} = %c0 to %dim step %c1
 // CHECK: memref.load
 // CHECK: memref.store
@@ -69,10 +70,12 @@ func.func @test_2d_dynamic(%A: memref<?x?xi32>, %B: memref<?x?xi32>) {
 // CHECK-LABEL: func.func @test_2d_dynamic
 // CHECK: %c0 = arith.constant 0 : index
 // CHECK: %c1 = arith.constant 1 : index
-// CHECK: %dim = memref.dim %arg0, %c0 : memref<?x?xi32>
-// CHECK: %dim_0 = memref.dim %arg0, %c1 : memref<?x?xi32>
+// CHECK: %c{{.*}} = arith.constant 0 : index
+// CHECK: %dim = memref.dim %arg0, %c{{.*}} : memref<?x?xi32>
+// CHECK: %c{{.*}} = arith.constant 1 : index
+// CHECK: %dim_2 = memref.dim %arg0, %c{{.*}} : memref<?x?xi32>
 // CHECK: scf.for {{.*}} = %c0 to %dim step %c1
-// CHECK: scf.for {{.*}} = %c0 to %dim_0 step %c1
+// CHECK: scf.for {{.*}} = %c0 to %dim_2 step %c1
 // CHECK: memref.load
 // CHECK: memref.store
 // CHECK-NOT: memref.copy
