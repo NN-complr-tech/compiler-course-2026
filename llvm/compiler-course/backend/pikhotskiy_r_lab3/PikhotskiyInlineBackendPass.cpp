@@ -163,4 +163,3 @@ char PikhotskiyInlineBackendPass::ID = 0;
 static RegisterPass<PikhotskiyInlineBackendPass>
     X("pikhotskiy-inline-backend",
       "Inline small direct backend calls with bounded recursion", false, false);
-
