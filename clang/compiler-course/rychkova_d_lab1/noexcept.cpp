@@ -49,9 +49,6 @@ public:
         }
       }
 
-      if (llvm::isa<clang::CXXNewExpr>(current))
-        return true;
-
       for (const auto *child : current->children()) {
         if (child)
           worklist.push(child);
@@ -148,6 +145,10 @@ private:
         fpt->getReturnType(), fpt->getParamTypes(), epi);
 
     func->setType(newType);
+    
+    for (unsigned i = 0; i < func->getNumParams(); ++i) {
+      func->getParamDecl(i)->setType(func->getParamDecl(i)->getType());
+    }
   }
 
   clang::ASTContext &m_context;
