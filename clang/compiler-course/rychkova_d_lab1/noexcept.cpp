@@ -145,7 +145,7 @@ private:
         fpt->getReturnType(), fpt->getParamTypes(), epi);
 
     func->setType(newType);
-    
+
     for (unsigned i = 0; i < func->getNumParams(); ++i) {
       func->getParamDecl(i)->setType(func->getParamDecl(i)->getType());
     }
