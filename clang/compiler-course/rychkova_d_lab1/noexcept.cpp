@@ -8,6 +8,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include <queue>
 #include <unordered_set>
+#include <exception>
 
 namespace {
 
@@ -28,30 +29,42 @@ public:
       const auto *current = worklist.front();
       worklist.pop();
 
-      if (llvm::isa<clang::CXXThrowExpr>(current))
-        return true;
+      try {
+        if (llvm::isa<clang::CXXThrowExpr>(current))
+          return true;
 
-      if (llvm::isa<clang::CXXTryStmt>(current))
-        return true;
+        if (llvm::isa<clang::CXXTryStmt>(current))
+          return true;
 
-      if (const auto *call = llvm::dyn_cast<clang::CallExpr>(current)) {
-        if (const auto *callee = call->getDirectCallee()) {
-          if (!isCalleeSafe(callee, noexceptFns))
-            return true;
+        if (const auto *call = llvm::dyn_cast<clang::CallExpr>(current)) {
+          if (const auto *callee = call->getDirectCallee()) {
+            if (!isCalleeSafe(callee, noexceptFns))
+              return true;
+          }
         }
-      }
 
-      if (const auto *construct =
-              llvm::dyn_cast<clang::CXXConstructExpr>(current)) {
-        if (const auto *ctor = construct->getConstructor()) {
-          if (!isCalleeSafe(ctor, noexceptFns))
-            return true;
+        if (const auto *construct =
+                llvm::dyn_cast<clang::CXXConstructExpr>(current)) {
+          if (const auto *ctor = construct->getConstructor()) {
+            if (!isCalleeSafe(ctor, noexceptFns))
+              return true;
+          }
         }
-      }
 
-      for (const auto *child : current->children()) {
-        if (child)
-          worklist.push(child);
+        // Проверка на CXXNewExpr может быть проблемой
+        // if (llvm::isa<clang::CXXNewExpr>(current))
+        //   return true;
+
+        for (const auto *child : current->children()) {
+          if (child)
+            worklist.push(child);
+        }
+      } catch (const std::exception &e) {
+        llvm::errs() << "EXCEPTION in canThrow: " << e.what() << "\n";
+        return true;
+      } catch (...) {
+        llvm::errs() << "UNKNOWN EXCEPTION in canThrow\n";
+        return true;
       }
     }
 
@@ -81,8 +94,16 @@ public:
       : m_functions(functions) {}
 
   bool VisitFunctionDecl(clang::FunctionDecl *func) {
-    if (func && func->hasBody() && !func->isImplicit() && !func->isDeleted())
-      m_functions.push_back(func);
+    try {
+      if (func && func->hasBody() && !func->isImplicit() && !func->isDeleted()) {
+        llvm::errs() << "Found function: " << func->getNameAsString() << "\n";
+        m_functions.push_back(func);
+      }
+    } catch (const std::exception &e) {
+      llvm::errs() << "EXCEPTION in VisitFunctionDecl: " << e.what() << "\n";
+    } catch (...) {
+      llvm::errs() << "UNKNOWN EXCEPTION in VisitFunctionDecl\n";
+    }
     return true;
   }
 
@@ -96,34 +117,54 @@ public:
       : m_context(ctx), m_analyzer(ctx), m_collector(m_functions) {}
 
   void HandleTranslationUnit(clang::ASTContext &ctx) override {
-    m_collector.TraverseDecl(ctx.getTranslationUnitDecl());
+    try {
+      llvm::errs() << "=== Starting HandleTranslationUnit ===\n";
+      
+      m_collector.TraverseDecl(ctx.getTranslationUnitDecl());
+      llvm::errs() << "=== Collected " << m_functions.size() << " functions ===\n";
 
-    FunctionSet noexceptFunctions;
-    for (const auto *func : m_functions) {
-      if (hasNoexceptSpec(func))
-        noexceptFunctions.insert(func);
-    }
-
-    bool changed = true;
-    while (changed) {
-      changed = false;
-
-      for (auto *func : m_functions) {
-        if (noexceptFunctions.count(func))
-          continue;
-
-        if (!func->getBody())
-          continue;
-
-        if (!m_analyzer.canThrow(func->getBody(), noexceptFunctions)) {
-          addNoexceptSpecifier(func);
+      FunctionSet noexceptFunctions;
+      for (const auto *func : m_functions) {
+        if (hasNoexceptSpec(func)) {
           noexceptFunctions.insert(func);
-          changed = true;
+          llvm::errs() << "Already noexcept: " << func->getNameAsString() << "\n";
         }
       }
-    }
 
-    ctx.getTranslationUnitDecl()->dump(llvm::errs());
+      bool changed = true;
+      int iteration = 0;
+      while (changed) {
+        changed = false;
+        iteration++;
+        llvm::errs() << "Iteration " << iteration << "\n";
+
+        for (auto *func : m_functions) {
+          if (noexceptFunctions.count(func))
+            continue;
+
+          if (!func->getBody())
+            continue;
+
+          llvm::errs() << "Analyzing: " << func->getNameAsString() << "\n";
+          if (!m_analyzer.canThrow(func->getBody(), noexceptFunctions)) {
+            addNoexceptSpecifier(func);
+            noexceptFunctions.insert(func);
+            changed = true;
+            llvm::errs() << "Added noexcept to: " << func->getNameAsString() << "\n";
+          }
+        }
+      }
+
+      llvm::errs() << "=== Dumping AST ===\n";
+      ctx.getTranslationUnitDecl()->dump(llvm::errs());
+      llvm::errs() << "=== Done ===\n";
+      llvm::errs().flush();
+      
+    } catch (const std::exception &e) {
+      llvm::errs() << "EXCEPTION in HandleTranslationUnit: " << e.what() << "\n";
+    } catch (...) {
+      llvm::errs() << "UNKNOWN EXCEPTION in HandleTranslationUnit\n";
+    }
   }
 
 private:
@@ -161,15 +202,20 @@ class NoexceptPluginAction : public clang::PluginASTAction {
 public:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &ci, llvm::StringRef) override {
+    llvm::errs() << "=== CreateASTConsumer called ===\n";
     return std::make_unique<NoexceptAdder>(ci.getASTContext());
   }
 
   bool ParseArgs(const clang::CompilerInstance &,
                  const std::vector<std::string> &) override {
+    llvm::errs() << "=== ParseArgs called ===\n";
     return true;
   }
 
-  ActionType getActionType() override { return ReplaceAction; }
+  ActionType getActionType() override { 
+    llvm::errs() << "=== getActionType called, returning ReplaceAction ===\n";
+    return ReplaceAction; 
+  }
 };
 
 } // namespace
