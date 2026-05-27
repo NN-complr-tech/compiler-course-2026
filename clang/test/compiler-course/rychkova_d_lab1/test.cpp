@@ -92,8 +92,8 @@ int* allocateMemory() {
 // CHECK-NOT: FunctionDecl {{.*}} unsafeConstructor 'int () noexcept'
 class UnsafeClass {
 public:
-    UnsafeClass() {}
-    ~UnsafeClass() {}
+    UnsafeClass() noexcept(false) {}
+    ~UnsafeClass() noexcept(false) {}
 };
 int unsafeConstructor() {
     UnsafeClass obj;
