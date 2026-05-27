@@ -51,6 +51,14 @@ public:
                 if (!isCalleeSafe(ctor, noexceptFns))
                     return true;
             }
+            const clang::CXXRecordDecl *record =
+                construct->getType()->getAsCXXRecordDecl();
+            if (record) {
+                if (const clang::CXXDestructorDecl *dtor = record->getDestructor()) {
+                    if (!isCalleeSafe(dtor, noexceptFns))
+                        return true;
+                }
+            }  
         }
 
         if (llvm::isa<clang::CXXNewExpr>(current))
