@@ -6,12 +6,13 @@ func.func @test_1d_static(%A: memref<5xf32>, %B: memref<5xf32>) {
 }
 
 // CHECK-LABEL: func.func @test_1d_static
-// CHECK: %c0 = arith.constant 0 : index
-// CHECK: %c1 = arith.constant 1 : index
-// CHECK: %c5 = arith.constant 5 : index
-// CHECK: scf.for {{.*}} = %c0 to %c5 step %c1
-// CHECK: memref.load
-// CHECK: memref.store
+// CHECK-DAG: %c0 = arith.constant 0 : index
+// CHECK-DAG: %c1 = arith.constant 1 : index
+// CHECK-DAG: %c5 = arith.constant 5 : index
+// CHECK: scf.for {{.*}} = %c0 to %c5 step %c1 {
+// CHECK-NEXT: %{{.*}} = memref.load %arg0[%{{.*}}] : memref<5xf32>
+// CHECK-NEXT: memref.store %{{.*}}, %arg1[%{{.*}}] : memref<5xf32>
+// CHECK-NEXT: }
 // CHECK-NOT: memref.copy
 
 func.func @test_2d_static(%A: memref<3x4xi32>, %B: memref<3x4xi32>) {
@@ -20,14 +21,16 @@ func.func @test_2d_static(%A: memref<3x4xi32>, %B: memref<3x4xi32>) {
 }
 
 // CHECK-LABEL: func.func @test_2d_static
-// CHECK: %c0 = arith.constant 0 : index
-// CHECK: %c1 = arith.constant 1 : index
-// CHECK: %c3 = arith.constant 3 : index
-// CHECK: %c4 = arith.constant 4 : index
-// CHECK: scf.for {{.*}} = %c0 to %c3 step %c1
-// CHECK: scf.for {{.*}} = %c0 to %c4 step %c1
-// CHECK: memref.load
-// CHECK: memref.store
+// CHECK-DAG: %c0 = arith.constant 0 : index
+// CHECK-DAG: %c1 = arith.constant 1 : index
+// CHECK-DAG: %c3 = arith.constant 3 : index
+// CHECK-DAG: %c4 = arith.constant 4 : index
+// CHECK: scf.for {{.*}} = %c0 to %c3 step %c1 {
+// CHECK-NEXT: scf.for {{.*}} = %c0 to %c4 step %c1 {
+// CHECK-NEXT: %{{.*}} = memref.load %arg0[%{{.*}}, %{{.*}}] : memref<3x4xi32>
+// CHECK-NEXT: memref.store %{{.*}}, %arg1[%{{.*}}, %{{.*}}] : memref<3x4xi32>
+// CHECK-NEXT: }
+// CHECK-NEXT: }
 // CHECK-NOT: memref.copy
 
 func.func @test_3d_static(%A: memref<2x3x2xf64>, %B: memref<2x3x2xf64>) {
@@ -36,15 +39,18 @@ func.func @test_3d_static(%A: memref<2x3x2xf64>, %B: memref<2x3x2xf64>) {
 }
 
 // CHECK-LABEL: func.func @test_3d_static
-// CHECK: %c0 = arith.constant 0 : index
-// CHECK: %c1 = arith.constant 1 : index
+// CHECK-DAG: %c0 = arith.constant 0 : index
+// CHECK-DAG: %c1 = arith.constant 1 : index
 // CHECK-DAG: %c2 = arith.constant 2 : index
 // CHECK-DAG: %c3 = arith.constant 3 : index
-// CHECK: scf.for {{.*}} = %c0 to %c2 step %c1
-// CHECK: scf.for {{.*}} = %c0 to %c3 step %c1
-// CHECK: scf.for {{.*}} = %c0 to %c{{.*}} step %c1
-// CHECK: memref.load
-// CHECK: memref.store
+// CHECK: scf.for {{.*}} = %c0 to %c2 step %c1 {
+// CHECK-NEXT: scf.for {{.*}} = %c0 to %c3 step %c1 {
+// CHECK-NEXT: scf.for {{.*}} = %c0 to %c{{.*}} step %c1 {
+// CHECK-NEXT: %{{.*}} = memref.load %arg0[%{{.*}}, %{{.*}}, %{{.*}}] : memref<2x3x2xf64>
+// CHECK-NEXT: memref.store %{{.*}}, %arg1[%{{.*}}, %{{.*}}, %{{.*}}] : memref<2x3x2xf64>
+// CHECK-NEXT: }
+// CHECK-NEXT: }
+// CHECK-NEXT: }
 // CHECK-NOT: memref.copy
 
 func.func @test_1d_dynamic(%A: memref<?xf32>, %B: memref<?xf32>) {
@@ -53,13 +59,14 @@ func.func @test_1d_dynamic(%A: memref<?xf32>, %B: memref<?xf32>) {
 }
 
 // CHECK-LABEL: func.func @test_1d_dynamic
-// CHECK: %c0 = arith.constant 0 : index
-// CHECK: %c1 = arith.constant 1 : index
-// CHECK: %c{{.*}} = arith.constant 0 : index
-// CHECK: %dim = memref.dim %arg0, %c{{.*}} : memref<?xf32>
-// CHECK: scf.for {{.*}} = %c0 to %dim step %c1
-// CHECK: memref.load
-// CHECK: memref.store
+// CHECK-DAG: %c0 = arith.constant 0 : index
+// CHECK-DAG: %c1 = arith.constant 1 : index
+// CHECK-DAG: %c{{.*}} = arith.constant 0 : index
+// CHECK-DAG: %dim = memref.dim %arg0, %c{{.*}} : memref<?xf32>
+// CHECK: scf.for {{.*}} = %c0 to %dim step %c1 {
+// CHECK-NEXT: %{{.*}} = memref.load %arg0[%{{.*}}] : memref<?xf32>
+// CHECK-NEXT: memref.store %{{.*}}, %arg1[%{{.*}}] : memref<?xf32>
+// CHECK-NEXT: }
 // CHECK-NOT: memref.copy
 
 func.func @test_2d_dynamic(%A: memref<?x?xi32>, %B: memref<?x?xi32>) {
@@ -68,16 +75,18 @@ func.func @test_2d_dynamic(%A: memref<?x?xi32>, %B: memref<?x?xi32>) {
 }
 
 // CHECK-LABEL: func.func @test_2d_dynamic
-// CHECK: %c0 = arith.constant 0 : index
-// CHECK: %c1 = arith.constant 1 : index
-// CHECK: %c{{.*}} = arith.constant 0 : index
-// CHECK: %dim = memref.dim %arg0, %c{{.*}} : memref<?x?xi32>
-// CHECK: %c{{.*}} = arith.constant 1 : index
-// CHECK: %dim_2 = memref.dim %arg0, %c{{.*}} : memref<?x?xi32>
-// CHECK: scf.for {{.*}} = %c0 to %dim step %c1
-// CHECK: scf.for {{.*}} = %c0 to %dim_2 step %c1
-// CHECK: memref.load
-// CHECK: memref.store
+// CHECK-DAG: %c0 = arith.constant 0 : index
+// CHECK-DAG: %c1 = arith.constant 1 : index
+// CHECK-DAG: %c{{.*}} = arith.constant 0 : index
+// CHECK-DAG: %dim = memref.dim %arg0, %c{{.*}} : memref<?x?xi32>
+// CHECK-DAG: %c{{.*}} = arith.constant 1 : index
+// CHECK-DAG: %dim_2 = memref.dim %arg0, %c{{.*}} : memref<?x?xi32>
+// CHECK: scf.for {{.*}} = %c0 to %dim step %c1 {
+// CHECK-NEXT: scf.for {{.*}} = %c0 to %dim_2 step %c1 {
+// CHECK-NEXT: %{{.*}} = memref.load %arg0[%{{.*}}, %{{.*}}] : memref<?x?xi32>
+// CHECK-NEXT: memref.store %{{.*}}, %arg1[%{{.*}}, %{{.*}}] : memref<?x?xi32>
+// CHECK-NEXT: }
+// CHECK-NEXT: }
 // CHECK-NOT: memref.copy
 
 func.func @test_multiple_copies(%A: memref<4xi32>, %B: memref<4xi32>, %C: memref<4xi32>) {
@@ -87,18 +96,20 @@ func.func @test_multiple_copies(%A: memref<4xi32>, %B: memref<4xi32>, %C: memref
 }
 
 // CHECK-LABEL: func.func @test_multiple_copies
-// CHECK: %c0 = arith.constant 0 : index
-// CHECK: %c1 = arith.constant 1 : index
-// CHECK: %c4 = arith.constant 4 : index
-// CHECK: scf.for {{.*}} = %c0 to %c4 step %c1
-// CHECK: memref.load
-// CHECK: memref.store
-// CHECK: %c{{.*}} = arith.constant 0 : index
-// CHECK: %c{{.*}} = arith.constant 1 : index
-// CHECK: %c{{.*}} = arith.constant 4 : index
-// CHECK: scf.for {{.*}} = %c{{.*}} to %c{{.*}} step %c{{.*}}
-// CHECK: memref.load
-// CHECK: memref.store
+// CHECK-DAG: %c0 = arith.constant 0 : index
+// CHECK-DAG: %c1 = arith.constant 1 : index
+// CHECK-DAG: %c4 = arith.constant 4 : index
+// CHECK: scf.for {{.*}} = %c0 to %c4 step %c1 {
+// CHECK-NEXT: %{{.*}} = memref.load %arg0[%{{.*}}] : memref<4xi32>
+// CHECK-NEXT: memref.store %{{.*}}, %arg1[%{{.*}}] : memref<4xi32>
+// CHECK-NEXT: }
+// CHECK-DAG: %c{{.*}} = arith.constant 0 : index
+// CHECK-DAG: %c{{.*}} = arith.constant 1 : index
+// CHECK-DAG: %c{{.*}} = arith.constant 4 : index
+// CHECK: scf.for {{.*}} = %c{{.*}} to %c{{.*}} step %c{{.*}} {
+// CHECK-NEXT: %{{.*}} = memref.load %arg1[%{{.*}}] : memref<4xi32>
+// CHECK-NEXT: memref.store %{{.*}}, %arg2[%{{.*}}] : memref<4xi32>
+// CHECK-NEXT: }
 // CHECK-NOT: memref.copy
 
 func.func @test_without_copy(%A: memref<4xi32>) {
