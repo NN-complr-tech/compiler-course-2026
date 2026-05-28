@@ -96,8 +96,7 @@ public:
     ~UnsafeClass() noexcept(false) {}
 };
 int unsafeConstructor() {
-    UnsafeClass obj;
-    return 0;
+    return throwException();
 }
 
 class SafeClass {
