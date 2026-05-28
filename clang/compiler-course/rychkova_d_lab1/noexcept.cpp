@@ -18,60 +18,60 @@ public:
   explicit ThrowAnalyzer(clang::ASTContext &ctx) : m_context(ctx) {}
 
   bool canThrow(const clang::Stmt *stmt, const FunctionSet &noexceptFns,
-              const clang::FunctionDecl *currentFn = nullptr) {
+                const clang::FunctionDecl *currentFn = nullptr) {
     if (!stmt)
-        return false;
+      return false;
 
     std::queue<const clang::Stmt *> worklist;
     worklist.push(stmt);
 
     while (!worklist.empty()) {
-        const auto *current = worklist.front();
-        worklist.pop();
+      const auto *current = worklist.front();
+      worklist.pop();
 
-        if (llvm::isa<clang::CXXThrowExpr>(current))
-            return true;
+      if (llvm::isa<clang::CXXThrowExpr>(current))
+        return true;
 
-        if (llvm::isa<clang::CXXTryStmt>(current))
-            return true;
+      if (llvm::isa<clang::CXXTryStmt>(current))
+        return true;
 
-        if (const auto *call = llvm::dyn_cast<clang::CallExpr>(current)) {
-            if (const auto *callee = call->getDirectCallee()) {
-                if (callee->getCanonicalDecl() != 
-                        (currentFn ? currentFn->getCanonicalDecl() : nullptr)) {
-                    if (!isCalleeSafe(callee, noexceptFns))
-                        return true;
-                }
-            }
+      if (const auto *call = llvm::dyn_cast<clang::CallExpr>(current)) {
+        if (const auto *callee = call->getDirectCallee()) {
+          if (callee->getCanonicalDecl() !=
+              (currentFn ? currentFn->getCanonicalDecl() : nullptr)) {
+            if (!isCalleeSafe(callee, noexceptFns))
+              return true;
+          }
         }
+      }
 
-        if (const auto *construct =
-                llvm::dyn_cast<clang::CXXConstructExpr>(current)) {
-            if (const auto *ctor = construct->getConstructor()) {
-                if (!isCalleeSafe(ctor, noexceptFns))
-                    return true;
-            }
-            const clang::CXXRecordDecl *record =
-                construct->getType()->getAsCXXRecordDecl();
-            if (record) {
-                if (const clang::CXXDestructorDecl *dtor = record->getDestructor()) {
-                    if (!isCalleeSafe(dtor, noexceptFns))
-                        return true;
-                }
-            }  
-        }
-
-        if (llvm::isa<clang::CXXNewExpr>(current))
+      if (const auto *construct =
+              llvm::dyn_cast<clang::CXXConstructExpr>(current)) {
+        if (const auto *ctor = construct->getConstructor()) {
+          if (!isCalleeSafe(ctor, noexceptFns))
             return true;
-
-        for (const auto *child : current->children()) {
-            if (child)
-                worklist.push(child);
         }
+        const clang::CXXRecordDecl *record =
+            construct->getType()->getAsCXXRecordDecl();
+        if (record) {
+          if (const clang::CXXDestructorDecl *dtor = record->getDestructor()) {
+            if (!isCalleeSafe(dtor, noexceptFns))
+              return true;
+          }
+        }
+      }
+
+      if (llvm::isa<clang::CXXNewExpr>(current))
+        return true;
+
+      for (const auto *child : current->children()) {
+        if (child)
+          worklist.push(child);
+      }
     }
 
     return false;
-}
+  }
 
 private:
   bool isCalleeSafe(const clang::FunctionDecl *fn,
