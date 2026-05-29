@@ -37,8 +37,7 @@ public:
 
     module.walk([&](memref::CopyOp op) { copies.push_back(op); });
 
-    LLVM_DEBUG(llvm::dbgs() << "Found " << copies.size()
-                            << " memref.copy operations\n");
+    LLVM_DEBUG(llvm::dbgs() << "Found " << copies.size() << " memref.copy operations\n");
 
     for (auto copyOp : copies) {
       lowerCopy(copyOp, rewriter);
@@ -82,8 +81,7 @@ private:
 
     rewriter.eraseOp(op);
 
-    LLVM_DEBUG(llvm::dbgs() << "  Replaced memref.copy with loop nest (rank "
-                            << rank << ")\n";
+    LLVM_DEBUG(llvm::dbgs() << "  Replaced memref.copy with loop nest (rank " << rank << ")\n";
   }
 };
 
