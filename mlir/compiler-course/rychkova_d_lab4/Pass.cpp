@@ -7,9 +7,12 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Tools/Plugins/PassPlugin.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace mlir;
+
+#define DEBUG_TYPE "rychkova-copy-to-loop"
 
 namespace {
 
@@ -32,10 +35,10 @@ public:
 
     SmallVector<memref::CopyOp> copies;
 
-    // Собираем все memref.copy операции
     module.walk([&](memref::CopyOp op) { copies.push_back(op); });
 
-    llvm::outs() << "Found " << copies.size() << " memref.copy operations\n";
+    LLVM_DEBUG(llvm::dbgs() << "Found " << copies.size()
+                            << " memref.copy operations\n");
 
     for (auto copyOp : copies) {
       lowerCopy(copyOp, rewriter);
@@ -79,8 +82,8 @@ private:
 
     rewriter.eraseOp(op);
 
-    llvm::outs() << "  Replaced memref.copy with loop nest (rank " << rank
-                 << ")\n";
+    LLVM_DEBUG(llvm::dbgs() << "  Replaced memref.copy with loop nest (rank "
+                            << rank << ")\n";
   }
 };
 
