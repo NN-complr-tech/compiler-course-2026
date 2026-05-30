@@ -82,7 +82,8 @@ private:
 
     rewriter.eraseOp(op);
 
-    LLVM_DEBUG(llvm::dbgs() << "  Replaced memref.copy with loop nest (rank " << rank << ")\n");
+    LLVM_DEBUG(llvm::dbgs() << "  Replaced memref.copy with loop nest (rank "
+                            << rank << ")\n");
   }
 };
 
