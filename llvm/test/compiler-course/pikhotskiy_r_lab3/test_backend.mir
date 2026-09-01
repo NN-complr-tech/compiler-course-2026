@@ -1,5 +1,37 @@
 # RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/pikhotskiy_r_lab3_BACKEND%shlibext -run-pass=pikhotskiy-inline-backend %s -o - | FileCheck %s
 
+--- |
+  define void @tiny_math() {
+    ret void
+  }
+
+  define void @caller_inline_once() {
+    call void @tiny_math()
+    ret void
+  }
+
+  define void @oversized_callee() {
+    ret void
+  }
+
+  define void @caller_keeps_large_call() {
+    call void @oversized_callee()
+    ret void
+  }
+
+  define void @split_callee() {
+    br label %next
+
+  next:
+    ret void
+  }
+
+  define void @caller_keeps_multiblock_call() {
+    call void @split_callee()
+    ret void
+  }
+
+...
 ---
 name: tiny_math
 tracksRegLiveness: true
@@ -16,8 +48,9 @@ tracksRegLiveness: true
 body: |
   bb.0:
     ; CHECK-LABEL: name: caller_inline_once
-    ; CHECK: MOV32ri 11
-    ; CHECK: ADD32ri
+    ; CHECK: bb.0:
+    ; CHECK-NEXT: %{{[0-9]+}}:gr32 = MOV32ri 11
+    ; CHECK-NEXT: %{{[0-9]+}}:gr32 = ADD32ri
     ; CHECK-NOT: CALL64pcrel32 @tiny_math
     ; CHECK: MOV32ri 42
     ; CHECK: RET64
@@ -56,7 +89,8 @@ tracksRegLiveness: true
 body: |
   bb.0:
     ; CHECK-LABEL: name: caller_keeps_large_call
-    ; CHECK: CALL64pcrel32 @oversized_callee
+    ; CHECK: bb.0:
+    ; CHECK-NEXT: CALL64pcrel32 @oversized_callee
     ; CHECK-NEXT: RET64
     CALL64pcrel32 @oversized_callee
     RET64
@@ -81,7 +115,8 @@ tracksRegLiveness: true
 body: |
   bb.0:
     ; CHECK-LABEL: name: caller_keeps_multiblock_call
-    ; CHECK: CALL64pcrel32 @split_callee
+    ; CHECK: bb.0:
+    ; CHECK-NEXT: CALL64pcrel32 @split_callee
     ; CHECK-NEXT: RET64
     CALL64pcrel32 @split_callee
     RET64
