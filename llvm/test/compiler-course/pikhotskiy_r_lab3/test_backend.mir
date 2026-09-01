@@ -1,0 +1,88 @@
+# RUN: llc -mtriple x86_64-unknown-linux-gnu --load=%llvmshlibdir/pikhotskiy_r_lab3_BACKEND%shlibext -run-pass=pikhotskiy-inline-backend %s -o - | FileCheck %s
+
+--- |
+  define void @oversized_callee() {
+    ret void
+  }
+
+  define void @caller_keeps_large_call() {
+    call void @oversized_callee()
+    ret void
+  }
+
+  define void @split_callee() {
+    br label %next
+
+  next:
+    ret void
+  }
+
+  define void @caller_keeps_multiblock_call() {
+    call void @split_callee()
+    ret void
+  }
+
+...
+---
+name: oversized_callee
+tracksRegLiveness: true
+body: |
+  bb.0:
+    %0:gr32 = MOV32ri 0
+    %1:gr32 = MOV32ri 1
+    %2:gr32 = MOV32ri 2
+    %3:gr32 = MOV32ri 3
+    %4:gr32 = MOV32ri 4
+    %5:gr32 = MOV32ri 5
+    %6:gr32 = MOV32ri 6
+    %7:gr32 = MOV32ri 7
+    %8:gr32 = MOV32ri 8
+    %9:gr32 = MOV32ri 9
+    %10:gr32 = MOV32ri 10
+    %11:gr32 = MOV32ri 11
+    %12:gr32 = MOV32ri 12
+    %13:gr32 = MOV32ri 13
+    %14:gr32 = MOV32ri 14
+    %15:gr32 = MOV32ri 15
+    RET64
+
+...
+---
+name: caller_keeps_large_call
+tracksRegLiveness: true
+body: |
+  bb.0:
+    ; CHECK-LABEL: name: caller_keeps_large_call
+    ; CHECK: bb.0:
+    ; CHECK-NEXT: CALL64pcrel32 @oversized_callee
+    ; CHECK-NEXT: RET64
+    CALL64pcrel32 @oversized_callee
+    RET64
+
+...
+---
+name: split_callee
+tracksRegLiveness: true
+body: |
+  bb.0:
+    %0:gr32 = MOV32ri 3
+    JMP_1 %bb.1
+
+  bb.1:
+    %1:gr32 = ADD32ri %0, 1, implicit-def $eflags
+    RET64
+
+...
+---
+name: caller_keeps_multiblock_call
+tracksRegLiveness: true
+body: |
+  bb.0:
+    ; CHECK-LABEL: name: caller_keeps_multiblock_call
+    ; CHECK: bb.0:
+    ; CHECK-NEXT: CALL64pcrel32 @split_callee
+    ; CHECK-NEXT: RET64
+    CALL64pcrel32 @split_callee
+    RET64
+
+...
