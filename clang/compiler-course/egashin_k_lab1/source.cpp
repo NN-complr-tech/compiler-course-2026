@@ -295,7 +295,7 @@ public:
     const FileID MainFile = Context.getSourceManager().getMainFileID();
     if (const llvm::RewriteBuffer *Buffer =
             Rewrite.getRewriteBufferFor(MainFile)) {
-      llvm::outs() << std::string(Buffer->begin(), Buffer->end());
+      Buffer->write(llvm::outs());
       return;
     }
 
